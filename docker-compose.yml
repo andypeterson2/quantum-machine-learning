@@ -1,0 +1,7 @@
+services:
+  classifier:
+    build: .
+    ports:
+      - "${PORT:-5001}:${PORT:-5001}"
+    environment:
+      PORT: ${PORT:-5001}
