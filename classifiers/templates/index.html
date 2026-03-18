@@ -92,7 +92,7 @@
                 <input type="number" id="lr"
                        value="{{ ui_config.default_hyperparams.lr }}" step="0.0001" min="0.00001" max="1">
               </div>
-              <details class="advanced-train-options" id="advanced-options">
+              <details class="ui-collapsible" id="advanced-options">
                 <summary>Advanced</summary>
                 <div class="form-row">
                   <label for="patience" title="Stop training if validation accuracy doesn't improve for this many epochs">Early Stop</label>
@@ -114,7 +114,7 @@
                 </div>
               </details>
             </form>
-            <details class="model-info-details" id="model-info-details">
+            <details class="ui-collapsible" id="model-info-details">
               <summary>Model Info</summary>
               <div id="model-info-panel" class="model-info-panel"></div>
             </details>
@@ -171,8 +171,8 @@
               <button id="refresh-saved-btn" class="btn btn-icon"
                       aria-label="Refresh saved models" title="Refresh"><span data-icon="refresh"></span></button>
             </div>
-            <div class="session-models ui-scrollbar-thin" id="session-models">
-              <p class="session-empty">No models loaded</p>
+            <div class="ui-list ui-scrollbar-thin" id="session-models">
+              <p class="ui-list-empty">No models loaded</p>
             </div>
           </section>
 
