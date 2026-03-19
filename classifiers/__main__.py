@@ -28,6 +28,19 @@ logging.basicConfig(
 logger = logging.getLogger("classifiers")
 
 
+def _get_ssl_context():
+    """Return (cert, key) paths if dev certs exist, else None."""
+    from pathlib import Path
+    for d in [
+        Path(os.environ.get("DEV_CERT_DIR", "")),
+        Path(__file__).resolve().parents[2] / ".certs",
+    ]:
+        cert, key = d / "cert.pem", d / "key.pem"
+        if cert.is_file() and key.is_file():
+            return (str(cert), str(key))
+    return None
+
+
 def _find_free_port() -> int:
     """Ask the OS to assign a free TCP port.
 
@@ -58,8 +71,11 @@ app = create_app()
 
 # Only print from the outer watcher process — WERKZEUG_RUN_MAIN is set in the
 # reloader child, which would otherwise produce duplicate output.
+ssl_ctx = _get_ssl_context()
+scheme = "https" if ssl_ctx else "http"
+
 if not os.environ.get("WERKZEUG_RUN_MAIN"):
-    logger.info("Running on http://localhost:%d", port)
+    logger.info("Running on %s://localhost:%d", scheme, port)
 
 host = os.environ.get("CLASSIFIERS_HOST", "0.0.0.0")
-app.run(debug=True, host=host, port=port)
+app.run(debug=True, host=host, port=port, ssl_context=ssl_ctx)
