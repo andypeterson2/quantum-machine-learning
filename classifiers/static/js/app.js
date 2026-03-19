@@ -18,7 +18,7 @@ const ICONS = UIKit.ICONS;
 // ── Config injected by template ─────────────────────────────────────────────
 
 /** @const {string} URL prefix for all API calls scoped to the active dataset. */
-const BASE = `/d/${UI_CONFIG.name}`;
+const BASE = API_BASE + `/d/${UI_CONFIG.name}`;
 
 // ── State ────────────────────────────────────────────────────────────────────
 
@@ -177,7 +177,7 @@ function updateEnsembleBtn() {
 
 (async function initDatasetMenu() {
   try {
-    const res  = await fetch("/api/datasets");
+    const res  = await fetch(API_BASE + "/api/datasets");
     const list = await res.json();
     datasetList.innerHTML = "";
     for (const ds of list) {
