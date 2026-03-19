@@ -49,6 +49,7 @@
       <div class="top-bar" id="top-bar">
         <span class="current-dataset" id="current-dataset">{% if plugin is defined %}{{ plugin.display_name }}{% else %}Dataset{% endif %}</span>
         <div class="top-bar-right">
+          <div id="backend-connect"></div>
           <button id="dataset-menu-btn" class="btn btn-icon hamburger-btn"
                   aria-label="Switch dataset" aria-expanded="false" title="Switch dataset"><span data-icon="hamburger"></span></button>
           <div id="dataset-menu" class="ui-dropdown hidden" role="listbox">
@@ -258,6 +259,19 @@
       var name = el.dataset.icon;
       if (UIKit.ICONS[name]) el.outerHTML = UIKit.ICONS[name];
     });
+  </script>
+  <script>
+    (function() {
+      var el = document.getElementById('backend-connect');
+      if (el && window.UIKit && UIKit.initConnect) {
+        UIKit.initConnect(el, {
+          service: 'classifier',
+          defaultHost: 'localhost',
+          defaultPort: 5001,
+          label: 'Backend'
+        });
+      }
+    })();
   </script>
 </body>
 </html>
