@@ -1,6 +1,5 @@
 """Unit tests for Quadratic and Polynomial MNIST model architectures."""
 
-import pytest
 import torch
 
 from classifiers.base_model import BaseModel

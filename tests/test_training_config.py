@@ -1,7 +1,5 @@
 """Unit tests for TrainingConfig, HistoryEntry, and advanced training features."""
 
-import pytest
-import torch
 
 from classifiers.training_config import TrainingConfig, HistoryEntry
 from classifiers.trainer import Trainer, TrainResult

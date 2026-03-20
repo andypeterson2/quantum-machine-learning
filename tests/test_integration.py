@@ -1,6 +1,5 @@
 """Integration tests: end-to-end pipelines combining multiple modules."""
 
-import pytest
 import torch
 import numpy as np
 from PIL import Image, ImageDraw

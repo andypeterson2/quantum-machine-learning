@@ -1,7 +1,6 @@
 """Unit tests for LinearNet architecture."""
 
 import torch
-import pytest
 
 from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.base_model import BaseModel

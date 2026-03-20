@@ -1,11 +1,8 @@
 """Unit tests for classifiers.trainer.Trainer and TrainResult."""
 
-import pytest
-import torch
 
 from classifiers.trainer import Trainer, TrainResult
 from classifiers.datasets.mnist.models import MNISTNet, LinearNet
-from classifiers.base_model import BaseModel
 from tests.conftest import make_fake_train_loader
 
 

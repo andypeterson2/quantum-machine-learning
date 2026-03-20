@@ -5,8 +5,6 @@ import torch
 from PIL import Image
 
 from classifiers.predictor import Predictor
-from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
-from classifiers.datasets.mnist.plugin import MNISTPlugin
 
 
 class TestPreprocessing:
