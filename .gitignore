@@ -1,6 +1,9 @@
 # Hidden files
 .*
 !.git*
+!.certs/
+!.dashboard.yaml
+!.dockerignore
 
 # Python
 __pycache__/
