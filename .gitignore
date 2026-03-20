@@ -33,3 +33,5 @@ data/
 .pytest_cache/
 .coverage
 htmlcov/
+.claude/
+ui-kit.zip
