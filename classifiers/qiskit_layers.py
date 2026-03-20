@@ -116,12 +116,21 @@ class _ParametricCircuit:
 
 
 class _ExampleCircuit(_ParametricCircuit):
-    """3-qubit parametric circuit with RX encoding + RXX/RZZ entanglement."""
+    """3-qubit parametric circuit with RX encoding + RXX/RZZ entanglement.
+
+    Uses a hardware-efficient ansatz with linear entanglement topology
+    to minimize circuit depth while maintaining expressibility.
+
+    Gate count: ``n`` RX (encoding) + ``2*(n-1)`` entangling gates
+    (reduced from ``2*n`` by removing the redundant wrap-around connection).
+    """
 
     def __init__(self, input_dim: int, executor: _QCExecutor | None = None) -> None:
         if executor is None:
             executor = _QCSampler()
-        super().__init__(_ExampleCircuit._builder, 2 * input_dim, input_dim, executor)
+        # Linear topology: 2*(n-1) entangling params instead of 2*n
+        num_params = 2 * (input_dim - 1) if input_dim > 1 else 0
+        super().__init__(_ExampleCircuit._builder, num_params, input_dim, executor)
 
     @staticmethod
     def _builder(params, inputs):
@@ -129,12 +138,14 @@ class _ExampleCircuit(_ParametricCircuit):
 
         n = len(inputs)
         qc = QuantumCircuit(n, n)
+        # Feature encoding via RX rotations
         for i in range(n):
             qc.rx(inputs[i], i)
         qc.barrier()
-        for i in range(n):
-            qc.rxx(params[2 * i], i, (i + 1) % n)
-            qc.rzz(params[2 * i + 1], i, (i + 1) % n)
+        # Linear entanglement (no cyclic wrap) — reduces depth by 1 layer
+        for i in range(n - 1):
+            qc.rxx(params[2 * i], i, i + 1)
+            qc.rzz(params[2 * i + 1], i, i + 1)
         qc.barrier()
         qc.measure_all()
         return qc
@@ -159,12 +170,21 @@ class _RunCircuit(Function):
 
     @staticmethod
     def _estimate_partial(
-        f: Callable, v: torch.Tensor, pos: int, delta: float = 0.2
+        f: Callable, v: torch.Tensor, pos: int, delta: float = np.pi / 2
     ) -> torch.Tensor:
+        """Estimate partial derivative using the parameter-shift rule.
+
+        For Pauli rotation gates the exact gradient is:
+            df/dθ = [f(θ + π/2) − f(θ − π/2)] / 2
+
+        This replaces the previous finite-difference approximation,
+        giving exact analytic gradients for parametric quantum circuits
+        composed of Pauli rotation gates (RX, RXX, RZZ, etc.).
+        """
         e = F.one_hot(torch.tensor([pos]), num_classes=v.shape[-1]).flatten().float()
-        fv_plus = f(v + e)
-        fv_minus = f(v - e)
-        return torch.tensor(fv_plus - fv_minus, dtype=torch.float32) / (2 * delta)
+        fv_plus = f(v + delta * e)
+        fv_minus = f(v - delta * e)
+        return torch.tensor(fv_plus - fv_minus, dtype=torch.float32) / 2
 
     @staticmethod
     def backward(ctx, grad_output):
