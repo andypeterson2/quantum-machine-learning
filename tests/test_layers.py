@@ -1,6 +1,5 @@
 """Unit tests for classifiers.layers (Quadratic and Polynomial layers)."""
 
-import pytest
 import torch
 
 from classifiers.layers import Quadratic, Polynomial

@@ -7,12 +7,10 @@ import io
 import json
 
 import pytest
-import torch
 from PIL import Image
 
 from classifiers.server import create_app
 from classifiers.datasets.mnist.models import MNISTNet, LinearNet
-from classifiers.model_registry import ModelRegistry
 from tests.conftest import make_fake_train_loader, make_fake_test_loader
 
 

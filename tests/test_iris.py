@@ -1,6 +1,5 @@
 """Unit and integration tests for the Iris dataset plugin and models."""
 
-import numpy as np
 import pytest
 import torch
 

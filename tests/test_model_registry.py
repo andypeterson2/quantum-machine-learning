@@ -1,6 +1,5 @@
 """Unit tests for classifiers.model_registry.ModelRegistry."""
 
-import pytest
 
 from classifiers.datasets.mnist.models import MNISTNet, LinearNet
 from classifiers.model_registry import ModelRegistry, ModelEntry

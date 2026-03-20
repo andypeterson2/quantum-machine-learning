@@ -2,9 +2,8 @@
 
 import pytest
 import torch
-from pathlib import Path
 
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
+from classifiers.datasets.mnist.models import MNISTNet
 from classifiers.model_registry import ModelEntry
 from classifiers.persistence import ModelPersistence
 

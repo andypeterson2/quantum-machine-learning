@@ -7,7 +7,6 @@ import io
 import json
 
 import pytest
-import torch
 from PIL import Image
 
 from classifiers.server import create_app
