@@ -1,0 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI-KIT — Entry Point (full)
+   Import this single file to get the complete toolkit.
+
+   Requires the Atkinson Hyperlegible font:
+     <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+           rel="stylesheet">
+
+   Requires Font Awesome 6 Free:
+     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+           rel="stylesheet">
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url("tokens.css");
+@import url("base.css");
+@import url("components.css");

@@ -1,0 +1,23 @@
+/* ═══════════════════════════════
+   FIELDSET
+   Form section groups with
+   optional legend / title.
+   ═══════════════════════════════ */
+.ui-fieldset {
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  margin: 0;
+}
+.ui-fieldset legend {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  padding: 0 6px;
+  font-family: var(--font);
+}
+.ui-fieldset-borderless {
+  border: none;
+  padding: 0;
+}

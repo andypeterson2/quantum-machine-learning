@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI-KIT — Base Styles
+   Reset, body defaults, gapless border rules, and utility classes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;  /* Zero radius everywhere */
+}
+
+/* ── Body ── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Tables always collapse borders ── */
+table { border-collapse: collapse; }
+
+/* ── Custom scrollbars ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track, transparent); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, var(--surface-muted)); }
+
+/* ── Utilities ── */
+.hidden { display: none !important; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+.resize-dragging { user-select: none; }
+
+/* ── Universal border rule ── */
+h1, h2, h3, h4, h5, h6 {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+}

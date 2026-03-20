@@ -1,0 +1,54 @@
+/* ═══════════════════════════════
+   PAGINATION
+   Page navigation for lists
+   and tables.
+   ═══════════════════════════════ */
+.ui-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-family: var(--font);
+}
+.ui-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  margin-left: -1px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: var(--font);
+}
+.ui-page:first-child { margin-left: 0; }
+.ui-page:hover {
+  background: var(--surface2);
+  color: var(--text);
+  z-index: 1;
+  position: relative;
+}
+.ui-page.active {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-color: var(--accent);
+  z-index: 2;
+  position: relative;
+}
+.ui-page:disabled,
+.ui-page.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ui-page-ellipsis {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}

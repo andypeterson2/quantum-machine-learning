@@ -1,0 +1,33 @@
+/* ═══════════════════════════════
+   CARDS
+   ═══════════════════════════════ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.card + .card { margin-top: -1px; }
+.card h2 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Card header row (title + action button side-by-side) ── */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.card-header h2 { margin-bottom: 0; border: none; padding: 0; }

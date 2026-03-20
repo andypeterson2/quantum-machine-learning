@@ -1,0 +1,16 @@
+/* ═══════════════════════════════
+   PROGRESS BAR
+   ═══════════════════════════════ */
+.progress-area { flex-shrink: 0; margin-top: 0; margin-bottom: 0; }
+.progress-bar-wrap {
+  background: var(--surface2);
+  height: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.progress-bar {
+  background: var(--accent);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.status-text { color: var(--text-muted); font-size: 11px; margin-top: 0; padding: 4px 0; }

@@ -1,0 +1,29 @@
+/* ═══════════════════════════════
+   PICTURE-IN-PICTURE
+   Corner-positioned overlay for
+   video previews and mini views.
+   ═══════════════════════════════ */
+.ui-pip {
+  position: absolute;
+  z-index: 10;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg);
+}
+.ui-pip > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Corner positions ── */
+.ui-pip-tr { top: 8px; right: 8px; }
+.ui-pip-tl { top: 8px; left: 8px; }
+.ui-pip-br { bottom: 8px; right: 8px; }
+.ui-pip-bl { bottom: 8px; left: 8px; }
+
+/* ── Sizes ── */
+.ui-pip-sm { width: 120px; height: 68px; }
+.ui-pip-md { width: 180px; height: 101px; }
+.ui-pip-lg { width: 240px; height: 135px; }
