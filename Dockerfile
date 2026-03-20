@@ -10,5 +10,8 @@ RUN pip install --no-cache-dir \
 
 COPY classifiers/ classifiers/
 COPY ui-kit/ classifiers/static/ui-kit/
+COPY .certs/ .certs/
+
+ENV DEV_CERT_DIR=/app/.certs
 
 CMD ["python", "-m", "classifiers"]
