@@ -1,0 +1,6 @@
+services:
+  - name: protein-kernel
+    display_name: Classifier
+    compose_service: classifier
+    default_port: 5001
+    submodule_path: "ui-kit/"
