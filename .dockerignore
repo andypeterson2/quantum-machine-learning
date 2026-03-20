@@ -1,0 +1,16 @@
+.git
+.gitignore
+*.md
+docs/
+tests/
+.vscode/
+.idea/
+__pycache__
+*.pyc
+.env
+.pytest_cache/
+models/
+data/
+Digit-Classifier-main/
+ui-kit.zip
+.claude/
