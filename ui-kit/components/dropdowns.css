@@ -1,0 +1,41 @@
+/* ═══════════════════════════════
+   DROPDOWN
+   ═══════════════════════════════ */
+.ui-dropdown {
+  position: absolute;
+  top: calc(100% + 0px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-width: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 50;
+}
+.ui-dropdown::-webkit-scrollbar { width: 4px; }
+.ui-dropdown::-webkit-scrollbar-thumb { background: var(--term-scrollbar); }
+.ui-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ui-dropdown-item:hover { background: var(--surface2); color: var(--text); }
+.ui-dropdown-item.active {
+  border-left-color: var(--accent);
+  color: var(--text);
+  background: var(--surface2);
+}

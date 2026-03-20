@@ -1,0 +1,38 @@
+/* ═══════════════════════════════
+   SIDEBAR NAV
+   Vertical navigation list with
+   active indicator border.
+   ═══════════════════════════════ */
+.ui-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.ui-sidebar-nav a {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  font-family: var(--font);
+}
+.ui-sidebar-nav a:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+.ui-sidebar-nav a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--surface);
+}
+.ui-sidebar-nav-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 12px 12px 4px;
+  font-family: var(--font);
+}

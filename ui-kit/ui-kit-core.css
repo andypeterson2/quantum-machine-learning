@@ -1,0 +1,10 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI-KIT — Core Entry Point (minimal)
+   Tokens + base only. Import individual component files as needed:
+     @import url("ui-kit/ui-kit-core.css");
+     @import url("ui-kit/components/buttons.css");
+     @import url("ui-kit/components/cards.css");
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url("tokens.css");
+@import url("base.css");

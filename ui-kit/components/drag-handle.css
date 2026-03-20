@@ -1,0 +1,30 @@
+/* ═══════════════════════════════
+   DRAG HANDLE
+   Visual grip indicator for
+   sortable / draggable items.
+   ═══════════════════════════════ */
+.ui-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  color: var(--text-muted);
+  padding: 4px;
+  flex-shrink: 0;
+  user-select: none;
+  touch-action: none;
+}
+.ui-drag-handle:active { cursor: grabbing; }
+.ui-drag-handle::before {
+  content: "⋮⋮";
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+/* ── Sortable ghost/chosen states ── */
+.ui-sortable-ghost { opacity: 0.4; }
+.ui-sortable-chosen {
+  outline: 1px solid var(--accent);
+  z-index: 10;
+  position: relative;
+}

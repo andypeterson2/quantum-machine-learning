@@ -1,0 +1,195 @@
+/* ═══════════════════════════════
+   APP SHELL — Unified composition
+   ═══════════════════════════════ */
+
+/* Canonical app shell — every app uses this skeleton */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+/* Top bar — flush, 1px bottom border, no gaps */
+.app-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 37px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 12px;
+  gap: 8px;
+}
+
+/* Body area below topbar — fills remaining height */
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Sidebar — flush left, 1px right border */
+.app-sidebar {
+  flex-shrink: 0;
+  width: 260px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+/* Main content — fills remaining space */
+.app-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* Side panel — flush right, 1px left border */
+.app-panel {
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+/* Legacy app-shell (protein-kernel compat) */
+.app-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════
+   MAIN AREA
+   ═══════════════════════════════ */
+.main-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ═══════════════════════════════
+   TOP BAR (legacy)
+   ═══════════════════════════════ */
+.top-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.current-dataset {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+}
+.top-bar-right {
+  position: relative;
+}
+.hamburger-btn {
+  font-size: 14px;
+  padding: 4px 9px;
+  line-height: 1;
+}
+
+/* ═══════════════════════════════
+   SPLIT LAYOUT
+   ═══════════════════════════════ */
+.split-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+.left-col {
+  flex-shrink: 0;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.right-col {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── Resize handle ── */
+.resize-handle {
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+}
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  background: transparent;
+  transition: background 0.15s;
+}
+.resize-h {
+  width: 8px;
+  cursor: col-resize;
+}
+.resize-h::after {
+  width: 2px;
+  height: calc(100% - 32px);
+  top: 16px;
+  left: 3px;
+}
+.resize-handle:hover::after,
+.resize-handle.dragging::after { background: var(--accent); }
+
+/* ═══════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════ */
+
+/* ── Tablet ── */
+@media (max-width: 1100px) {
+  .left-col { width: 260px; }
+}
+
+/* ── Mobile: stack + scroll ── */
+@media (max-width: 900px) {
+  body { height: auto; overflow-y: auto; }
+  .app-shell { flex-wrap: wrap; overflow: visible; }
+  .app-body { flex-direction: column; overflow: visible; }
+  .app-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .main-area { overflow: visible; min-width: 0; gap: 0; }
+  .split-layout { flex-direction: column; overflow: visible; }
+  .left-col  { width: 100% !important; overflow: visible; }
+  .right-col { min-width: 0; overflow: visible; }
+  .card { overflow: visible; }
+  .resize-h { display: none; }
+  .ui-table-sticky-wrap { max-height: 400px; }
+  .drawer-left.open { width: 240px; }
+  .drawer-left > .side-panel { width: 218px; }
+}
+
+@media (max-width: 600px) {
+  .feature-row .feature-label {
+    min-width: calc(50% - 10px);
+    max-width: none;
+    flex: 1 1 calc(50% - 10px);
+  }
+  .predict-row-btn { width: 100%; }
+}

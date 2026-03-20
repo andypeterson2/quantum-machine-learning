@@ -38,6 +38,53 @@
 }
 .import-disk-row select:focus { border-color: var(--accent); }
 
+/* ── Sticky-table app-specific classes ── */
+.corner-cell {
+  min-width: 90px;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+.model-col-head { min-width: 90px; }
+.col-model-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.metrics-section-row > td {
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 5px 10px 3px;
+  border-top: 1px solid var(--border);
+}
+.metrics-section-row:first-child > td { border-top: none; }
+th.metric-label {
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  padding: 5px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+.cfg-cell { color: var(--text-muted); font-size: 11px; }
+
+/* ── Colour helpers ── */
+.pred-label { font-size: 13px; font-weight: 700; color: var(--accent); }
+.pred-model-name { color: var(--text-muted); font-size: 12px; }
+.conf-high  { color: var(--success); }
+.conf-low   { color: var(--text-muted); }
+.acc-high   { color: var(--success); }
+.acc-med    { color: var(--warn); }
+.acc-low    { color: var(--danger); }
+
 /* ── Prediction table (uses generic .ui-table via class, but ID selectors for specificity) ── */
 .pred-wrap {
   flex-shrink: 0; margin-top: 12px;

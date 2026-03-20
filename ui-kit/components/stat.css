@@ -1,0 +1,46 @@
+/* ═══════════════════════════════
+   STAT
+   Key-value metric display for
+   dashboards and summaries.
+   ═══════════════════════════════ */
+.ui-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font);
+}
+.ui-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.ui-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ui-stat-value-sm { font-size: 16px; }
+.ui-stat-change {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.ui-stat-change-up { color: var(--success); }
+.ui-stat-change-down { color: var(--danger); }
+
+/* ── Inline stat row ── */
+.ui-stat-row {
+  display: flex;
+  gap: 0;
+}
+.ui-stat-row .ui-stat {
+  flex: 1;
+  margin-left: -1px;
+}
+.ui-stat-row .ui-stat:first-child { margin-left: 0; }

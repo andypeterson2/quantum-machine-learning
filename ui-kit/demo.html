@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI-KIT — Component Reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="ui-kit.css">
+  <style>
+    /* Demo-specific overrides so sections are visible in a scrolling page */
+    body { height: auto; overflow-y: auto; padding: 0; }
+    .demo-page { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .demo-section { margin-bottom: 40px; }
+    .demo-section h2 {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--accent); margin-bottom: 12px;
+      border-bottom: 1px solid var(--border); padding-bottom: 6px;
+    }
+    .demo-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 12px; }
+    .demo-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .demo-swatch-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .demo-swatch {
+      width: 70px; height: 48px; border: 1px solid var(--border);
+      display: flex; align-items: flex-end; justify-content: center;
+      font-size: 9px; color: var(--text-muted); padding-bottom: 3px;
+    }
+    .demo-mini-shell {
+      border: 1px solid var(--border);
+      height: 300px; display: flex; overflow: hidden; width: 100%;
+    }
+    .demo-mini-shell .main-area { padding: 10px; }
+    .demo-mini-shell .split-layout { gap: 0; }
+    .demo-mini-shell .left-col { width: 200px; }
+    .demo-icon-grid { display: flex; flex-wrap: wrap; gap: 14px; }
+    .demo-icon-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 10px; color: var(--text-muted); min-width: 64px;
+    }
+    .demo-icon-item .icon { color: var(--text); }
+  </style>
+</head>
+<body>
+  <script src="icons.js"></script>
+  <script src="ui-kit.js"></script>
+
+  <div class="demo-page">
+    <h1 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px;">UI-KIT</h1>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 28px;">Component reference &amp; visual regression page. Toggle dark/light with the button in the bottom-right corner.</p>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TOKENS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Design Tokens — Surfaces</h2>
+      <div class="demo-swatch-grid">
+        <div class="demo-swatch" style="background: var(--bg);">--bg</div>
+        <div class="demo-swatch" style="background: var(--surface);">--surface</div>
+        <div class="demo-swatch" style="background: var(--surface2);">--surface2</div>
+        <div class="demo-swatch" style="background: var(--surface-muted);">--surface-muted</div>
+        <div class="demo-swatch" style="background: var(--surface-hl);">--surface-hl</div>
+        <div class="demo-swatch" style="background: var(--border);">--border</div>
+        <div class="demo-swatch" style="background: var(--term-bg);">--term-bg</div>
+      </div>
+    </div>
+
+    <div class="demo-section">
+      <h2>Design Tokens — Accents</h2>
+      <div class="demo-swatch-grid">
+        <div class="demo-swatch" style="background: var(--accent); color: #fff;">--accent</div>
+        <div class="demo-swatch" style="background: var(--accent-hover); color: #fff;">--accent-hover</div>
+        <div class="demo-swatch" style="background: var(--accent-teal); color: #fff;">--accent-teal</div>
+        <div class="demo-swatch" style="background: var(--accent-olive); color: #fff;">--accent-olive</div>
+        <div class="demo-swatch" style="background: var(--accent-brown); color: #fff;">--accent-brown</div>
+        <div class="demo-swatch" style="background: var(--accent-dark); color: #fff;">--accent-dark</div>
+        <div class="demo-swatch" style="background: var(--success); color: #fff;">--success</div>
+        <div class="demo-swatch" style="background: var(--warn); color: #000;">--warn</div>
+        <div class="demo-swatch" style="background: var(--danger); color: #fff;">--danger</div>
+      </div>
+    </div>
+
+    <div class="demo-section">
+      <h2>Design Tokens — Syntax</h2>
+      <div class="demo-swatch-grid">
+        <div class="demo-swatch" style="background: var(--syntax-string); color: #000;">string</div>
+        <div class="demo-swatch" style="background: var(--syntax-keyword); color: #fff;">keyword</div>
+        <div class="demo-swatch" style="background: var(--syntax-function); color: #fff;">function</div>
+        <div class="demo-swatch" style="background: var(--syntax-comment);">comment</div>
+        <div class="demo-swatch" style="background: var(--syntax-type); color: #fff;">type</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- ICONS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Icons</h2>
+      <div class="demo-icon-grid" id="icon-grid"></div>
+      <script>
+        (function () {
+          var grid = document.getElementById("icon-grid");
+          var names = Object.keys(UIKit.ICONS);
+          for (var i = 0; i < names.length; i++) {
+            var name = names[i];
+            var item = document.createElement("div");
+            item.className = "demo-icon-item";
+            item.innerHTML = UIKit.ICONS[name] + "<span>" + name + "</span>";
+            grid.appendChild(item);
+          }
+        })();
+      </script>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- BUTTONS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Buttons</h2>
+      <div class="demo-row">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <button class="btn btn-danger">Danger</button>
+        <button class="btn btn-icon" title="Icon button"></button>
+      </div>
+      <div class="demo-row">
+        <button class="btn btn-primary" disabled>Disabled</button>
+        <button class="btn btn-primary btn-loading">Loading</button>
+      </div>
+      <script>
+        document.querySelector('.btn-icon[title="Icon button"]').innerHTML = UIKit.ICONS.refresh;
+      </script>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CARDS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Cards</h2>
+      <div class="demo-row">
+        <div class="card" style="width: 280px;">
+          <div class="card-header">
+            <h2>Card Title</h2>
+            <button class="btn btn-primary">Action</button>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted);">Card content goes here.</p>
+        </div>
+        <div class="card" style="width: 280px;">
+          <h2>Simple Card</h2>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px;">Without header row.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- MODALS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Modal</h2>
+      <div style="position: relative; background: rgba(0,0,0,0.3); padding: 40px; border: 1px solid var(--border);">
+        <div class="modal" style="position: relative; margin: 0 auto;">
+          <div class="modal-header">
+            <span class="modal-title">Confirm Action</span>
+            <button class="btn btn-icon" style="width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;"></button>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary);">Are you sure you want to proceed?</p>
+          <div class="modal-footer">
+            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-primary">Confirm</button>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.querySelector('.modal .btn-icon').innerHTML = UIKit.ICONS.close;
+      </script>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- FORM ROWS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Form Rows</h2>
+      <div class="card" style="width: 320px;">
+        <form class="card-form" onsubmit="return false">
+          <div class="form-row">
+            <label>Model</label>
+            <select><option>Linear</option><option>CNN</option><option>SVM</option></select>
+          </div>
+          <div class="form-row">
+            <label>Name</label>
+            <input type="text" placeholder="My Model">
+          </div>
+          <div class="form-row">
+            <label>Epochs</label>
+            <input type="number" value="3" min="1" max="200">
+          </div>
+          <div class="form-row">
+            <label>LR</label>
+            <input type="number" value="0.001" step="0.0001">
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CONTROL ROW -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Control Row</h2>
+      <div class="card" style="width: 400px;">
+        <div class="control-row">
+          <select>
+            <option>— select an item —</option>
+            <option>Item A</option>
+            <option>Item B</option>
+          </select>
+          <button class="btn btn-secondary">Import</button>
+          <button class="btn btn-icon" title="Refresh"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- LIST ROWS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>List Rows</h2>
+      <div class="card" style="width: 360px;">
+        <div class="ui-list" style="max-height: 200px;">
+          <div class="ui-list-row">
+            <span class="ui-list-name">Linear</span>
+            <span class="ui-list-tag">Linear</span>
+            <button class="btn btn-icon" title="Save"></button>
+            <button class="btn btn-danger" aria-label="Remove"></button>
+          </div>
+          <div class="ui-list-row">
+            <span class="ui-list-name">CNN 2</span>
+            <span class="ui-list-tag">CNN</span>
+            <button class="btn btn-icon" title="Save"></button>
+            <button class="btn btn-danger" aria-label="Remove"></button>
+          </div>
+        </div>
+        <p class="ui-list-empty" style="display: none;">No items loaded</p>
+      </div>
+      <script>
+        (function () {
+          document.querySelectorAll('.ui-list-row .btn-icon[title="Save"]').forEach(function (b) { b.innerHTML = UIKit.ICONS.save; });
+          document.querySelectorAll('.ui-list-row .btn-danger').forEach(function (b) { b.innerHTML = UIKit.ICONS.close; });
+        })();
+      </script>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PROGRESS BAR -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Progress Bar</h2>
+      <div class="card" style="width: 400px;">
+        <div class="progress-area">
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" style="width: 65%;" role="progressbar"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="65"></div>
+          </div>
+          <p class="status-text">Processing 65%…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TABLES -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Simple Table</h2>
+      <div class="ui-table-wrap" style="max-width: 500px;">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Prediction</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pred-model-name">Linear</td>
+              <td><span class="pred-label">Setosa</span></td>
+              <td><span class="conf-high">97.3%</span></td>
+            </tr>
+            <tr>
+              <td class="pred-model-name">SVM</td>
+              <td><span class="pred-label">Virginica</span></td>
+              <td><span class="conf-low">62.1%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="demo-section">
+      <h2>Sticky-Header Table</h2>
+      <div class="ui-table-sticky-wrap" style="max-height: 200px; max-width: 500px;">
+        <table class="ui-table-sticky">
+          <thead>
+            <tr>
+              <th class="corner-cell metric-label"></th>
+              <th><div class="model-col-head"><span class="col-model-name">Linear</span></div></th>
+              <th><div class="model-col-head"><span class="col-model-name">CNN</span></div></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="metrics-section-row"><td colspan="3">Config</td></tr>
+            <tr><th class="metric-label">Type</th><td>Linear</td><td>CNN</td></tr>
+            <tr><th class="metric-label">Epochs</th><td class="cfg-cell">3</td><td class="cfg-cell">5</td></tr>
+            <tr class="metrics-section-row"><td colspan="3">Evaluation</td></tr>
+            <tr><th class="metric-label">Test Acc</th><td><span class="acc-med">92.1%</span></td><td><span class="acc-high">99.2%</span></td></tr>
+            <tr><th class="metric-label">Test Loss</th><td>0.2813</td><td>0.0234</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- LOG TERMINAL -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Log Terminal</h2>
+      <div class="card" style="width: 500px; height: 180px;">
+        <div class="log-terminal" id="demo-log" role="log" aria-live="polite"></div>
+      </div>
+      <div class="demo-row" style="margin-top: 8px;">
+        <button class="btn btn-secondary" id="log-info-btn">Add Info</button>
+        <button class="btn btn-secondary" id="log-ok-btn">Add OK</button>
+        <button class="btn btn-secondary" id="log-warn-btn">Add Warn</button>
+        <button class="btn btn-secondary" id="log-err-btn">Add Error</button>
+      </div>
+      <script>
+        (function () {
+          var addLog = UIKit.createLogger(document.getElementById("demo-log"), 50);
+          addLog("Logger initialised");
+          addLog("Ready for input", "ok");
+          document.getElementById("log-info-btn").addEventListener("click", function () { addLog("An informational message"); });
+          document.getElementById("log-ok-btn").addEventListener("click", function () { addLog("Operation succeeded", "ok"); });
+          document.getElementById("log-warn-btn").addEventListener("click", function () { addLog("Something looks off", "warn"); });
+          document.getElementById("log-err-btn").addEventListener("click", function () { addLog("Something went wrong", "err"); });
+        })();
+      </script>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- DRAWER + DROPDOWN (mini shell) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Drawer + Dropdown + Split Layout</h2>
+      <div class="demo-mini-shell">
+        <div class="drawer drawer-left" id="demo-drawer">
+          <button id="demo-handle" class="side-handle side-handle-left" aria-expanded="false">
+            <span>LOG</span>
+          </button>
+          <div class="side-panel side-panel-left">
+            <div class="side-panel-header">
+              <span class="side-panel-title">Panel</span>
+            </div>
+            <div class="log-terminal" id="demo-drawer-log" role="log"></div>
+          </div>
+        </div>
+        <main class="main-area">
+          <div class="top-bar">
+            <span class="current-dataset">Demo App</span>
+            <div class="top-bar-right">
+              <button id="demo-menu-btn" class="btn btn-icon hamburger-btn" aria-expanded="false" title="Menu"></button>
+              <div id="demo-menu" class="ui-dropdown hidden">
+                <div class="side-panel-header"><span class="side-panel-title">Options</span></div>
+                <div id="demo-menu-list">
+                  <button class="ui-dropdown-item active">Option A</button>
+                  <button class="ui-dropdown-item">Option B</button>
+                  <button class="ui-dropdown-item">Option C</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="split-layout" id="demo-split">
+            <div class="left-col" id="demo-left" style="width: 180px;">
+              <div class="card"><h2>Left</h2><p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Drag the handle to resize.</p></div>
+            </div>
+            <div class="resize-handle resize-h" id="demo-resize" role="separator"></div>
+            <div class="right-col">
+              <div class="card"><h2>Right</h2><p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Content here.</p></div>
+            </div>
+          </div>
+        </main>
+      </div>
+      <script>
+        (function () {
+          var drawer = UIKit.initDrawer(
+            document.getElementById("demo-drawer"),
+            document.getElementById("demo-handle")
+          );
+          document.getElementById("demo-handle").insertAdjacentHTML("beforeend", UIKit.ICONS.chevron);
+          document.getElementById("demo-menu-btn").innerHTML = UIKit.ICONS.hamburger;
+
+          var dropdown = UIKit.initDropdown(
+            document.getElementById("demo-menu-btn"),
+            document.getElementById("demo-menu")
+          );
+
+          UIKit.initResize(
+            document.getElementById("demo-resize"),
+            document.getElementById("demo-left"),
+            document.getElementById("demo-split"),
+            { min: 100, default: 180, key: "demo-left-width" }
+          );
+
+          UIKit.onEscape(function () {
+            drawer.close();
+            dropdown.close();
+          });
+
+          var addLog = UIKit.createLogger(document.getElementById("demo-drawer-log"), 50);
+          addLog("Drawer panel log");
+          addLog("Click the handle to toggle", "ok");
+        })();
+      </script>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- APP SHELL DEMO -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>App Shell (Unified Composition)</h2>
+      <div style="border: 1px solid var(--border); height: 280px; overflow: hidden;">
+        <div class="app" style="height: 100%;">
+          <div class="app-topbar">
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted);">App Name</span>
+            <span style="flex: 1;"></span>
+            <button class="btn btn-secondary" style="font-size: 11px; padding: 3px 10px;">Action</button>
+          </div>
+          <div class="app-body">
+            <div class="app-sidebar" style="padding: 12px;">
+              <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); margin-bottom: 8px;">Sidebar</p>
+              <p style="font-size: 12px; color: var(--text-secondary);">Flush left with 1px right border. No gaps.</p>
+            </div>
+            <div class="app-main" style="padding: 14px;">
+              <p style="font-size: 12px; color: var(--text-secondary);">Main content area fills remaining space. All regions are flush — separated by 1px borders, not whitespace.</p>
+            </div>
+            <div class="app-panel" style="width: 200px; padding: 12px;">
+              <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); margin-bottom: 8px;">Panel</p>
+              <p style="font-size: 12px; color: var(--text-secondary);">Flush right with 1px left border.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- FEATURE ROW -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Feature Row (Tabular Input)</h2>
+      <div class="card" style="max-width: 600px;">
+        <div class="feature-row">
+          <label class="feature-label"><span>Length</span><input type="number" step="0.01" class="feature-input" value="5.1"></label>
+          <label class="feature-label"><span>Width</span><input type="number" step="0.01" class="feature-input" value="3.5"></label>
+          <label class="feature-label"><span>Height</span><input type="number" step="0.01" class="feature-input" value="1.4"></label>
+          <button class="btn btn-primary predict-row-btn">Predict</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CANVAS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="demo-section">
+      <h2>Drawing Canvas</h2>
+      <div class="canvas-area">
+        <div class="canvas-wrap">
+          <canvas class="ui-canvas" width="200" height="200"></canvas>
+          <button class="ui-canvas-clear" aria-label="Clear" title="Clear"></button>
+        </div>
+        <p class="canvas-hint">Draw something</p>
+      </div>
+      <script>
+        (function () {
+          document.querySelector('.ui-canvas-clear').innerHTML = UIKit.ICONS.close;
+          var canvas = document.querySelector(".ui-canvas");
+          var ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          var drawing = false, lastPos = null;
+          function getPos(e) {
+            var r = canvas.getBoundingClientRect(), s = e.touches ? e.touches[0] : e;
+            return { x: (s.clientX - r.left) * (canvas.width / r.width), y: (s.clientY - r.top) * (canvas.height / r.height) };
+          }
+          function paint(e) {
+            if (!drawing) return; e.preventDefault();
+            var p = getPos(e);
+            ctx.lineWidth = 16; ctx.lineCap = "round"; ctx.strokeStyle = "#fff"; ctx.fillStyle = "#fff";
+            ctx.beginPath();
+            if (lastPos) { ctx.moveTo(lastPos.x, lastPos.y); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+            else { ctx.arc(p.x, p.y, 8, 0, Math.PI * 2); ctx.fill(); }
+            lastPos = p;
+          }
+          canvas.addEventListener("mousedown", function (e) { drawing = true; lastPos = null; paint(e); });
+          canvas.addEventListener("mousemove", paint);
+          canvas.addEventListener("mouseup", function () { drawing = false; lastPos = null; });
+          canvas.addEventListener("mouseleave", function () { drawing = false; lastPos = null; });
+          document.querySelector(".ui-canvas-clear").addEventListener("click", function () {
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+          });
+        })();
+      </script>
+    </div>
+
+  </div><!-- /.demo-page -->
+
+  <!-- Theme toggle (always visible) -->
+  <button class="ui-theme-toggle" id="demo-theme-toggle" aria-label="Toggle theme"></button>
+  <script>UIKit.initThemeToggle(document.getElementById("demo-theme-toggle"));</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+/* ═══════════════════════════════
+   TIMELINE
+   Chronological entry list for
+   experience, history, changelog.
+   ═══════════════════════════════ */
+.ui-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.ui-timeline-entry {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ui-timeline-entry:last-child { border-bottom: none; }
+.ui-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.ui-timeline-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ui-timeline-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ui-timeline-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ui-timeline-body {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.ui-timeline-body ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+.ui-timeline-body li {
+  margin-bottom: 2px;
+}
