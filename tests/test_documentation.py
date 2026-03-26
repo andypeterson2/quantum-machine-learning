@@ -4,8 +4,6 @@ Verify README has working setup instructions, architecture matches code,
 all configuration options are documented, and common issues are covered.
 """
 
-import os
-import importlib
 from pathlib import Path
 
 import pytest
