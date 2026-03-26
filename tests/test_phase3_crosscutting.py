@@ -12,11 +12,9 @@ environments.  A small number of tests do import lightweight project modules
 
 import os
 import re
-import ast
 
 import pytest
 import torch
-import numpy as np
 
 from tests.conftest import make_fake_train_loader as _make_mnist_loader
 
@@ -334,7 +332,7 @@ class TestPerformanceAndResources:
     def test_requirements_file_not_bloated(self):
         """requirements.txt should be concise (< 20 lines)."""
         src = _read("requirements.txt")
-        lines = [l for l in src.strip().split("\n") if l.strip()]
+        lines = [line for line in src.strip().split("\n") if line.strip()]
         assert len(lines) < 20, f"Too many requirements ({len(lines)})"
 
     def test_dockerfile_layer_caching_order(self):
