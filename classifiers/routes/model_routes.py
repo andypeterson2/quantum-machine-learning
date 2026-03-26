@@ -63,8 +63,11 @@ def register(bp) -> None:
             from PIL import Image
 
             b64: str = data.get("image", "")
-            img_bytes = base64.b64decode(b64)
-            raw_input: Any = Image.open(io.BytesIO(img_bytes)).convert("L")
+            try:
+                img_bytes = base64.b64decode(b64)
+                raw_input: Any = Image.open(io.BytesIO(img_bytes)).convert("L")
+            except Exception:
+                return jsonify({"error": "Invalid image data"}), 400
         else:
             raw_input = data.get("features", {})
 

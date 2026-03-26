@@ -77,8 +77,9 @@ def register(bp) -> None:
             teacher_process = None
             if teacher_name:
                 teacher_entry = registry.get(plugin.name, teacher_name)
-                if teacher_entry is not None:
-                    teacher_model = teacher_entry.model
+                if teacher_entry is None:
+                    return error_response(f"Teacher model '{teacher_name}' not found", 404)
+                teacher_model = teacher_entry.model
             config = TrainingConfig(
                 patience=int(patience) if patience is not None else None,
                 val_gap=val_gap,

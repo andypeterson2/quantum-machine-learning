@@ -17,6 +17,7 @@ surface for state changes (Single Responsibility Principle).
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 
 from .evaluator import EvalResult
@@ -66,6 +67,7 @@ class ModelRegistry:
     """
 
     def __init__(self) -> None:
+        self._lock = threading.Lock()
         self._models: dict[str, dict[str, ModelEntry]] = {}
         self._counters: dict[str, int] = {}
 
@@ -83,9 +85,10 @@ class ModelRegistry:
         Returns:
             A string of the form ``"Model N"``.
         """
-        self._counters.setdefault(dataset, 0)
-        self._counters[dataset] += 1
-        return f"Model {self._counters[dataset]}"
+        with self._lock:
+            self._counters.setdefault(dataset, 0)
+            self._counters[dataset] += 1
+            return f"Model {self._counters[dataset]}"
 
     # ── Write operations ───────────────────────────────────────────────────────
 
@@ -110,14 +113,15 @@ class ModelRegistry:
             batch_size: Training batch size.
             lr:         Training learning rate.
         """
-        self._models.setdefault(dataset, {})[name] = ModelEntry(
-            model=model,
-            model_type=model_type,
-            dataset=dataset,
-            epochs=epochs,
-            batch_size=batch_size,
-            lr=lr,
-        )
+        with self._lock:
+            self._models.setdefault(dataset, {})[name] = ModelEntry(
+                model=model,
+                model_type=model_type,
+                dataset=dataset,
+                epochs=epochs,
+                batch_size=batch_size,
+                lr=lr,
+            )
 
     def remove(self, dataset: str, name: str) -> None:
         """Remove the model named *name* from *dataset*'s namespace.
@@ -128,8 +132,9 @@ class ModelRegistry:
             dataset: Dataset slug.
             name:    Display name of the model to remove.
         """
-        if dataset in self._models:
-            self._models[dataset].pop(name, None)
+        with self._lock:
+            if dataset in self._models:
+                self._models[dataset].pop(name, None)
 
     def update_eval_result(self, dataset: str, name: str, result: EvalResult) -> None:
         """Attach evaluation metrics to an existing registry entry.
@@ -146,11 +151,12 @@ class ModelRegistry:
         Raises:
             KeyError: If *name* is not present in *dataset*'s namespace.
         """
-        ns = self._models.get(dataset, {})
-        entry = ns.get(name)
-        if entry is None:
-            raise KeyError(f"Model '{name}' not found in dataset '{dataset}'")
-        entry.eval_result = result
+        with self._lock:
+            ns = self._models.get(dataset, {})
+            entry = ns.get(name)
+            if entry is None:
+                raise KeyError(f"Model '{name}' not found in dataset '{dataset}'")
+            entry.eval_result = result
 
     # ── Read operations ────────────────────────────────────────────────────────
 
@@ -164,7 +170,8 @@ class ModelRegistry:
         Returns:
             The corresponding :class:`ModelEntry`, or ``None`` if absent.
         """
-        return self._models.get(dataset, {}).get(name)
+        with self._lock:
+            return self._models.get(dataset, {}).get(name)
 
     def names(self, dataset: str) -> list[str]:
         """Return a snapshot of current model names for *dataset* in insertion order.
@@ -175,7 +182,8 @@ class ModelRegistry:
         Returns:
             A new list of name strings.
         """
-        return list(self._models.get(dataset, {}).keys())
+        with self._lock:
+            return list(self._models.get(dataset, {}).keys())
 
     def items(self, dataset: str) -> list[tuple[str, ModelEntry]]:
         """Return a snapshot of ``(name, entry)`` pairs for *dataset*.
@@ -186,8 +194,10 @@ class ModelRegistry:
         Returns:
             A new list of ``(str, ModelEntry)`` tuples.
         """
-        return list(self._models.get(dataset, {}).items())
+        with self._lock:
+            return list(self._models.get(dataset, {}).items())
 
     def __len__(self) -> int:
         """Return the total number of models across all datasets."""
-        return sum(len(ns) for ns in self._models.values())
+        with self._lock:
+            return sum(len(ns) for ns in self._models.values())
