@@ -101,7 +101,7 @@ class ModelPersistence:
         results: list[dict[str, Any]] = []
         for p in sorted(self._dir.glob("*.pt")):
             try:
-                data = torch.load(p, map_location="cpu", weights_only=False)
+                data = torch.load(p, map_location="cpu", weights_only=True)
                 results.append(
                     {
                         "filename": p.name,
@@ -147,7 +147,12 @@ class ModelPersistence:
         if not path.exists():
             raise FileNotFoundError(f"Checkpoint not found: {filename!r}")
 
-        data = torch.load(path, map_location="cpu", weights_only=False)
+        try:
+            data = torch.load(path, map_location="cpu", weights_only=True)
+        except Exception:
+            raise RuntimeError(
+                f"Cannot safely load {filename!r} with weights_only=True"
+            )
         dataset: str = data.get("dataset", "mnist")
         model_type: str = data["model_type"]
         model = create_model(dataset, model_type)

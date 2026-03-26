@@ -166,12 +166,12 @@ class TestIrisRoutes:
 
 class TestPredictEdgeCases:
     def test_predict_missing_image_field_raises(self, client, registry):
-        """Missing image field should raise (empty base64 is not valid)."""
-        from PIL import UnidentifiedImageError
+        """Missing image field should return 400 with error message."""
         registry.add(DS, "m", MNISTNet(), model_type="CNN",
                       epochs=1, batch_size=32, lr=0.001)
-        with pytest.raises(UnidentifiedImageError):
-            client.post(f"/d/{DS}/predict", json={})
+        res = client.post(f"/d/{DS}/predict", json={})
+        assert res.status_code == 400
+        assert "error" in res.get_json()
 
     def test_predict_with_small_image(self, client, registry):
         registry.add(DS, "m", MNISTNet(), model_type="CNN",

@@ -1,7 +1,6 @@
 # Hidden files
 .*
 !.git*
-!.certs/
 !.dashboard.yaml
 !.dockerignore
 
