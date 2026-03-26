@@ -200,10 +200,12 @@ def register(bp) -> None:
             batch_size=data["batch_size"],
             lr=data["lr"],
         )
-        new_entry = registry.get(plugin.name, name)
-        if new_entry is not None:
-            new_entry.training_history = data.get("training_history", [])
-            new_entry.num_params = data.get("num_params")
+        registry.update_training_meta(
+            plugin.name,
+            name,
+            training_history=data.get("training_history", []),
+            num_params=data.get("num_params"),
+        )
 
         return jsonify(
             {

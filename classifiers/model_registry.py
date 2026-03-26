@@ -158,6 +158,34 @@ class ModelRegistry:
                 raise KeyError(f"Model '{name}' not found in dataset '{dataset}'")
             entry.eval_result = result
 
+    def update_training_meta(
+        self,
+        dataset: str,
+        name: str,
+        training_history: list[dict] | None = None,
+        num_params: int | None = None,
+    ) -> None:
+        """Atomically update training metadata on an existing entry.
+
+        Args:
+            dataset:          Dataset slug.
+            name:             Display name of the model to update.
+            training_history: Optional history list to store.
+            num_params:       Optional trainable parameter count.
+
+        Raises:
+            KeyError: If *name* is not present in *dataset*'s namespace.
+        """
+        with self._lock:
+            ns = self._models.get(dataset, {})
+            entry = ns.get(name)
+            if entry is None:
+                raise KeyError(f"Model '{name}' not found in dataset '{dataset}'")
+            if training_history is not None:
+                entry.training_history = training_history
+            if num_params is not None:
+                entry.num_params = num_params
+
     # ── Read operations ────────────────────────────────────────────────────────
 
     def get(self, dataset: str, name: str) -> ModelEntry | None:

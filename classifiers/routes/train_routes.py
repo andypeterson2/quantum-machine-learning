@@ -118,11 +118,13 @@ def register(bp) -> None:
                     batch_size=result.batch_size,
                     lr=result.lr,
                 )
-                # Store extended info on the entry
-                new_entry = registry.get(plugin.name, name)
-                if new_entry is not None:
-                    new_entry.training_history = result.history
-                    new_entry.num_params = result.num_params
+                # Store extended info on the entry (thread-safe)
+                registry.update_training_meta(
+                    plugin.name,
+                    name,
+                    training_history=result.history,
+                    num_params=result.num_params,
+                )
 
                 done_event: dict[str, Any] = {
                     "type": "done",

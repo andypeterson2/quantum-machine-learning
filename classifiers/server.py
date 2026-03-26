@@ -58,7 +58,7 @@ def create_app(models_dir: Path | None = None) -> Flask:
         template_folder="templates",
         static_folder="static",
     )
-    app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY", "classifiers-dev-secret")
+    app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY") or os.urandom(32).hex()
     CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*").split(","))
 
     # Auto-discover dataset plugins (mnist, iris, etc.)

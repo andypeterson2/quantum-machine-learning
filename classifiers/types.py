@@ -7,22 +7,7 @@ making the shared callback contract explicit and discoverable.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol, Union
-
-
-# ── Structured training event ────────────────────────────────────────────────
-
-
-class TrainingEvent(Protocol):
-    """Protocol describing what structured SSE events look like.
-
-    Any dict with at least a ``"type"`` key satisfies this protocol.
-    The protocol exists purely for documentation and IDE support — callers
-    can still pass plain dicts or strings.
-    """
-
-    def __getitem__(self, key: str) -> Any: ...
-    def get(self, key: str, default: Any = None) -> Any: ...
+from typing import Any, Callable, Union
 
 
 #: Type alias for status/progress messages.
