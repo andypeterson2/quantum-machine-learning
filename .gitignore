@@ -1,9 +1,10 @@
 # Hidden files
 .*
 !.git*
-!.certs/
-!.dashboard.yaml
 !.dockerignore
+
+# Dependencies
+node_modules/
 
 # Python
 __pycache__/
@@ -12,15 +13,6 @@ __pycache__/
 dist/
 build/
 venv/
-
-# IDE
-*.swp
-
-# OS
-Thumbs.db
-
-# Docker
-*.log
 
 # ML artifacts
 *.pth
@@ -31,5 +23,6 @@ data/
 # Testing
 htmlcov/
 
-# Other
+# Build
+*.log
 ui-kit.zip
