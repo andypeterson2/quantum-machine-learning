@@ -4,8 +4,6 @@ Verify README has working setup instructions, architecture matches code,
 all configuration options are documented, and common issues are covered.
 """
 
-import os
-import importlib
 from pathlib import Path
 
 import pytest
@@ -41,19 +39,19 @@ class TestReadmeSetupInstructions:
         return (ROOT / "README.md").read_text()
 
     def test_mentions_python_version(self, readme):
-        assert "3.12" in readme or "python" in readme.lower()
+        assert "3.12" in readme or "3.11" in readme or "3.10" in readme
 
     def test_mentions_pip_install(self, readme):
-        assert "pip install" in readme or "requirements" in readme
+        assert "pip install" in readme or "requirements.txt" in readme
 
     def test_mentions_docker(self, readme):
         assert "docker" in readme.lower() or "Docker" in readme
 
     def test_mentions_running_the_app(self, readme):
-        assert "python -m" in readme or "flask" in readme.lower() or "run" in readme.lower()
+        assert "python -m" in readme or "flask" in readme.lower()
 
     def test_mentions_testing(self, readme):
-        assert "pytest" in readme or "test" in readme.lower()
+        assert "pytest" in readme
 
 
 class TestArchitectureDocumentation:
@@ -67,13 +65,13 @@ class TestArchitectureDocumentation:
         assert "Flask" in readme
 
     def test_documents_trainer(self, readme):
-        assert "Trainer" in readme or "train" in readme.lower()
+        assert "Trainer" in readme
 
     def test_documents_evaluator(self, readme):
-        assert "Evaluator" in readme or "evaluat" in readme.lower()
+        assert "Evaluator" in readme
 
     def test_documents_predictor(self, readme):
-        assert "Predictor" in readme or "predict" in readme.lower()
+        assert "Predictor" in readme
 
     def test_server_module_exists(self):
         assert (ROOT / "classifiers" / "server.py").is_file()

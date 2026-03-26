@@ -1,4 +1,8 @@
-"""Shared fixtures for classifiers tests."""
+"""Shared fixtures and helpers for classifiers tests."""
+
+import base64
+import io
+import json
 
 import pytest
 import torch
@@ -64,6 +68,25 @@ def sample_probs():
 def sample_batch():
     """A small batch of random tensors shaped like MNIST input."""
     return torch.randn(4, 1, 28, 28)
+
+
+def blank_png_b64(width: int = 280, height: int = 280) -> str:
+    """Return a base64-encoded blank black PNG."""
+    img = Image.new("L", (width, height), 0)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+
+def parse_sse(raw: bytes) -> list[dict]:
+    """Parse raw SSE bytes into a list of event dicts."""
+    events = []
+    for chunk in raw.decode().split("\n\n"):
+        chunk = chunk.strip()
+        if not chunk.startswith("data:"):
+            continue
+        events.append(json.loads(chunk[len("data:"):].strip()))
+    return events
 
 
 class _FakeLoader(list):

@@ -1,6 +1,9 @@
 .git
 .gitignore
-*.md
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+LICENSE
 docs/
 tests/
 .vscode/
@@ -13,3 +16,4 @@ models/
 data/
 Digit-Classifier-main/
 ui-kit.zip
+.claude/

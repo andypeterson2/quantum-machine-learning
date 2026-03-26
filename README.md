@@ -186,7 +186,7 @@ quantum-protein-kernel/
 │       │   ├── sse.js              # SSE stream consumer (consumeSSE)
 │       │   └── chart.js            # Canvas-based training curve renderer
 │       └── ui-kit/                 # Shared UI component library
-├── tests/                          # Pytest test suite (142 tests)
+├── tests/                          # Pytest test suite (425 tests)
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── data/                           # Dataset cache (git-ignored)
 ```
@@ -376,7 +376,7 @@ The `/train` endpoint accepts optional fields for advanced training:
 python -m pytest tests/ -v
 ```
 
-The test suite (142 tests) covers:
+The test suite (425 tests) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies

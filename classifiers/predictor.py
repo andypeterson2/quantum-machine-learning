@@ -38,7 +38,7 @@ class Predictor:
 
         predictor = Predictor(trained_model, mnist_plugin)
         probs = predictor.predict(Image.open("digit.png"))
-        print(f"Predicted: {probs.argmax()} ({probs.max():.1%} confidence)")
+        >>> print(f"Predicted: {probs.argmax()} ({probs.max():.1%} confidence)")
     """
 
     def __init__(self, model: BaseModel, plugin: "DatasetPlugin") -> None:

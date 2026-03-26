@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ ui_config.display_name }} — Classifier</title>
+
+  <!-- UI Kit (optional, loaded if present) -->
+  {% if ui_kit %}
+  <link rel="stylesheet" href="/ui-kit/ui-kit.css">
+  {% endif %}
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+
+  <!-- ── Top bar ──────────────────────────────────────────────────────── -->
+  <header class="ui-navbar">
+    <div class="ui-navbar-left">
+      <button id="dataset-menu-btn" class="btn btn-ghost" aria-haspopup="true">
+        {{ ui_config.display_name }} &#9662;
+      </button>
+      <div id="dataset-menu" class="ui-dropdown hidden" role="menu">
+        <div id="dataset-list"></div>
+      </div>
+    </div>
+    <div class="ui-navbar-right">
+      <button id="theme-toggle" class="btn btn-icon" aria-label="Toggle theme"></button>
+    </div>
+  </header>
+
+  <!-- ── Main layout ──────────────────────────────────────────────────── -->
+  <div id="split-layout" class="split-layout">
+
+    <!-- Left column — controls -->
+    <aside id="left-col" class="left-col">
+
+      <!-- TRAIN card -->
+      <section class="card">
+        <h2 class="card-title">Train</h2>
+        <label for="model-type">Model</label>
+        <select id="model-type">
+          {% for mt in model_types %}
+          <option value="{{ mt }}">{{ mt }}</option>
+          {% endfor %}
+        </select>
+
+        <div id="model-info-details" class="hidden">
+          <div id="model-info-panel"></div>
+        </div>
+
+        <label for="model-name">Name</label>
+        <input id="model-name" type="text" placeholder="auto">
+
+        <label for="epochs">Epochs</label>
+        <input id="epochs" type="number" value="{{ ui_config.default_hyperparams.epochs | default(10) }}" min="1">
+
+        <label for="batch-size">Batch size</label>
+        <input id="batch-size" type="number" value="{{ ui_config.default_hyperparams.batch_size | default(64) }}" min="1">
+
+        <label for="lr">Learning rate</label>
+        <input id="lr" type="number" value="{{ ui_config.default_hyperparams.lr | default(0.01) }}" step="0.001" min="0">
+
+        <!-- Advanced: early stopping -->
+        <details class="advanced-toggle">
+          <summary>Advanced</summary>
+          <label for="patience">Patience (early stop)</label>
+          <input id="patience" type="number" placeholder="disabled" min="1">
+
+          <label for="val-gap">Val every N batches</label>
+          <input id="val-gap" type="number" value="50" min="1">
+
+          <label for="teacher-select">Distill from</label>
+          <select id="teacher-select">
+            <option value="">— none —</option>
+          </select>
+
+          <div id="distill-row" class="hidden">
+            <label for="distill-weight">Distill weight (alpha)</label>
+            <input id="distill-weight" type="number" value="0.5" step="0.1" min="0" max="1">
+          </div>
+        </details>
+
+        <button id="train-btn" class="btn btn-primary btn-block">&#9654; Train</button>
+      </section>
+
+      <!-- MODELS card -->
+      <section class="card">
+        <h2 class="card-title">Models</h2>
+        <div id="session-models"></div>
+        <button id="ensemble-btn" class="btn btn-block hidden">Ensemble</button>
+      </section>
+
+      <!-- SAVED card -->
+      <section class="card">
+        <h2 class="card-title">Saved</h2>
+        <div class="row">
+          <select id="saved-select"><option value="">— no saved models —</option></select>
+          <button id="refresh-saved-btn" class="btn btn-icon" aria-label="Refresh">&#8635;</button>
+        </div>
+        <button id="import-btn" class="btn btn-block" disabled>Import</button>
+      </section>
+    </aside>
+
+    <!-- Resize handle -->
+    <div id="resize-h" class="resize-handle"></div>
+
+    <!-- Right column — canvas / features + results -->
+    <main class="right-col">
+
+      <!-- TRY card — image input -->
+      <section class="card" id="canvas-col" style="display:none">
+        <h2 class="card-title">Draw</h2>
+        <canvas id="draw-canvas" width="280" height="280"></canvas>
+        <div class="row">
+          <button id="clear-btn" class="btn">Clear</button>
+          <button id="predict-btn" class="btn btn-primary">Predict</button>
+        </div>
+      </section>
+
+      <!-- TRY card — tabular input -->
+      <section class="card" id="tabular-col" style="display:none">
+        <h2 class="card-title">Predict</h2>
+        {% if ui_config.input_type == 'tabular' and ui_config.feature_names %}
+        {% for feat in ui_config.feature_names %}
+        <label for="feat-{{ feat }}">{{ feat }}</label>
+        <input id="feat-{{ feat }}" class="feature-input" data-feature="{{ feat }}" type="number" step="any" value="0">
+        {% endfor %}
+        {% endif %}
+        <button id="predict-btn-tab" class="btn btn-primary btn-block" onclick="document.getElementById('predict-btn').click()">Predict</button>
+      </section>
+
+      <!-- Prediction results -->
+      <section class="card">
+        <h2 class="card-title">Predictions</h2>
+        <table class="ui-table">
+          <thead><tr><th>Model</th><th>Prediction</th><th>Confidence</th></tr></thead>
+          <tbody id="pred-body">
+            <tr class="empty-row"><td colspan="3">No prediction yet</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Chart area -->
+      <div id="chart-area" class="card hidden">
+        <canvas id="train-chart" width="600" height="250"></canvas>
+      </div>
+
+      <!-- TEST card -->
+      <section class="card">
+        <h2 class="card-title">Evaluation</h2>
+        <div id="evaluate-progress" class="hidden">
+          <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div id="eval-bar" class="progress-bar-fill"></div>
+          </div>
+          <span id="eval-status"></span>
+        </div>
+        <table class="ui-table metrics-table">
+          <thead id="metrics-head"></thead>
+          <tbody id="metrics-body">
+            <tr class="empty-row"><td>No models trained yet</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- ── Log drawer ───────────────────────────────────────────────────── -->
+  <div id="log-drawer" class="ui-drawer ui-drawer-bottom">
+    <div id="log-handle" class="ui-drawer-handle" aria-label="Resize log panel"></div>
+    <pre id="log-terminal" class="ui-log-terminal"></pre>
+  </div>
+
+  <!-- ── Globals expected by app.js ───────────────────────────────────── -->
+  <script>
+    var UI_CONFIG = {{ ui_config | tojson }};
+    var API_BASE  = "";
+  </script>
+
+  <!-- ── Scripts ──────────────────────────────────────────────────────── -->
+  {% if ui_kit %}
+  <script src="/ui-kit/ui-kit.js"></script>
+  {% endif %}
+  <script src="{{ url_for('static', filename='js/sse.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

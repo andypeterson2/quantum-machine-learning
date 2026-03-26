@@ -137,7 +137,9 @@ async function fetchModelInfo(modelType) {
     const res = await fetch(`${BASE}/model-info/${encodeURIComponent(modelType)}`);
     if (!res.ok) { details.classList.add("hidden"); return; }
     const data = await res.json();
-    panel.innerHTML = data.html;
+    const doc = new DOMParser().parseFromString(data.html, "text/html");
+    doc.querySelectorAll("script").forEach((s) => s.remove());
+    panel.innerHTML = doc.body.innerHTML;
     details.classList.remove("hidden");
   } catch { details.classList.add("hidden"); }
 }
