@@ -5,7 +5,8 @@ from classifiers.server import create_app
 
 
 @pytest.fixture()
-def client():
+def client(monkeypatch):
+    monkeypatch.setenv("CLASSIFIERS_CORS_ORIGINS", "https://andypeterson2.github.io")
     app = create_app()
     app.config["TESTING"] = True
     yield app.test_client()

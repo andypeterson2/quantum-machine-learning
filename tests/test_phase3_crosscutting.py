@@ -84,8 +84,8 @@ class TestE2EPipeline:
         assert result.model is not None
         assert result.epochs_completed == 2
 
-        evaluator = Evaluator(result.model, test_loader, num_classes=3)
-        eval_result = evaluator.evaluate()
+        evaluator = Evaluator()
+        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=list(range(3)))
         assert 0.0 <= eval_result.accuracy <= 1.0
 
         # Predict on a single sample
@@ -116,8 +116,8 @@ class TestE2EPipeline:
         assert result.model is not None
         assert result.epochs_completed == 1
 
-        evaluator = Evaluator(result.model, test_loader, num_classes=10)
-        eval_result = evaluator.evaluate()
+        evaluator = Evaluator()
+        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=10, class_labels=list(range(10)))
         assert 0.0 <= eval_result.accuracy <= 1.0
 
     def test_svm_model_uses_hinge_loss(self):
@@ -161,8 +161,8 @@ class TestModelAccuracyRegression:
         )
         result = trainer.train()
 
-        evaluator = Evaluator(result.model, test_loader, num_classes=3)
-        eval_result = evaluator.evaluate()
+        evaluator = Evaluator()
+        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=list(range(3)))
         # With random data the model may not beat 33% reliably,
         # so we check it doesn't crash and returns a valid accuracy.
         assert 0.0 <= eval_result.accuracy <= 1.0

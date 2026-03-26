@@ -60,7 +60,7 @@ class Evaluator:
             plugin.num_classes, plugin.class_labels,
             on_status=print,
         )
-        print(f"Accuracy: {result.accuracy:.2%}")
+        >>> print(f"Accuracy: {result.accuracy:.2%}")
     """
 
     def evaluate(
@@ -106,6 +106,8 @@ class Evaluator:
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(test_loader):
                 output = model(data)
+                # Always use cross-entropy for evaluation loss (standardized metric,
+                # regardless of training loss function)
                 total_loss += F.cross_entropy(output, target, reduction="sum").item()
                 pred = output.argmax(dim=1)
                 correct += pred.eq(target).sum().item()

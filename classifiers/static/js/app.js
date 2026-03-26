@@ -303,13 +303,38 @@ function buildSessionModelsList() {
     const paramsStr = m.num_params ? `${m.num_params.toLocaleString()} params` : "";
     const row = document.createElement("div");
     row.className = "ui-list-row";
-    row.innerHTML = `
-      <span class="ui-list-name">${name}</span>
-      <span class="ui-list-tag">${m.model_type}</span>
-      ${paramsStr ? `<span class="ui-list-tag">${paramsStr}</span>` : ""}
-      <button class="btn btn-icon btn-sm" data-ablation="${name}" title="Ablation study">⊘</button>
-      <button class="btn btn-icon"   data-export="${name}" title="Save to disk">${ICONS.save}</button>
-      <button class="btn btn-danger" data-remove="${name}" aria-label="Remove ${name}">${ICONS.close}</button>`;
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "ui-list-name";
+    nameSpan.textContent = name;
+    row.appendChild(nameSpan);
+    const typeTag = document.createElement("span");
+    typeTag.className = "ui-list-tag";
+    typeTag.textContent = m.model_type;
+    row.appendChild(typeTag);
+    if (paramsStr) {
+      const paramsTag = document.createElement("span");
+      paramsTag.className = "ui-list-tag";
+      paramsTag.textContent = paramsStr;
+      row.appendChild(paramsTag);
+    }
+    const ablationBtn = document.createElement("button");
+    ablationBtn.className = "btn btn-icon btn-sm";
+    ablationBtn.dataset.ablation = name;
+    ablationBtn.title = "Ablation study";
+    ablationBtn.textContent = "\u2298";
+    row.appendChild(ablationBtn);
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "btn btn-icon";
+    exportBtn.dataset.export = name;
+    exportBtn.title = "Save to disk";
+    exportBtn.innerHTML = ICONS.save;
+    row.appendChild(exportBtn);
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "btn btn-danger";
+    removeBtn.dataset.remove = name;
+    removeBtn.setAttribute("aria-label", "Remove " + name);
+    removeBtn.innerHTML = ICONS.close;
+    row.appendChild(removeBtn);
     sessionModels.appendChild(row);
   }
   updateTeacherSelect();
@@ -364,7 +389,10 @@ function buildMetricsTable() {
     th.scope   = "col";
     const head = document.createElement("div");
     head.className = "model-col-head";
-    head.innerHTML = `<span class="col-model-name">${name}</span>`;
+    const colName = document.createElement("span");
+    colName.className = "col-model-name";
+    colName.textContent = name;
+    head.appendChild(colName);
     th.appendChild(head);
     htr.appendChild(th);
   }
@@ -729,10 +757,13 @@ document.addEventListener("click", async (e) => {
 
 // ── Remove model from session (delegated close buttons) ──────────────────────
 
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
   const btn = e.target.closest("[data-remove]");
   const name = btn?.dataset?.remove;
   if (!name) return;
+  try {
+    await fetch(`${BASE}/models/${encodeURIComponent(name)}`, { method: "DELETE" });
+  } catch (_) { /* best effort — server may be unavailable */ }
   delete state.models[name];
   delete state.predictions[name];
   buildMetricsTable();

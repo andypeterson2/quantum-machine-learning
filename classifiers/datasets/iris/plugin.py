@@ -79,7 +79,10 @@ class IrisPlugin(DatasetPlugin):
         """
         self._ensure_loaded()
         assert self._train_X is not None and self._train_y is not None
-        ds = TensorDataset(self._train_X, self._train_y)
+        split = int(len(self._train_X) * 0.8)
+        train_subset_X = self._train_X[:split]
+        train_subset_y = self._train_y[:split]
+        ds = TensorDataset(train_subset_X, train_subset_y)
         return DataLoader(ds, batch_size=batch_size, shuffle=True)
 
     def get_test_loader(self, batch_size: int) -> DataLoader:

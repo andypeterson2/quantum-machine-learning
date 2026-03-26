@@ -190,19 +190,19 @@ class _RunCircuit(Function):
     def backward(ctx, grad_output):
         _, w, x_batch = ctx.saved_tensors
         w_list = w.tolist()
-        grad_output = grad_output[0]
 
         batch_df_dw, batch_df_dx = [], []
         for j in range(len(x_batch)):
             x = x_batch[j]
             x_list = x.tolist()
+            g = grad_output[j]
 
             df_dw = []
             for k in range(w.shape[-1]):
                 df_dw_k = _RunCircuit._estimate_partial(
                     f=lambda ww: ctx.pc.run(ww.tolist(), x_list), v=w, pos=k
                 )
-                df_dw.append(torch.dot(df_dw_k, grad_output))
+                df_dw.append(torch.dot(df_dw_k, g))
             batch_df_dw.append(df_dw)
 
             df_dx = []
@@ -210,7 +210,7 @@ class _RunCircuit(Function):
                 df_dx_k = _RunCircuit._estimate_partial(
                     f=lambda xx: ctx.pc.run(w_list, xx.tolist()), v=x, pos=k
                 )
-                df_dx.append(torch.dot(df_dx_k, grad_output))
+                df_dx.append(torch.dot(df_dx_k, g))
             batch_df_dx.append(df_dx)
 
         batch_df_dw = torch.tensor(batch_df_dw).sum(dim=0)
@@ -247,8 +247,7 @@ class QiskitQLayer(nn.Module):
     def __init__(self, input_dim: int, num_heads: int = 1) -> None:
         _check_qiskit()
         super().__init__()
-        pc = _ExampleCircuit(input_dim)
-        self.heads = nn.ModuleList([_Head(pc) for _ in range(num_heads)])
+        self.heads = nn.ModuleList([_Head(_ExampleCircuit(input_dim)) for _ in range(num_heads)])
         # Probe the output dimension.
         num_outputs = self.heads[0](torch.zeros((1, input_dim))).shape[1]
         self.reduce: nn.Module | Callable = (

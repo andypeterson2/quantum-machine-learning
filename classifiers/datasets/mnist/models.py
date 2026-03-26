@@ -110,10 +110,10 @@ class MNISTQuadraticNet(BaseModel):
 
         Conv2d(1→6, k=5) → ReLU → MaxPool2d(2)
         Conv2d(6→16, k=5) → ReLU → MaxPool2d(2)
-        Flatten → Linear(256→120) → ReLU
-        Linear(120→32) → ReLU
+        Flatten → fc1: Linear(256→120) → ReLU
+        fc2: Linear(120→32) → ReLU
         Quadratic(32→16) → ReLU
-        Linear(16→10)
+        fc3: Linear(16→10)
     """
 
     name = "Quadratic"
@@ -125,18 +125,18 @@ class MNISTQuadraticNet(BaseModel):
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(256, 120)
-        self.fc3 = nn.Linear(120, 32)
+        self.fc2 = nn.Linear(120, 32)
         self.quad = Quadratic(32, 16)
-        self.fc5 = nn.Linear(16, 10)
+        self.fc3 = nn.Linear(16, 10)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc2(x))
         x = F.relu(self.quad(x))
-        return self.fc5(x)
+        return self.fc3(x)
 
 
 # ── Polynomial ───────────────────────────────────────────────────────────────
@@ -149,11 +149,11 @@ class MNISTPolynomialNet(BaseModel):
 
         Conv2d(1→6, k=5) → ReLU → MaxPool2d(2)
         Conv2d(6→16, k=5) → ReLU → MaxPool2d(2)
-        Flatten → Linear(256→120) → ReLU
+        Flatten → fc1: Linear(256→120) → ReLU
         Polynomial(120→84) → ReLU
-        Linear(84→32) → ReLU
+        fc2: Linear(84→32) → ReLU
         Polynomial(32→16) → ReLU
-        Linear(16→10)
+        fc3: Linear(16→10)
     """
 
     name = "Polynomial"
@@ -166,9 +166,9 @@ class MNISTPolynomialNet(BaseModel):
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(256, 120)
         self.poly1 = Polynomial(120, 84)
-        self.fc3 = nn.Linear(84, 32)
+        self.fc2 = nn.Linear(84, 32)
         self.poly2 = Polynomial(32, 16)
-        self.fc5 = nn.Linear(16, 10)
+        self.fc3 = nn.Linear(16, 10)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.pool(F.relu(self.conv1(x)))
@@ -176,9 +176,9 @@ class MNISTPolynomialNet(BaseModel):
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.poly1(x))
-        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc2(x))
         x = F.relu(self.poly2(x))
-        return self.fc5(x)
+        return self.fc3(x)
 
 
 # ── Qiskit quantum models ───────────────────────────────────────────────────

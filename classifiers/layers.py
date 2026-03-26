@@ -76,5 +76,6 @@ class Polynomial(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = torch.log(torch.abs(x) + 1)
         x = self.fc(x)
+        x = torch.clamp(x, min=-10, max=10)  # prevent exp overflow
         x = torch.exp(x)
         return x
