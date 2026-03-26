@@ -7,6 +7,7 @@ preprocessing, and the set of compatible model architectures.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -58,9 +59,10 @@ class MNISTPlugin(DatasetPlugin):
             transforms.Normalize((MNIST_MEAN,), (MNIST_STD,)),
         ])
         train_data = datasets.MNIST(
-            "./data", train=True, download=True, transform=transform
+            str(Path(__file__).resolve().parent.parent.parent / "data"), train=True, download=True, transform=transform
         )
-        return DataLoader(train_data, batch_size=batch_size, shuffle=True)
+        train_subset = Subset(train_data, range(0, 55_000))
+        return DataLoader(train_subset, batch_size=batch_size, shuffle=True)
 
     def get_val_loader(self, batch_size: int) -> DataLoader:
         """Hold out the last 5,000 training samples as a validation set.
@@ -73,7 +75,7 @@ class MNISTPlugin(DatasetPlugin):
             transforms.Normalize((MNIST_MEAN,), (MNIST_STD,)),
         ])
         full_train = datasets.MNIST(
-            "./data", train=True, download=True, transform=transform
+            str(Path(__file__).resolve().parent.parent.parent / "data"), train=True, download=True, transform=transform
         )
         val_subset = Subset(full_train, range(55_000, 60_000))
         return DataLoader(val_subset, batch_size=batch_size, shuffle=False)
@@ -89,7 +91,7 @@ class MNISTPlugin(DatasetPlugin):
             transforms.Normalize((MNIST_MEAN,), (MNIST_STD,)),
         ])
         test_data = datasets.MNIST(
-            "./data", train=False, download=True, transform=transform
+            str(Path(__file__).resolve().parent.parent.parent / "data"), train=False, download=True, transform=transform
         )
         return DataLoader(test_data, batch_size=batch_size, shuffle=False)
 

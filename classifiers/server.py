@@ -24,6 +24,7 @@ every dataset plugin.  Adding a new dataset is therefore zero-config.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from flask import Flask
@@ -57,8 +58,8 @@ def create_app(models_dir: Path | None = None) -> Flask:
         template_folder="templates",
         static_folder="static",
     )
-    app.config["SECRET_KEY"] = "classifiers-dev-secret"
-    CORS(app)
+    app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY", "classifiers-dev-secret")
+    CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*").split(","))
 
     # Auto-discover dataset plugins (mnist, iris, etc.)
     discover_plugins()

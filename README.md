@@ -6,6 +6,8 @@
 
 A full-stack web application for training, evaluating, and comparing classical and quantum-hybrid neural network classifiers across multiple datasets. Containerized with Docker and served via Flask.
 
+> **Note on naming:** The repository directory may still appear as `quantum-protein-kernel` in some contexts — this is a historical artifact. The project is a general-purpose multi-dataset classifier platform (package name: `quantum-machine-learning`). No protein or bioinformatics data is used.
+
 Ships with **MNIST** (handwritten digit recognition via canvas drawing) and **Iris** (flower species classification via numeric features), and is designed so adding a new dataset requires zero changes to existing code.
 
 ![Dark theme UI showing the train panel on the left and the drawing canvas + model comparison table on the right](.github/screenshot.png)
@@ -32,7 +34,7 @@ graph LR
 
 ### Core
 - **Plugin architecture** — each dataset is a self-contained plugin; add new ones without modifying any shared code
-- **Multiple model architectures per dataset** — CNN, Linear, SVM, Quadratic, Polynomial, and Qiskit quantum models for MNIST; Linear and SVM for Iris
+- **Multiple model architectures per dataset** — CNN, Linear, SVM, Quadratic, Polynomial, and Qiskit quantum models for MNIST; Linear, SVM, and PennyLane QVC for Iris
 - **Live training progress** via Server-Sent Events — watch loss and epoch updates as they stream in
 - **Training curves** — real-time loss and validation accuracy charts rendered on a canvas during training
 - **Auto-evaluation** — test-set accuracy, per-class accuracy, and parameter counts computed automatically
@@ -354,6 +356,9 @@ The `/train` endpoint accepts optional fields for advanced training:
 |-------------|-------------|-----------------|
 | **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | ~95-97% |
 | **SVM** (`IrisSVM`) | Linear layer + multi-class hinge loss | ~94-96% |
+| **QVC** (`IrisQVC`) | PennyLane quantum variational classifier (4 qubits, 2 layers) | ~93-96%* |
+
+\* QVC requires `pennylane` to be installed. It only appears in the model dropdown when PennyLane is available.
 
 ### Custom Layers
 

@@ -1,11 +1,13 @@
 """CORS header tests for the classifier Flask API."""
 from __future__ import annotations
+import os
 import pytest
 from classifiers.server import create_app
 
 
 @pytest.fixture()
-def client():
+def client(monkeypatch):
+    monkeypatch.setenv("CLASSIFIERS_CORS_ORIGINS", "*")
     app = create_app()
     app.config["TESTING"] = True
     yield app.test_client()
