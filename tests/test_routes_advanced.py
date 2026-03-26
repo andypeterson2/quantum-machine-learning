@@ -2,37 +2,19 @@
 
 from __future__ import annotations
 
-import base64
-import io
-import json
-
 import pytest
-from PIL import Image
 
 from classifiers.server import create_app
 from classifiers.datasets.mnist.models import MNISTNet, LinearNet
 from classifiers.datasets.iris.models import IrisLinear
-from tests.conftest import make_fake_test_loader
+from tests.conftest import (
+    blank_png_b64 as _blank_png_b64,
+    make_fake_test_loader,
+    parse_sse as _parse_sse,
+)
 
 
 DS = "mnist"
-
-
-def _blank_png_b64(width: int = 280, height: int = 280) -> str:
-    img = Image.new("L", (width, height), 0)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return base64.b64encode(buf.getvalue()).decode()
-
-
-def _parse_sse(raw: bytes) -> list[dict]:
-    events = []
-    for chunk in raw.decode().split("\n\n"):
-        chunk = chunk.strip()
-        if not chunk.startswith("data:"):
-            continue
-        events.append(json.loads(chunk[len("data:"):].strip()))
-    return events
 
 
 @pytest.fixture()
@@ -165,12 +147,13 @@ class TestIrisRoutes:
 
 
 class TestPredictEdgeCases:
-    def test_predict_missing_image_field_returns_400(self, client, registry):
-        """Missing image field should return 400 (empty base64 is not valid)."""
+    def test_predict_missing_image_field_raises(self, client, registry):
+        """Missing image field should return 400 with error message."""
         registry.add(DS, "m", MNISTNet(), model_type="CNN",
                       epochs=1, batch_size=32, lr=0.001)
         res = client.post(f"/d/{DS}/predict", json={})
         assert res.status_code == 400
+        assert "error" in res.get_json()
 
     def test_predict_with_small_image(self, client, registry):
         registry.add(DS, "m", MNISTNet(), model_type="CNN",

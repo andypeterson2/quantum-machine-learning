@@ -12,11 +12,11 @@ environments.  A small number of tests do import lightweight project modules
 
 import os
 import re
-import ast
 
 import pytest
 import torch
-import numpy as np
+
+from tests.conftest import make_fake_train_loader as _make_mnist_loader
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
@@ -40,23 +40,6 @@ def _make_iris_loader(n_samples=40, batch_size=16):
     X = torch.randn(n_samples, 4)
     y = torch.randint(0, 3, (n_samples,))
     return DataLoader(TensorDataset(X, y), batch_size=batch_size, shuffle=False)
-
-
-class _FakeLoader(list):
-    """List that also exposes a ``batch_size`` attribute like a DataLoader."""
-
-    def __init__(self, batches, batch_size):
-        super().__init__(batches)
-        self.batch_size = batch_size
-
-
-def _make_mnist_loader(batch_size=16, n_batches=3):
-    """Create a synthetic MNIST-like DataLoader (1x28x28 images, 10 classes)."""
-    batches = [
-        (torch.randn(batch_size, 1, 28, 28), torch.randint(0, 10, (batch_size,)))
-        for _ in range(n_batches)
-    ]
-    return _FakeLoader(batches, batch_size)
 
 
 # ── WP #681: E2E protein classification pipeline ─────────────────────────
@@ -85,7 +68,7 @@ class TestE2EPipeline:
         assert result.epochs_completed == 2
 
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=[str(i) for i in range(3)])
+        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=list(range(3)))
         assert 0.0 <= eval_result.accuracy <= 1.0
 
         # Predict on a single sample
@@ -117,7 +100,7 @@ class TestE2EPipeline:
         assert result.epochs_completed == 1
 
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=10, class_labels=[str(i) for i in range(10)])
+        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=10, class_labels=list(range(10)))
         assert 0.0 <= eval_result.accuracy <= 1.0
 
     def test_svm_model_uses_hinge_loss(self):
@@ -162,7 +145,7 @@ class TestModelAccuracyRegression:
         result = trainer.train()
 
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=[str(i) for i in range(3)])
+        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=list(range(3)))
         # With random data the model may not beat 33% reliably,
         # so we check it doesn't crash and returns a valid accuracy.
         assert 0.0 <= eval_result.accuracy <= 1.0
@@ -274,7 +257,7 @@ class TestDockerDeployment:
 
     def test_dockerfile_copies_app_code(self):
         src = _read("Dockerfile")
-        assert "classifiers/" in src
+        assert "COPY classifiers/" in src
 
     def test_dockerfile_copies_ui_kit(self):
         src = _read("Dockerfile")
@@ -349,15 +332,15 @@ class TestPerformanceAndResources:
     def test_requirements_file_not_bloated(self):
         """requirements.txt should be concise (< 20 lines)."""
         src = _read("requirements.txt")
-        lines = [l for l in src.strip().split("\n") if l.strip()]
+        lines = [line for line in src.strip().split("\n") if line.strip()]
         assert len(lines) < 20, f"Too many requirements ({len(lines)})"
 
     def test_dockerfile_layer_caching_order(self):
         """Dockerfile should COPY requirements.txt before app code for
         optimal layer caching (dependencies change less often)."""
         src = _read("Dockerfile")
-        req_pos = src.find("requirements.txt")
-        app_pos = src.find("classifiers/")
+        req_pos = src.find("COPY requirements.txt")
+        app_pos = src.find("COPY classifiers/")
         assert req_pos < app_pos, \
             "requirements.txt should be copied before app code"
 
@@ -370,19 +353,10 @@ class TestPerformanceAndResources:
         """Core modules should use logging, not bare print()."""
         for mod in ["trainer.py", "evaluator.py", "predictor.py", "server.py"]:
             src = _read(f"classifiers/{mod}")
-            # Allow print in comments/strings/docstrings but flag bare print() calls
+            # Allow print in comments/strings but flag bare print() calls
             lines = src.split("\n")
-            in_docstring = False
             for i, line in enumerate(lines, 1):
                 stripped = line.strip()
-                # Track triple-quoted docstrings
-                if '"""' in stripped or "'''" in stripped:
-                    count = stripped.count('"""') + stripped.count("'''")
-                    if count == 1:
-                        in_docstring = not in_docstring
-                    continue
-                if in_docstring:
-                    continue
                 if stripped.startswith("#"):
                     continue
                 if re.match(r"^\s*print\(", line):

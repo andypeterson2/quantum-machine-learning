@@ -232,7 +232,7 @@ class TestDockerfileBuild:
 
     def test_dockerfile_copy_requirements(self):
         src = _read("Dockerfile")
-        assert "requirements.txt" in src
+        assert "COPY requirements.txt" in src
 
     def test_dockerfile_pip_install(self):
         src = _read("Dockerfile")
@@ -240,7 +240,7 @@ class TestDockerfileBuild:
 
     def test_dockerfile_copy_classifiers(self):
         src = _read("Dockerfile")
-        assert "classifiers/" in src
+        assert "COPY classifiers/" in src
 
     def test_dockerfile_cmd(self):
         src = _read("Dockerfile")
@@ -265,12 +265,11 @@ class TestContainerEnvironment:
 
     def test_docker_compose_env_port(self):
         src = _read("docker-compose.yml")
-        assert "PORT" in src
+        assert "CLASSIFIERS_PORT" in src
 
     def test_dockerfile_env_cert_dir(self):
         src = _read("Dockerfile")
-        # DEV_CERT_DIR is read at runtime in __main__.py, not necessarily in Dockerfile
-        assert "CMD" in src  # Dockerfile has a valid CMD
+        assert "DEV_CERT_DIR" in src
 
     def test_requirements_flask(self):
         src = _read("requirements.txt")
