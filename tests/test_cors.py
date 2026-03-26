@@ -1,5 +1,6 @@
 """CORS header tests for the classifier Flask API."""
 from __future__ import annotations
+import os
 import pytest
 from classifiers.server import create_app
 
