@@ -257,7 +257,7 @@ class TestDockerDeployment:
 
     def test_dockerfile_copies_app_code(self):
         src = _read("Dockerfile")
-        assert "COPY classifiers/" in src
+        assert "COPY packages/quantum-protein-kernel/classifiers/" in src
 
     def test_dockerfile_copies_ui_kit(self):
         src = _read("Dockerfile")
@@ -339,8 +339,8 @@ class TestPerformanceAndResources:
         """Dockerfile should COPY requirements.txt before app code for
         optimal layer caching (dependencies change less often)."""
         src = _read("Dockerfile")
-        req_pos = src.find("COPY requirements.txt")
-        app_pos = src.find("COPY classifiers/")
+        req_pos = src.find("COPY packages/quantum-protein-kernel/requirements.txt")
+        app_pos = src.find("COPY packages/quantum-protein-kernel/classifiers/")
         assert req_pos < app_pos, \
             "requirements.txt should be copied before app code"
 
