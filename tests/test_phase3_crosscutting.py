@@ -18,6 +18,8 @@ import pytest
 import torch
 import numpy as np
 
+from tests.conftest import make_fake_train_loader as _make_mnist_loader
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
@@ -40,23 +42,6 @@ def _make_iris_loader(n_samples=40, batch_size=16):
     X = torch.randn(n_samples, 4)
     y = torch.randint(0, 3, (n_samples,))
     return DataLoader(TensorDataset(X, y), batch_size=batch_size, shuffle=False)
-
-
-class _FakeLoader(list):
-    """List that also exposes a ``batch_size`` attribute like a DataLoader."""
-
-    def __init__(self, batches, batch_size):
-        super().__init__(batches)
-        self.batch_size = batch_size
-
-
-def _make_mnist_loader(batch_size=16, n_batches=3):
-    """Create a synthetic MNIST-like DataLoader (1x28x28 images, 10 classes)."""
-    batches = [
-        (torch.randn(batch_size, 1, 28, 28), torch.randint(0, 10, (batch_size,)))
-        for _ in range(n_batches)
-    ]
-    return _FakeLoader(batches, batch_size)
 
 
 # ── WP #681: E2E protein classification pipeline ─────────────────────────

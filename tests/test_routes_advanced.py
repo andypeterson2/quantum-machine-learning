@@ -2,37 +2,19 @@
 
 from __future__ import annotations
 
-import base64
-import io
-import json
-
 import pytest
-from PIL import Image
 
 from classifiers.server import create_app
 from classifiers.datasets.mnist.models import MNISTNet, LinearNet
 from classifiers.datasets.iris.models import IrisLinear
-from tests.conftest import make_fake_test_loader
+from tests.conftest import (
+    blank_png_b64 as _blank_png_b64,
+    make_fake_test_loader,
+    parse_sse as _parse_sse,
+)
 
 
 DS = "mnist"
-
-
-def _blank_png_b64(width: int = 280, height: int = 280) -> str:
-    img = Image.new("L", (width, height), 0)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return base64.b64encode(buf.getvalue()).decode()
-
-
-def _parse_sse(raw: bytes) -> list[dict]:
-    events = []
-    for chunk in raw.decode().split("\n\n"):
-        chunk = chunk.strip()
-        if not chunk.startswith("data:"):
-            continue
-        events.append(json.loads(chunk[len("data:"):].strip()))
-    return events
 
 
 @pytest.fixture()
