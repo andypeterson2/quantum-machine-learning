@@ -83,6 +83,7 @@ class Trainer:
         lr: float = 1e-3,
         config: TrainingConfig | None = None,
         val_loader: DataLoader | None = None,
+        early_stop_min_accuracy: float = 0.6,
     ) -> None:
         self.model_cls = model_cls
         self.train_loader = train_loader
@@ -91,6 +92,7 @@ class Trainer:
         self.lr = lr
         self.config = config
         self.val_loader = val_loader
+        self.early_stop_min_accuracy = early_stop_min_accuracy
 
     def train(self, on_status: StatusCallback | None = None) -> TrainResult:
         """Run the training loop and return a :class:`TrainResult`.
@@ -203,7 +205,7 @@ class Trainer:
             if (
                 cfg is not None
                 and cfg.patience is not None
-                and best_acc > 0.6
+                and best_acc > self.early_stop_min_accuracy
                 and epoch > best_epoch + cfg.patience
             ):
                 status(

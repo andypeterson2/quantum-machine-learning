@@ -60,7 +60,7 @@ class HistoryEntry:
     val_accuracy: float | None = None
 
     def to_dict(self) -> dict:
-        d: dict = {"epoch": self.epoch, "batch": self.batch, "train_loss": self.train_loss}
+        d: dict = {"type": "history", "epoch": self.epoch, "batch": self.batch, "train_loss": self.train_loss}
         if self.val_accuracy is not None:
             d["val_accuracy"] = self.val_accuracy
         return d

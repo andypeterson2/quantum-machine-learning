@@ -5,7 +5,7 @@ All Qiskit dependencies are mocked so the tests run without Qiskit installed.
 
 import sys
 from types import ModuleType
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -91,7 +91,6 @@ from classifiers.qiskit_layers import (  # noqa: E402
     _IndependentInterpret,
     _ParametricCircuit,
     _QCExecutor,
-    _QCSampler,
     _RunCircuit,
     QiskitQLayer,
 )
@@ -135,8 +134,7 @@ class TestIndependentInterpret:
         counts = {"000": 500, "111": 500}
         result = interp(counts)
         assert result.shape == (3,)
-        # bits "111" contribute to all 3 positions
-        expected_total = 500 * 3  # only '1' bits counted
+        # bits "111" contribute to all 3 positions; normalised to sum=1
         assert np.isclose(result.sum(), 1.0)
 
     def test_single_outcome(self):

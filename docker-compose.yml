@@ -2,6 +2,10 @@ services:
   classifier:
     build: .
     ports:
-      - "127.0.0.1:${PORT:-5001}:${PORT:-5001}"
+      - "127.0.0.1:${CLASSIFIERS_PORT:-5001}:${CLASSIFIERS_PORT:-5001}"
     environment:
-      PORT: ${PORT:-5001}
+      CLASSIFIERS_PORT: "${CLASSIFIERS_PORT:-5001}"
+      CLASSIFIERS_HOST: "0.0.0.0"
+      DEV_CERT_DIR: ""
+      # CLASSIFIERS_SECRET_KEY: "change-me-in-production"
+      # CLASSIFIERS_CORS_ORIGINS: "http://localhost:5001"
