@@ -6,9 +6,10 @@ returns the list of registered plugins for the frontend dataset selector.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
-from flask import Blueprint, Response, jsonify, redirect, render_template, send_from_directory, url_for
+from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, send_from_directory, url_for
 
 from ..plugin_registry import get_plugin, list_plugins
 
@@ -70,6 +71,19 @@ def list_datasets() -> Response:
         for p in plugins.values()
     ]
     return jsonify(result)
+
+
+@bp.get("/health")
+def health() -> Response:
+    """Return server health status, uptime, and connected-client count."""
+    start = current_app.extensions.get("start_time", 0.0)
+    tracker = current_app.extensions.get("connections")
+    return jsonify({
+        "status": "ok",
+        "uptime": round(time.monotonic() - start, 1),
+        "clients": tracker.count if tracker else 0,
+        "timestamp": time.time(),
+    })
 
 
 @bp.get("/api/datasets/<name>/config")

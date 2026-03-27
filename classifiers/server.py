@@ -25,11 +25,14 @@ every dataset plugin.  Adding a new dataset is therefore zero-config.
 from __future__ import annotations
 
 import os
+import threading
+import time
 from pathlib import Path
 
 from flask import Flask
 from flask_cors import CORS
 
+from .connections import ConnectionTracker
 from .model_registry import ModelRegistry
 from .persistence import ModelPersistence
 from .plugin_registry import discover_plugins
@@ -59,7 +62,7 @@ def create_app(models_dir: Path | None = None) -> Flask:
         static_folder="static",
     )
     app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY") or os.urandom(32).hex()
-    CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*").split(","))
+    CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*,https://andypeterson.dev").split(","))
 
     # Auto-discover dataset plugins (mnist, iris, etc.)
     discover_plugins()
@@ -69,6 +72,19 @@ def create_app(models_dir: Path | None = None) -> Flask:
     app.extensions["persistence"] = ModelPersistence(
         models_dir or _DEFAULT_MODELS_DIR
     )
+    app.extensions["start_time"] = time.monotonic()
+
+    tracker = ConnectionTracker()
+    app.extensions["connections"] = tracker
+
+    # Background thread sweeps stale clients every 30 s.
+    def _sweep_loop() -> None:
+        while True:
+            time.sleep(30)
+            tracker.sweep(timeout=90)
+
+    sweep_thread = threading.Thread(target=_sweep_loop, daemon=True)
+    sweep_thread.start()
 
     from .routes import register_routes
     register_routes(app)

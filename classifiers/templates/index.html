@@ -182,8 +182,11 @@
   {% if ui_kit %}
   <script src="/ui-kit/ui-kit.js"></script>
   {% endif %}
+  <script src="{{ url_for('static', filename='js/connection.js') }}"></script>
   <script src="{{ url_for('static', filename='js/sse.js') }}"></script>
   <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <!-- Auto-connect in standalone Flask mode (same origin) -->
+  <script>connectionManager.connect("");</script>
 </body>
 </html>
