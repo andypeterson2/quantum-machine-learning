@@ -232,7 +232,7 @@ class TestDockerfileBuild:
 
     def test_dockerfile_copy_requirements(self):
         src = _read("Dockerfile")
-        assert "COPY packages/quantum-protein-kernel/requirements.txt" in src
+        assert "COPY requirements.txt" in src
 
     def test_dockerfile_pip_install(self):
         src = _read("Dockerfile")
@@ -240,7 +240,7 @@ class TestDockerfileBuild:
 
     def test_dockerfile_copy_classifiers(self):
         src = _read("Dockerfile")
-        assert "COPY packages/quantum-protein-kernel/classifiers/" in src
+        assert "COPY classifiers/" in src
 
     def test_dockerfile_cmd(self):
         src = _read("Dockerfile")
