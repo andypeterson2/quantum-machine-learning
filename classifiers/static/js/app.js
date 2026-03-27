@@ -20,6 +20,24 @@ const ICONS = UIKit.ICONS;
 /** @const {string} URL prefix for all API calls scoped to the active dataset. */
 const BASE = API_BASE + `/d/${UI_CONFIG.name}`;
 
+// ── Connection-aware fetch wrapper ──────────────────────────────────────────
+
+/**
+ * Thin wrapper around ``fetch`` that checks the connection manager state
+ * before issuing a request.  Throws immediately when disconnected so
+ * callers can surface a user-visible error instead of hanging silently.
+ *
+ * @param {string}      url
+ * @param {RequestInit}  [opts]
+ * @returns {Promise<Response>}
+ */
+async function apiFetch(url, opts) {
+  if (typeof connectionManager !== "undefined" && connectionManager.state !== "connected") {
+    throw new Error("Not connected to server");
+  }
+  return fetch(url, opts);
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 
 /**
@@ -134,7 +152,7 @@ async function fetchModelInfo(modelType) {
   const details = document.getElementById("model-info-details");
   const panel   = document.getElementById("model-info-panel");
   try {
-    const res = await fetch(`${BASE}/model-info/${encodeURIComponent(modelType)}`);
+    const res = await apiFetch(`${BASE}/model-info/${encodeURIComponent(modelType)}`);
     if (!res.ok) { details.classList.add("hidden"); return; }
     const data = await res.json();
     const doc = new DOMParser().parseFromString(data.html, "text/html");
@@ -179,7 +197,7 @@ function updateEnsembleBtn() {
 
 (async function initDatasetMenu() {
   try {
-    const res  = await fetch(API_BASE + "/api/datasets");
+    const res  = await apiFetch(API_BASE + "/api/datasets");
     const list = await res.json();
     datasetList.innerHTML = "";
     for (const ds of list) {
@@ -482,7 +500,7 @@ function buildMetricsTable() {
 
 async function loadModels() {
   try {
-    const res  = await fetch(`${BASE}/models`);
+    const res  = await apiFetch(`${BASE}/models`);
     const data = await res.json();
     for (const [name, info] of Object.entries(data)) state.models[name] = info;
     buildMetricsTable();
@@ -669,7 +687,7 @@ async function runPredict() {
     body = { features };
   }
   try {
-    const res  = await fetch(`${BASE}/predict`, {
+    const res  = await apiFetch(`${BASE}/predict`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify(body),
@@ -693,7 +711,7 @@ clearBtn.addEventListener("click", () => {
 
 async function loadSavedModels() {
   try {
-    const res   = await fetch(`${BASE}/models/disk`);
+    const res   = await apiFetch(`${BASE}/models/disk`);
     const files = await res.json();
     savedSelect.innerHTML = "";
     if (files.length === 0) {
@@ -721,7 +739,7 @@ importBtn.addEventListener("click", async () => {
   if (!filename) return;
   importBtn.disabled = true;
   try {
-    const res  = await fetch(`${BASE}/models/disk/${encodeURIComponent(filename)}/load`, { method: "POST" });
+    const res  = await apiFetch(`${BASE}/models/disk/${encodeURIComponent(filename)}/load`, { method: "POST" });
     const data = await res.json();
     if (!res.ok || data.error) return;
     state.models[data.name] = {
@@ -749,7 +767,7 @@ document.addEventListener("click", async (e) => {
   if (!exportName) return;
   btn.disabled = true;
   try {
-    const res  = await fetch(`${BASE}/models/${encodeURIComponent(exportName)}/export`, { method: "POST" });
+    const res  = await apiFetch(`${BASE}/models/${encodeURIComponent(exportName)}/export`, { method: "POST" });
     const data = await res.json();
     if (res.ok && !data.error) await loadSavedModels();
   } catch (_) { /* silent */ } finally {
@@ -764,7 +782,7 @@ document.addEventListener("click", async (e) => {
   const name = btn?.dataset?.remove;
   if (!name) return;
   try {
-    await fetch(`${BASE}/models/${encodeURIComponent(name)}`, { method: "DELETE" });
+    await apiFetch(`${BASE}/models/${encodeURIComponent(name)}`, { method: "DELETE" });
   } catch (_) { /* best effort — server may be unavailable */ }
   delete state.models[name];
   delete state.predictions[name];
@@ -782,7 +800,7 @@ ensembleBtn.addEventListener("click", async () => {
   ensembleBtn.disabled = true;
   ensembleBtn.textContent = "Running…";
   try {
-    const res = await fetch(`${BASE}/ensemble`, {
+    const res = await apiFetch(`${BASE}/ensemble`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model_names: names }),
@@ -842,6 +860,17 @@ document.addEventListener("click", async (e) => {
     (err) => { addLog(`Ablation error: ${err}`, "err"); }
   );
   btn.disabled = false;
+});
+
+// ── Connection state observer ────────────────────────────────────────────────
+
+document.addEventListener("connection:statechange", (e) => {
+  const { state: s, previous } = e.detail;
+  if (s === "connected")    addLog("Connected to server", "ok");
+  if (s === "degraded")     addLog("Connection unstable \u2014 retrying\u2026");
+  if (s === "disconnected" && (previous === "connected" || previous === "degraded"))
+    addLog("Lost server connection", "err");
+  if (s === "connecting" && previous === "disconnected") addLog("Reconnecting\u2026");
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────

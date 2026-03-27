@@ -21,7 +21,9 @@ def register_routes(app: Flask) -> None:
         app: The Flask application instance to register blueprints on.
     """
     from .main import bp as main_bp
+    from .connection_routes import bp as connection_bp
     from .dataset_routes import bp as dataset_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(connection_bp)
     app.register_blueprint(dataset_bp)
