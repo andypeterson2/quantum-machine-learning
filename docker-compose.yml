@@ -1,11 +1,11 @@
 services:
   classifier:
+    container_name: classifier
     build: .
     ports:
-      - "127.0.0.1:${CLASSIFIERS_PORT:-5001}:${CLASSIFIERS_PORT:-5001}"
+      - "127.0.0.1:${CLASSIFIER_PORT}:${CLASSIFIER_PORT}"
     environment:
-      CLASSIFIERS_PORT: "${CLASSIFIERS_PORT:-5001}"
+      CLASSIFIERS_PORT: "${CLASSIFIER_PORT}"
       CLASSIFIERS_HOST: "0.0.0.0"
+      CLASSIFIERS_CORS_ORIGINS: "http://localhost:*,https://andypeterson.dev"
       DEV_CERT_DIR: ""
-      # CLASSIFIERS_SECRET_KEY: "change-me-in-production"
-      # CLASSIFIERS_CORS_ORIGINS: "http://localhost:5001"

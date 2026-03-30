@@ -1,8 +1,12 @@
 flask==3.0.2
 flask-cors==6.0.2
-torch==2.2.2
-torchvision==0.17.2
 numpy==1.26.4
 Pillow==12.1.1
 mistune==3.2.0
 scikit-learn==1.8.0
+# torch and torchvision are installed separately:
+#   - Docker: CPU-only wheels via --index-url (see Dockerfile)
+#   - CI: CPU-only wheels (see ci.yml)
+#   - Local: install manually with GPU or CPU variant
+torch==2.2.2
+torchvision==0.17.2
