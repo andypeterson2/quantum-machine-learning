@@ -261,7 +261,7 @@ class TestContainerEnvironment:
 
     def test_docker_compose_port_mapping(self):
         src = _read("docker-compose.yml")
-        assert "5001" in src, "Port 5001 not mapped in docker-compose"
+        assert "CLASSIFIER_PORT" in src, "CLASSIFIER_PORT not referenced in docker-compose port mapping"
 
     def test_docker_compose_env_port(self):
         src = _read("docker-compose.yml")

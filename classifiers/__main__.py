@@ -38,7 +38,13 @@ def _get_ssl_context():
 
 # Persist the chosen port so Werkzeug's reloader child inherits it and binds
 # to the same port instead of probing for a new one.
-port = int(os.environ.get("CLASSIFIERS_PORT") or 5001)
+def _find_port():
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+port = int(os.environ.get("CLASSIFIERS_PORT") or 0) or _find_port()
 os.environ["CLASSIFIERS_PORT"] = str(port)
 
 app = create_app()
