@@ -15,7 +15,7 @@ from ..plugin_registry import get_plugin, list_plugins
 
 bp = Blueprint("main", __name__)
 
-_UI_KIT_DIR = Path(__file__).resolve().parents[2] / "ui-kit"
+_UI_KIT_DIR = Path(__file__).resolve().parents[3] / "ui-kit"
 
 
 @bp.get("/")
