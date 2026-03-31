@@ -317,15 +317,15 @@ class TestClassifierFrontend:
         assert os.path.isfile(path)
 
     def test_ui_kit_exists(self):
-        path = os.path.join(ROOT, "ui-kit")
+        path = os.path.join(ROOT, "..", "ui-kit")
         assert os.path.isdir(path), "ui-kit directory not found"
 
     def test_ui_kit_css_exists(self):
-        path = os.path.join(ROOT, "ui-kit", "ui-kit.css")
+        path = os.path.join(ROOT, "..", "ui-kit", "ui-kit.css")
         assert os.path.isfile(path)
 
     def test_ui_kit_js_exists(self):
-        path = os.path.join(ROOT, "ui-kit", "ui-kit.js")
+        path = os.path.join(ROOT, "..", "ui-kit", "ui-kit.js")
         assert os.path.isfile(path)
 
     def test_flask_serves_static(self):
