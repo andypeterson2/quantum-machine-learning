@@ -157,6 +157,14 @@ async function fetchModelInfo(modelType) {
     const data = await res.json();
     const doc = new DOMParser().parseFromString(data.html, "text/html");
     doc.querySelectorAll("script").forEach((s) => s.remove());
+    // Strip event-handler attributes (onerror, onload, etc.) and javascript: URIs
+    doc.body.querySelectorAll("*").forEach((el) => {
+      for (const attr of [...el.attributes]) {
+        if (attr.name.startsWith("on") || (attr.name === "href" && attr.value.trimStart().startsWith("javascript:"))) {
+          el.removeAttribute(attr.name);
+        }
+      }
+    });
     panel.innerHTML = doc.body.innerHTML;
     details.classList.remove("hidden");
   } catch { details.classList.add("hidden"); }
