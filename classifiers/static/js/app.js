@@ -815,7 +815,7 @@ ensembleBtn.addEventListener("click", async () => {
     });
     const data = await res.json();
     if (data.error) {
-      addLog(`Ensemble error: ${data.error}`, "err");
+      addLog(`Ensemble error: ${data.error.message || data.error}`, "err");
       return;
     }
     addLog(`Ensemble accuracy: ${(data.accuracy * 100).toFixed(1)}%`, "ok");

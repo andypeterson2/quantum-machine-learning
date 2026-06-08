@@ -67,7 +67,7 @@ def register(bp) -> None:
                 img_bytes = base64.b64decode(b64)
                 raw_input: Any = Image.open(io.BytesIO(img_bytes)).convert("L")
             except Exception:
-                return jsonify({"error": "Invalid image data"}), 400
+                return error_response("Invalid image data", 400, code="invalid_image")
         else:
             raw_input = data.get("features", {})
 
