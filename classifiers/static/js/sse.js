@@ -64,7 +64,7 @@ async function consumeSSE(url, body, onStatus, onDone, onError) {
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    onError(err.error || res.statusText);
+    onError((err.error && err.error.message) || err.error || res.statusText);
     return;
   }
   const reader  = res.body.getReader();
