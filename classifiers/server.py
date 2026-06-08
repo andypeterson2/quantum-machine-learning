@@ -90,7 +90,7 @@ def create_app(models_dir: Path | None = None) -> Flask:
     register_routes(app)
 
     # Uniform JSON error envelope for framework-raised errors (404/405/500, ...).
-    from .errors import register_error_handlers
+    from .routes.errors import register_error_handlers
 
     register_error_handlers(app)
 
