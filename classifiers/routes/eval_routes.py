@@ -1,5 +1,9 @@
 """Evaluation endpoints — single model, ensemble, and ablation study.
 
+``POST /evaluate`` streams per-model progress via SSE; ``POST /evaluate/sync``
+runs the same evaluation inline and returns ``{"results": {...}}`` directly (the
+cross-repo "curl-able" rule). Both share :func:`_evaluate_all`.
+
 Separated from the main dataset blueprint to honour the Single Responsibility
 Principle: this module only orchestrates model evaluation.
 """
@@ -16,47 +20,58 @@ from .errors import error_response
 from .sse import sse_response
 
 
+def _evaluate_all(plugin, registry, on_status=None) -> dict:
+    """Evaluate every registered model for *plugin*; return ``{name: metrics}``.
+
+    Pure compute (plus registry updates) — no SSE — so it is shared by the async
+    ``/evaluate`` stream and the synchronous ``/evaluate/sync`` route. *on_status*
+    is an optional ``str -> None`` progress callback.
+    """
+    evaluator = Evaluator()
+    test_loader = plugin.get_test_loader(1000)
+    results: dict[str, dict] = {}
+    for model_name, entry in registry.items(plugin.name):
+        if on_status:
+            on_status(f"Evaluating '{model_name}'...")
+        ev = evaluator.evaluate(
+            entry.model,
+            test_loader,
+            plugin.num_classes,
+            plugin.class_labels,
+            on_status=on_status or (lambda *_: None),
+        )
+        registry.update_eval_result(plugin.name, model_name, ev)
+        results[model_name] = {
+            "accuracy": ev.accuracy,
+            "avg_loss": ev.avg_loss,
+            "per_class_accuracy": ev.per_class_accuracy,
+            "num_params": ev.num_params,
+        }
+    return results
+
+
 def register(bp) -> None:
     """Attach evaluation routes to *bp*."""
 
     # ── Evaluate ─────────────────────────────────────────────────────────────
 
     @bp.post("/evaluate")
-    def evaluate() -> Response | tuple[dict, int]:
+    def evaluate() -> Response | tuple[Response, int]:
         """Evaluate every registered model for this dataset via SSE."""
         plugin = g.plugin
         registry = current_app.extensions["registry"]
 
-        model_items = registry.items(plugin.name)
-        if not model_items:
+        if not registry.items(plugin.name):
             return error_response("No models to evaluate")
 
         q: queue.Queue[dict | None] = queue.Queue()
 
         def run() -> None:
             try:
-                evaluator = Evaluator()
-                test_loader = plugin.get_test_loader(1000)
-                all_results: dict[str, dict] = {}
-
-                for model_name, entry in model_items:
-                    q.put({"type": "status", "msg": f"Evaluating '{model_name}'..."})
-                    ev = evaluator.evaluate(
-                        entry.model,
-                        test_loader,
-                        plugin.num_classes,
-                        plugin.class_labels,
-                        on_status=lambda msg: q.put({"type": "status", "msg": msg}),
-                    )
-                    registry.update_eval_result(plugin.name, model_name, ev)
-                    all_results[model_name] = {
-                        "accuracy": ev.accuracy,
-                        "avg_loss": ev.avg_loss,
-                        "per_class_accuracy": ev.per_class_accuracy,
-                        "num_params": ev.num_params,
-                    }
-
-                q.put({"type": "done", "results": all_results})
+                results = _evaluate_all(
+                    plugin, registry, on_status=lambda msg: q.put({"type": "status", "msg": msg})
+                )
+                q.put({"type": "done", "results": results})
             except Exception as exc:
                 q.put({"type": "error", "msg": str(exc)})
             finally:
@@ -65,10 +80,24 @@ def register(bp) -> None:
         threading.Thread(target=run, daemon=True).start()
         return sse_response(q)
 
+    @bp.post("/evaluate/sync")
+    def evaluate_sync() -> Response | tuple[Response, int]:
+        """Evaluate every registered model synchronously; returns {"results": {...}}."""
+        plugin = g.plugin
+        registry = current_app.extensions["registry"]
+
+        if not registry.items(plugin.name):
+            return error_response("No models to evaluate")
+        try:
+            results = _evaluate_all(plugin, registry)
+        except Exception as exc:
+            return error_response(str(exc), 500)
+        return jsonify({"results": results})
+
     # ── Ensemble ─────────────────────────────────────────────────────────────
 
     @bp.post("/ensemble")
-    def ensemble() -> Response | tuple[dict, int]:
+    def ensemble() -> Response | tuple[Response, int]:
         """Majority-vote ensemble evaluation across selected models."""
         plugin = g.plugin
         registry = current_app.extensions["registry"]
@@ -99,7 +128,7 @@ def register(bp) -> None:
     # ── Ablation ─────────────────────────────────────────────────────────────
 
     @bp.post("/ablation")
-    def ablation() -> Response | tuple[dict, int]:
+    def ablation() -> Response | tuple[Response, int]:
         """Ablation study: zero out each layer and measure accuracy drop."""
         plugin = g.plugin
         registry = current_app.extensions["registry"]
