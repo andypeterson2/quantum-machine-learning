@@ -26,6 +26,28 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -v
 
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest jsonschema
+
+      - name: Boot the classifier and run the live-HTTP contract tests
+        run: |
+          CLASSIFIERS_PORT=5001 python -c "from classifiers.server import create_app; create_app().run(host='127.0.0.1', port=5001, use_reloader=False)" &
+          curl --retry 90 --retry-delay 1 --retry-connrefused -sf http://127.0.0.1:5001/health
+          CLASSIFIERS_URL=http://127.0.0.1:5001 python -m pytest tests/contract/ -v
+
   lint:
     runs-on: ubuntu-latest
     steps:
