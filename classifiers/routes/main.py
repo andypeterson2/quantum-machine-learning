@@ -1,15 +1,15 @@
-"""Top-level routes — root redirect and dataset listing API.
+"""Top-level API routes — health, discovery, and dataset listing.
 
-The root URL redirects to the first available dataset, and ``/api/datasets``
-returns the list of registered plugins for the frontend dataset selector.
+This service is API-only; the frontend is owned by the portal. ``/api/datasets``
+returns the list of registered plugins for the dataset selector, and
+``/api/datasets/<name>/config`` returns a dataset's UI configuration.
 """
 
 from __future__ import annotations
 
 import time
-from pathlib import Path
 
-from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, send_from_directory, url_for
+from flask import Blueprint, Response, current_app, jsonify
 
 from ..plugin_registry import get_plugin, list_plugins
 from .errors import error_response
@@ -17,8 +17,6 @@ from .errors import error_response
 bp = Blueprint("main", __name__)
 
 SERVICE = "classifiers"
-
-_UI_KIT_DIR = Path(__file__).resolve().parents[3] / "ui-kit"
 
 
 def _service_version() -> str:
@@ -45,38 +43,6 @@ _STREAMING = [
         "description": "Live evaluation stream; live equivalent of the synchronous evaluate route.",
     },
 ]
-
-
-@bp.get("/")
-def index() -> Response:
-    """Redirect root URL to the first available dataset."""
-    plugins = list_plugins()
-    if plugins:
-        first = next(iter(plugins))
-        return redirect(url_for("main.dataset_index", dataset=first))
-    return error_response("No datasets registered", 404, code="no_datasets")
-
-
-@bp.get("/d/<dataset>/")
-def dataset_index(dataset: str) -> Response | tuple[str, int]:
-    """Serve the SPA entry point for a specific dataset."""
-    plugin = get_plugin(dataset)
-    if plugin is None:
-        return error_response(f"Unknown dataset: {dataset!r}", 404, code="unknown_dataset")
-    ui_config = plugin.get_ui_config()
-    model_types = list(plugin.get_model_types().keys())
-    return render_template(
-        "index.html",
-        ui_config=ui_config,
-        model_types=model_types,
-        ui_kit=_UI_KIT_DIR.is_dir(),
-    )
-
-
-@bp.get("/ui-kit/<path:filename>")
-def ui_kit_static(filename: str) -> Response:
-    """Serve files from the ui-kit directory."""
-    return send_from_directory(str(_UI_KIT_DIR), filename)
 
 
 @bp.get("/api/datasets")

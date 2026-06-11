@@ -297,52 +297,8 @@ class TestContainerEnvironment:
 
 # ── WP #693: Classifier frontend rendering ────────────────────────────────
 
-class TestClassifierFrontend:
-    """#693 — Verify HTML/JS/CSS frontend artefacts exist."""
-
-    def test_app_css_exists(self):
-        path = os.path.join(ROOT, "classifiers", "static", "css", "app.css")
-        assert os.path.isfile(path)
-
-    def test_app_js_exists(self):
-        path = os.path.join(ROOT, "classifiers", "static", "js", "app.js")
-        assert os.path.isfile(path)
-
-    def test_sse_js_exists(self):
-        path = os.path.join(ROOT, "classifiers", "static", "js", "sse.js")
-        assert os.path.isfile(path)
-
-    def test_chart_js_exists(self):
-        path = os.path.join(ROOT, "classifiers", "static", "js", "chart.js")
-        assert os.path.isfile(path)
-
-    @pytest.mark.skipif(
-        not os.path.isdir(os.path.join(ROOT, "..", "ui-kit")),
-        reason="ui-kit sibling directory not present (standalone checkout)",
-    )
-    def test_ui_kit_exists(self):
-        path = os.path.join(ROOT, "..", "ui-kit")
-        assert os.path.isdir(path), "ui-kit directory not found"
-
-    @pytest.mark.skipif(
-        not os.path.isdir(os.path.join(ROOT, "..", "ui-kit")),
-        reason="ui-kit sibling directory not present (standalone checkout)",
-    )
-    def test_ui_kit_css_exists(self):
-        path = os.path.join(ROOT, "..", "ui-kit", "ui-kit.css")
-        assert os.path.isfile(path)
-
-    @pytest.mark.skipif(
-        not os.path.isdir(os.path.join(ROOT, "..", "ui-kit")),
-        reason="ui-kit sibling directory not present (standalone checkout)",
-    )
-    def test_ui_kit_js_exists(self):
-        path = os.path.join(ROOT, "..", "ui-kit", "ui-kit.js")
-        assert os.path.isfile(path)
-
-    def test_flask_serves_static(self):
-        src = _read("classifiers/server.py")
-        assert "static_folder" in src, "Flask app should configure static_folder"
+# The HTML/JS/CSS frontend (and ui-kit) now live in the portal repo — this service
+# is API-only and serves no static assets. Frontend tests moved to the website.
 
 
 # ── WP #694: Frontend-backend API integration ─────────────────────────────

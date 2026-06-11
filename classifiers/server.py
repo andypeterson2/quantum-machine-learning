@@ -56,11 +56,9 @@ def create_app(models_dir: Path | None = None) -> Flask:
         A fully configured :class:`~flask.Flask` application instance ready
         to serve requests.
     """
-    app = Flask(
-        __name__,
-        template_folder="templates",
-        static_folder="static",
-    )
+    # API-only service: the frontend is owned by the portal, so no static/template
+    # serving (static_folder=None disables the default /static/<path> route too).
+    app = Flask(__name__, static_folder=None)
     app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY") or os.urandom(32).hex()
     CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*,https://andypeterson.dev").split(","))
 
