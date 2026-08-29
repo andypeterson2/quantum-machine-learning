@@ -29,7 +29,7 @@ import threading
 import time
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from .connections import ConnectionTracker
@@ -62,6 +62,12 @@ def create_app(models_dir: Path | None = None) -> Flask:
     app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY") or os.urandom(32).hex()
     CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*,https://andypeterson.dev").split(","))
 
+    # Cap request-body size. Predict images and JSON bodies are a few KB; anything
+    # larger is rejected with 413 before parsing (a DoS guard). Overridable via env.
+    app.config["MAX_CONTENT_LENGTH"] = int(
+        os.environ.get("CLASSIFIERS_MAX_CONTENT_LENGTH") or 2 * 1024 * 1024  # 2 MB
+    )
+
     # Auto-discover dataset plugins (mnist, iris, etc.)
     discover_plugins()
 
@@ -91,5 +97,16 @@ def create_app(models_dir: Path | None = None) -> Flask:
     from .routes.errors import register_error_handlers
 
     register_error_handlers(app)
+
+    # Origin guard (the gate's teeth): reject anything that didn't arrive through the
+    # gateway, which injects X-Origin-Secret. /health stays public so the host's health
+    # check + scale-to-zero wake work. Inert until ORIGIN_SECRET is set, so it's safe to
+    # land before the gateway is wired. See andypeterson-gateway/PHASE3-DEPLOY.md §3.
+    @app.before_request
+    def _origin_guard():
+        want = os.environ.get("ORIGIN_SECRET")
+        if want and request.path != "/health" and request.headers.get("X-Origin-Secret") != want:
+            return jsonify({"error": {"code": "forbidden", "message": "origin"}}), 403
+        return None
 
     return app

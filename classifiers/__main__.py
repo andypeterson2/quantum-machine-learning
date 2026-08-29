@@ -58,4 +58,8 @@ if not os.environ.get("WERKZEUG_RUN_MAIN"):
     logger.info("Running on %s://localhost:%d", scheme, port)
 
 host = os.environ.get("CLASSIFIERS_HOST", "127.0.0.1")
-app.run(debug=True, host=host, port=port, ssl_context=ssl_ctx)
+# Debug (Werkzeug reloader + interactive debugger) is convenient locally but is a
+# remote-code-execution risk in production, so it defaults on for dev and is turned
+# off by setting CLASSIFIERS_DEBUG=0 (as the container / Fly deploy does).
+debug = os.environ.get("CLASSIFIERS_DEBUG", "1").lower() not in ("0", "false", "no", "")
+app.run(debug=debug, host=host, port=port, ssl_context=ssl_ctx)

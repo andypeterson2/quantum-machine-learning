@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import pytest
 
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.server import create_app
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
 from tests.conftest import (
     blank_png_b64 as _blank_png_b64,
-    make_fake_train_loader,
+)
+from tests.conftest import (
     make_fake_test_loader,
+    make_fake_train_loader,
+)
+from tests.conftest import (
     parse_sse as _parse_sse,
 )
-
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -189,17 +192,16 @@ class TestTrainRoute:
         fake_loader = make_fake_train_loader(batch_size=16, n_batches=3)
         with patch.object(
             app.extensions["registry"].__class__, "__len__", return_value=0
+        ), patch(
+            "classifiers.datasets.mnist.plugin.MNISTPlugin.get_train_loader",
+            return_value=fake_loader,
         ):
-            with patch(
-                "classifiers.datasets.mnist.plugin.MNISTPlugin.get_train_loader",
-                return_value=fake_loader,
-            ):
-                res = client.post(
-                    f"/d/{DS}/train",
-                    json={"model_type": "CNN", "epochs": 1,
-                          "batch_size": 16, "lr": 0.001, "name": "t1"},
-                    content_type="application/json",
-                )
+            res = client.post(
+                f"/d/{DS}/train",
+                json={"model_type": "CNN", "epochs": 1,
+                      "batch_size": 16, "lr": 0.001, "name": "t1"},
+                content_type="application/json",
+            )
         assert res.status_code == 200
         assert res.content_type.startswith("text/event-stream")
         events = _parse_sse(res.data)
@@ -290,3 +292,44 @@ class TestUnknownDataset:
     def test_unknown_dataset_returns_404(self, client):
         res = client.get("/d/doesnotexist/models")
         assert res.status_code == 404
+
+
+# ── Request caps (DoS guards) ───────────────────────────────────────────────
+
+
+class TestRequestCaps:
+    """Training hyper-parameters and request-body size are bounded, so a single
+    request can't run the one-worker server for hours, exhaust its memory, or
+    ship a giant payload. Training-input rejection happens in _setup_trainer,
+    before any data is loaded or trained."""
+
+    def test_excessive_epochs_rejected(self, client):
+        res = client.post(
+            f"/d/{DS}/train/sync", json={"model_type": "Linear", "epochs": 100000}
+        )
+        assert res.status_code == 400
+        assert "epoch" in res.get_data(as_text=True).lower()
+
+    def test_excessive_batch_size_rejected(self, client):
+        res = client.post(
+            f"/d/{DS}/train/sync", json={"model_type": "Linear", "batch_size": 10**9}
+        )
+        assert res.status_code == 400
+        assert "batch_size" in res.get_data(as_text=True).lower()
+
+    def test_nonpositive_lr_rejected(self, client):
+        res = client.post(
+            f"/d/{DS}/train/sync", json={"model_type": "Linear", "lr": 0}
+        )
+        assert res.status_code == 400
+
+    def test_oversized_body_rejected_with_413(self, client):
+        # A body over MAX_CONTENT_LENGTH is rejected before the route parses it.
+        # (train/sync reads the body immediately; predict short-circuits earlier.)
+        big = "A" * (3 * 1024 * 1024)  # 3 MB, over the 2 MB MAX_CONTENT_LENGTH
+        res = client.post(
+            f"/d/{DS}/train/sync",
+            data='{"model_type":"Linear","name":"' + big + '"}',
+            content_type="application/json",
+        )
+        assert res.status_code == 413

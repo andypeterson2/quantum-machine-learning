@@ -22,7 +22,7 @@ dependencies = [
     "flask-cors>=6.0",
     "torch>=2.2",
     "torchvision>=0.17",
-    "numpy>=1.26",
+    "numpy>=1.26,<2",  # torch 2.2 uses numpy's 1.x C-API; numpy 2 breaks it
     "Pillow>=12.0",
     "mistune>=3.0",
     "scikit-learn>=1.5",
@@ -32,7 +32,7 @@ dependencies = [
 quantum = [
     "qiskit>=1.0",
     "qiskit-aer>=0.13",
-    "pennylane>=0.35",
+    "pennylane>=0.35,<0.45",  # 0.45+ requires numpy>=2, which breaks torch 2.2
 ]
 dev = [
     "pytest>=8.0",

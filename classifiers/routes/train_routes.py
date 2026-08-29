@@ -15,8 +15,9 @@ from typing import Any
 
 from flask import Response, current_app, g, jsonify, request
 
-from ..trainer import Trainer
-from ..training_config import TrainingConfig
+from classifiers.trainer import Trainer
+from classifiers.training_config import TrainingConfig
+
 from .errors import error_response
 from .sse import sse_response
 
@@ -30,6 +31,39 @@ class _TrainingInputError(Exception):
         self.status = status
 
 
+# Bounds on training inputs. Unbounded values let one request monopolise the
+# single-worker server for hours (epochs) or exhaust its memory (batch_size), so
+# out-of-range values are rejected with a 400 rather than silently clamped.
+_MAX_EPOCHS = 50
+_MAX_BATCH_SIZE = 512
+_MAX_LR = 1.0
+_MAX_VAL_GAP = 10_000
+_MAX_PATIENCE = 1_000
+
+
+def _bounded_int(body, key, default, lo, hi):
+    """Read an int hyper-parameter, rejecting values outside ``[lo, hi]``."""
+    try:
+        value = int(body.get(key, default))
+    except (TypeError, ValueError):
+        # `from None`: the raw cast error adds nothing to the 400 message.
+        raise _TrainingInputError(f"'{key}' must be an integer") from None
+    if not lo <= value <= hi:
+        raise _TrainingInputError(f"'{key}' must be between {lo} and {hi} (got {value})")
+    return value
+
+
+def _bounded_float(body, key, default, lo, hi):
+    """Read a float hyper-parameter, rejecting values outside ``(lo, hi]``."""
+    try:
+        value = float(body.get(key, default))
+    except (TypeError, ValueError):
+        raise _TrainingInputError(f"'{key}' must be a number") from None
+    if not lo < value <= hi:
+        raise _TrainingInputError(f"'{key}' must be in ({lo}, {hi}] (got {value})")
+    return value
+
+
 def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
     """Validate the request body and build ``(Trainer, model_name)``.
 
@@ -37,9 +71,9 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
     teacher model — callers map that to the JSON error envelope.
     """
     model_type_name: str = body.get("model_type", "")
-    epochs: int = int(body.get("epochs", 3))
-    batch_size: int = int(body.get("batch_size", 64))
-    lr: float = float(body.get("lr", 1e-3))
+    epochs: int = _bounded_int(body, "epochs", 3, 1, _MAX_EPOCHS)
+    batch_size: int = _bounded_int(body, "batch_size", 64, 1, _MAX_BATCH_SIZE)
+    lr: float = _bounded_float(body, "lr", 1e-3, 0.0, _MAX_LR)
     name: str = body.get("name") or registry.next_name(plugin.name)
 
     model_types = plugin.get_model_types()
@@ -51,7 +85,7 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
 
     # Advanced training options
     patience = body.get("patience")
-    val_gap = int(body.get("val_gap", 50))
+    val_gap = _bounded_int(body, "val_gap", 50, 1, _MAX_VAL_GAP)
     teacher_name: str | None = body.get("teacher")
     distill_weight = float(body.get("distill_weight", 0.5))
 
@@ -65,7 +99,11 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
                 raise _TrainingInputError(f"Teacher model '{teacher_name}' not found", 404)
             teacher_model = teacher_entry.model
         config = TrainingConfig(
-            patience=int(patience) if patience is not None else None,
+            patience=(
+                _bounded_int(body, "patience", 1, 1, _MAX_PATIENCE)
+                if patience is not None
+                else None
+            ),
             val_gap=val_gap,
             teacher_model=teacher_model,
             distill_weight=distill_weight,

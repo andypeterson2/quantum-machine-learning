@@ -138,11 +138,25 @@ class IrisPlugin(DatasetPlugin):
         """Return compatible architectures for Iris.
 
         Returns:
-            ``{"Linear": IrisLinear, "SVM": IrisSVM, "QVC": IrisQVC}``
+            ``{"Linear": IrisLinear, "SVM": IrisSVM}``, plus ``"QVC": IrisQVC`` when
+            PennyLane (the optional ``quantum`` extra) is installed.
         """
-        from .models import IrisLinear, IrisSVM, IrisQVC
+        from .models import IrisLinear, IrisSVM
 
-        return {"Linear": IrisLinear, "SVM": IrisSVM, "QVC": IrisQVC}
+        types: dict[str, type[BaseModel]] = {"Linear": IrisLinear, "SVM": IrisSVM}
+        # QVC needs PennyLane (the optional `quantum` extra, imported lazily deep in
+        # IrisQVC). Only advertise it when PennyLane is importable, so a lean deploy
+        # doesn't offer a model that raises ImportError at train time. Install the
+        # `quantum` extra to light up the quantum classifier.
+        try:
+            import pennylane  # noqa: F401
+        except ImportError:
+            pass
+        else:
+            from .models import IrisQVC
+
+            types["QVC"] = IrisQVC
+        return types
 
     def get_default_hyperparams(self) -> dict:
         """Return Iris-tuned defaults: more epochs, smaller batch, lower lr.
