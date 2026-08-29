@@ -6,10 +6,9 @@ import torch
 from classifiers.base_model import BaseModel
 from classifiers.datasets.iris.models import IrisLinear, IrisSVM
 from classifiers.datasets.iris.plugin import IrisPlugin
-from classifiers.evaluator import Evaluator, EvalResult
+from classifiers.evaluator import EvalResult, Evaluator
 from classifiers.predictor import Predictor
 from classifiers.trainer import Trainer, TrainResult
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -50,7 +49,7 @@ class TestIrisPlugin:
 
     def test_get_test_loader(self, iris_plugin):
         loader = iris_plugin.get_test_loader(batch_size=100)
-        batch_data, batch_targets = next(iter(loader))
+        batch_data, _batch_targets = next(iter(loader))
         assert batch_data.shape[1] == 4
 
     def test_get_val_loader(self, iris_plugin):

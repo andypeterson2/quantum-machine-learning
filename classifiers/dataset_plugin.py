@@ -104,7 +104,7 @@ class DatasetPlugin(ABC):
 
     # ── Validation data ──────────────────────────────────────────────────────
 
-    def get_val_loader(self, batch_size: int) -> DataLoader | None:
+    def get_val_loader(self, batch_size: int) -> DataLoader | None:  # noqa: ARG002 — interface signature; the base default has no val split
         """Return a :class:`~torch.utils.data.DataLoader` over a validation set.
 
         Override in plugins that support a separate validation split.  The

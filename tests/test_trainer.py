@@ -1,8 +1,8 @@
 """Unit tests for classifiers.trainer.Trainer and TrainResult."""
 
 
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.trainer import Trainer, TrainResult
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
 from tests.conftest import make_fake_train_loader
 
 

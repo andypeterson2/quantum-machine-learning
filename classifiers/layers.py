@@ -12,7 +12,7 @@ the plugin architecture.
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Quadratic(nn.Module):
@@ -49,8 +49,7 @@ class Quadratic(nn.Module):
         xt = torch.transpose(x, 1, 2)
         # Append a column of ones so the product retains linear terms.
         x = torch.cat((x, torch.ones((x.shape[0], 1, 1), device=x.device)), dim=-1)
-        z = torch.flatten(xt @ x, start_dim=1, end_dim=-1)
-        return z
+        return torch.flatten(xt @ x, start_dim=1, end_dim=-1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.fc(Quadratic.expand(x))
@@ -77,5 +76,4 @@ class Polynomial(nn.Module):
         x = torch.log(torch.abs(x) + 1)
         x = self.fc(x)
         x = torch.clamp(x, min=-10, max=10)  # prevent exp overflow
-        x = torch.exp(x)
-        return x
+        return torch.exp(x)

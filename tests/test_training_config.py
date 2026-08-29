@@ -1,9 +1,9 @@
 """Unit tests for TrainingConfig, HistoryEntry, and advanced training features."""
 
 
-from classifiers.training_config import TrainingConfig, HistoryEntry
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.trainer import Trainer, TrainResult
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
+from classifiers.training_config import HistoryEntry, TrainingConfig
 from tests.conftest import make_fake_train_loader
 
 

@@ -15,7 +15,8 @@ import threading
 
 from flask import Response, current_app, g, jsonify, request
 
-from ..evaluator import Evaluator
+from classifiers.evaluator import Evaluator
+
 from .errors import error_response
 from .sse import sse_response
 
@@ -50,7 +51,9 @@ def _evaluate_all(plugin, registry, on_status=None) -> dict:
     return results
 
 
-def register(bp) -> None:
+# One registrar per blueprint: it enumerates every evaluation endpoint in one
+# place, so the length is the route table, not tangled logic.
+def register(bp) -> None:  # noqa: C901, PLR0915
     """Attach evaluation routes to *bp*."""
 
     # ── Evaluate ─────────────────────────────────────────────────────────────

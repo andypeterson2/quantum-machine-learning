@@ -10,8 +10,9 @@ gaining new capabilities through composition.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import torch
 
@@ -38,7 +39,7 @@ class TrainingConfig:
     patience: int | None = None
     val_gap: int = 50
     regularization_fn: Callable[[torch.nn.Module], torch.Tensor] | None = None
-    teacher_model: "BaseModel | None" = field(default=None, repr=False)
+    teacher_model: BaseModel | None = field(default=None, repr=False)
     distill_weight: float = 0.5
     teacher_process: Callable[[torch.Tensor], torch.Tensor] | None = None
 
@@ -60,7 +61,12 @@ class HistoryEntry:
     val_accuracy: float | None = None
 
     def to_dict(self) -> dict:
-        d: dict = {"type": "history", "epoch": self.epoch, "batch": self.batch, "train_loss": self.train_loss}
+        d: dict = {
+            "type": "history",
+            "epoch": self.epoch,
+            "batch": self.batch,
+            "train_loss": self.train_loss,
+        }
         if self.val_accuracy is not None:
             d["val_accuracy"] = self.val_accuracy
         return d

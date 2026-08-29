@@ -10,12 +10,12 @@ Tests use file-system reads (``open`` / ``os.path``) rather than direct Python
 imports to avoid dependency-version issues in constrained CI environments.
 """
 
-import os
 import re
+from pathlib import Path
 
 import pytest
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+ROOT = Path(__file__).resolve().parent.parent
 
 
 # ---------------------------------------------------------------------------
@@ -24,9 +24,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 def _read(relpath: str) -> str:
     """Read a project file relative to the repository root."""
-    path = os.path.join(ROOT, relpath)
-    assert os.path.isfile(path), f"Expected file not found: {relpath}"
-    with open(path, encoding="utf-8") as fh:
+    path = ROOT / relpath
+    assert path.is_file(), f"Expected file not found: {relpath}"
+    with path.open(encoding="utf-8") as fh:
         return fh.read()
 
 
@@ -36,8 +36,8 @@ class TestQuantumFeatureMapEncoding:
     """#686 — Verify quantum circuit encoding code exists and is correct."""
 
     def test_iris_models_file_exists(self):
-        path = os.path.join(ROOT, "classifiers", "datasets", "iris", "models.py")
-        assert os.path.isfile(path)
+        path = ROOT / "classifiers" / "datasets" / "iris" / "models.py"
+        assert path.is_file()
 
     def test_angle_embedding_present(self):
         src = _read("classifiers/datasets/iris/models.py")
@@ -136,8 +136,8 @@ class TestClassificationOutput:
     """#689 — Verify prediction + confidence code."""
 
     def test_predictor_module_exists(self):
-        path = os.path.join(ROOT, "classifiers", "predictor.py")
-        assert os.path.isfile(path)
+        path = ROOT / "classifiers" / "predictor.py"
+        assert path.is_file()
 
     def test_softmax_applied(self):
         src = _read("classifiers/predictor.py")
@@ -170,12 +170,12 @@ class TestTrainingDataPipeline:
     """#690 — Verify data loading and preprocessing code."""
 
     def test_iris_plugin_exists(self):
-        path = os.path.join(ROOT, "classifiers", "datasets", "iris", "plugin.py")
-        assert os.path.isfile(path)
+        path = ROOT / "classifiers" / "datasets" / "iris" / "plugin.py"
+        assert path.is_file()
 
     def test_mnist_plugin_exists(self):
-        path = os.path.join(ROOT, "classifiers", "datasets", "mnist", "plugin.py")
-        assert os.path.isfile(path)
+        path = ROOT / "classifiers" / "datasets" / "mnist" / "plugin.py"
+        assert path.is_file()
 
     def test_iris_train_loader(self):
         src = _read("classifiers/datasets/iris/plugin.py")
@@ -216,7 +216,7 @@ class TestDockerfileBuild:
     """#691 — Verify Dockerfile syntax and structure."""
 
     def test_dockerfile_exists(self):
-        assert os.path.isfile(os.path.join(ROOT, "Dockerfile"))
+        assert (ROOT / "Dockerfile").is_file()
 
     def test_dockerfile_has_from(self):
         src = _read("Dockerfile")
@@ -257,11 +257,13 @@ class TestContainerEnvironment:
     """#692 — Verify environment variables and requirements config."""
 
     def test_docker_compose_exists(self):
-        assert os.path.isfile(os.path.join(ROOT, "docker-compose.yml"))
+        assert (ROOT / "docker-compose.yml").is_file()
 
     def test_docker_compose_port_mapping(self):
         src = _read("docker-compose.yml")
-        assert "CLASSIFIER_PORT" in src, "CLASSIFIER_PORT not referenced in docker-compose port mapping"
+        assert "CLASSIFIER_PORT" in src, (
+            "CLASSIFIER_PORT not referenced in docker-compose port mapping"
+        )
 
     def test_docker_compose_env_port(self):
         src = _read("docker-compose.yml")
@@ -292,7 +294,7 @@ class TestContainerEnvironment:
         assert "scikit-learn" in src or "sklearn" in src
 
     def test_pyproject_toml_exists(self):
-        assert os.path.isfile(os.path.join(ROOT, "pyproject.toml"))
+        assert (ROOT / "pyproject.toml").is_file()
 
 
 # ── WP #693: Classifier frontend rendering ────────────────────────────────
@@ -349,8 +351,8 @@ class TestCIPipeline:
     """#695 — Verify CI configuration exists and is correct."""
 
     def test_ci_config_exists(self):
-        path = os.path.join(ROOT, ".github", "workflows", "ci.yml")
-        assert os.path.isfile(path)
+        path = ROOT / ".github" / "workflows" / "ci.yml"
+        assert path.is_file()
 
     def test_ci_runs_pytest(self):
         src = _read(".github/workflows/ci.yml")
@@ -395,7 +397,7 @@ class TestAPIDocumentationAccuracy:
         return _read("README.md")
 
     def test_api_docs_exist(self):
-        assert os.path.isfile(os.path.join(ROOT, "docs", "api.md"))
+        assert (ROOT / "docs" / "api.md").is_file()
 
     def test_docs_cover_train_endpoint(self, api_docs):
         assert "/train" in api_docs

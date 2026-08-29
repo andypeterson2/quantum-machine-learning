@@ -10,15 +10,15 @@ environments.  A small number of tests do import lightweight project modules
 (e.g. ``Trainer``, ``Evaluator``) to exercise the real pipeline path.
 """
 
-import os
 import re
+from pathlib import Path
 
 import pytest
 import torch
 
 from tests.conftest import make_fake_train_loader as _make_mnist_loader
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+ROOT = Path(__file__).resolve().parent.parent
 
 
 # ---------------------------------------------------------------------------
@@ -27,9 +27,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 def _read(relpath: str) -> str:
     """Read a project file relative to the repository root."""
-    path = os.path.join(ROOT, relpath)
-    assert os.path.isfile(path), f"Expected file not found: {relpath}"
-    with open(path, encoding="utf-8") as fh:
+    path = ROOT / relpath
+    assert path.is_file(), f"Expected file not found: {relpath}"
+    with path.open(encoding="utf-8") as fh:
         return fh.read()
 
 
@@ -50,8 +50,8 @@ class TestE2EPipeline:
     def test_iris_linear_train_evaluate_predict(self):
         """Full pipeline: instantiate Iris Linear, train, eval, predict."""
         from classifiers.datasets.iris.models import IrisLinear
-        from classifiers.trainer import Trainer
         from classifiers.evaluator import Evaluator
+        from classifiers.trainer import Trainer
 
         train_loader = _make_iris_loader(n_samples=60, batch_size=16)
         test_loader = _make_iris_loader(n_samples=20, batch_size=20)
@@ -68,7 +68,9 @@ class TestE2EPipeline:
         assert result.epochs_completed == 2
 
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=list(range(3)))
+        eval_result = evaluator.evaluate(
+            result.model, test_loader, num_classes=3, class_labels=list(range(3))
+        )
         assert 0.0 <= eval_result.accuracy <= 1.0
 
         # Predict on a single sample
@@ -82,8 +84,8 @@ class TestE2EPipeline:
     def test_mnist_cnn_train_evaluate(self):
         """Train a CNN on synthetic MNIST-shaped data and evaluate."""
         from classifiers.datasets.mnist.models import MNISTNet
-        from classifiers.trainer import Trainer
         from classifiers.evaluator import Evaluator
+        from classifiers.trainer import Trainer
 
         train_loader = _make_mnist_loader(batch_size=8, n_batches=3)
         test_loader = _make_mnist_loader(batch_size=8, n_batches=2)
@@ -100,7 +102,9 @@ class TestE2EPipeline:
         assert result.epochs_completed == 1
 
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=10, class_labels=list(range(10)))
+        eval_result = evaluator.evaluate(
+            result.model, test_loader, num_classes=10, class_labels=list(range(10))
+        )
         assert 0.0 <= eval_result.accuracy <= 1.0
 
     def test_svm_model_uses_hinge_loss(self):
@@ -129,8 +133,8 @@ class TestModelAccuracyRegression:
     def test_iris_linear_above_random(self):
         """After a few epochs, Iris Linear should beat random (33%)."""
         from classifiers.datasets.iris.models import IrisLinear
-        from classifiers.trainer import Trainer
         from classifiers.evaluator import Evaluator
+        from classifiers.trainer import Trainer
 
         train_loader = _make_iris_loader(n_samples=80, batch_size=16)
         test_loader = _make_iris_loader(n_samples=30, batch_size=30)
@@ -145,7 +149,9 @@ class TestModelAccuracyRegression:
         result = trainer.train()
 
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(result.model, test_loader, num_classes=3, class_labels=list(range(3)))
+        eval_result = evaluator.evaluate(
+            result.model, test_loader, num_classes=3, class_labels=list(range(3))
+        )
         # With random data the model may not beat 33% reliably,
         # so we check it doesn't crash and returns a valid accuracy.
         assert 0.0 <= eval_result.accuracy <= 1.0
@@ -283,7 +289,7 @@ class TestDockerDeployment:
         assert "build:" in src
 
     def test_dockerignore_exists(self):
-        assert os.path.isfile(os.path.join(ROOT, ".dockerignore"))
+        assert (ROOT / ".dockerignore").is_file()
 
     def test_docker_compose_port_binding(self):
         src = _read("docker-compose.yml")

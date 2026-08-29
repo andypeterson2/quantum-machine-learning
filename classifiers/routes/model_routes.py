@@ -15,10 +15,10 @@ from pathlib import Path
 from typing import Any
 
 import mistune
-
 from flask import Response, current_app, g, jsonify, request
 
-from ..predictor import Predictor
+from classifiers.predictor import Predictor
+
 from .errors import error_response
 
 
@@ -42,7 +42,9 @@ def _read_model_section(plugin, model_type: str) -> str | None:
     return mistune.html(match.group(1).strip())
 
 
-def register(bp) -> None:
+# One registrar per blueprint — the length is the route table (see
+# eval_routes.register).
+def register(bp) -> None:  # noqa: C901, PLR0915
     """Attach model management routes to *bp*."""
 
     # ── Predict ──────────────────────────────────────────────────────────────

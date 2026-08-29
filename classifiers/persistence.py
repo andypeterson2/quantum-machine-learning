@@ -54,7 +54,7 @@ class ModelPersistence:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
-    def save(self, name: str, entry: "ModelEntry") -> str:
+    def save(self, name: str, entry: ModelEntry) -> str:
         """Serialise *entry* to a ``.pt`` checkpoint file named after *name*.
 
         The checkpoint dict includes the ``"dataset"`` key so the model can
@@ -149,10 +149,10 @@ class ModelPersistence:
 
         try:
             data = torch.load(path, map_location="cpu", weights_only=True)
-        except Exception:
+        except Exception as err:
             raise RuntimeError(
                 f"Cannot safely load {filename!r} with weights_only=True"
-            )
+            ) from err
         dataset: str = data.get("dataset", "mnist")
         model_type: str = data["model_type"]
         model = create_model(dataset, model_type)

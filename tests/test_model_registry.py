@@ -1,8 +1,8 @@
 """Unit tests for classifiers.model_registry.ModelRegistry."""
 
 
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
-from classifiers.model_registry import ModelRegistry, ModelEntry
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
+from classifiers.model_registry import ModelEntry, ModelRegistry
 
 DS = "mnist"  # Dataset slug used throughout tests
 

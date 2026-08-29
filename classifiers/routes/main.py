@@ -11,7 +11,8 @@ import time
 
 from flask import Blueprint, Response, current_app, jsonify
 
-from ..plugin_registry import get_plugin, list_plugins
+from classifiers.plugin_registry import get_plugin, list_plugins
+
 from .errors import error_response
 
 bp = Blueprint("main", __name__)
@@ -35,7 +36,7 @@ _STREAMING = [
     {
         "protocol": "sse",
         "channel": "train",
-        "description": "Live training metrics stream; live equivalent of the synchronous train route.",
+        "description": "Live training metrics stream (SSE twin of the sync train route).",
     },
     {
         "protocol": "sse",

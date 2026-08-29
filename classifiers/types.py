@@ -7,8 +7,8 @@ making the shared callback contract explicit and discoverable.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Union
-
+from collections.abc import Callable
+from typing import Any
 
 #: Type alias for status/progress messages.
 #:
@@ -21,4 +21,4 @@ from typing import Any, Callable, Union
 #: :class:`~classifiers.evaluator.Evaluator` accept an optional argument of
 #: this type, decoupling progress reporting from any specific transport
 #: (SSE queue, stdout, log file, etc.).
-StatusCallback = Callable[[Union[str, dict[str, Any]]], None]
+StatusCallback = Callable[[str | dict[str, Any]], None]

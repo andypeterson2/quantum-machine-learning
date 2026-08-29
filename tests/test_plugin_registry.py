@@ -2,13 +2,13 @@
 
 import pytest
 
+from classifiers.base_model import BaseModel
 from classifiers.plugin_registry import (
-    get_plugin,
-    list_plugins,
     create_model,
     discover_plugins,
+    get_plugin,
+    list_plugins,
 )
-from classifiers.base_model import BaseModel
 
 
 class TestPluginDiscovery:

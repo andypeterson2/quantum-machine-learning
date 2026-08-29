@@ -7,7 +7,7 @@ test:
 	python -m pytest tests/ -v
 
 lint:
-	ruff check classifiers/ tests/
+	ruff check .
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +

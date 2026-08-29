@@ -100,8 +100,8 @@ class Evaluator:
         total_loss = 0.0
         correct = 0
         total = 0
-        class_correct: dict[int, int] = {i: 0 for i in range(num_classes)}
-        class_total: dict[int, int] = {i: 0 for i in range(num_classes)}
+        class_correct: dict[int, int] = dict.fromkeys(range(num_classes), 0)
+        class_total: dict[int, int] = dict.fromkeys(range(num_classes), 0)
 
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(test_loader):
@@ -113,7 +113,7 @@ class Evaluator:
                 correct += pred.eq(target).sum().item()
                 total += len(target)
 
-                for t, p in zip(target, pred):
+                for t, p in zip(target, pred, strict=True):
                     cls = t.item()
                     class_total[cls] += 1
                     if p.item() == cls:
@@ -176,8 +176,8 @@ class Evaluator:
         total_loss = 0.0
         correct = 0
         total = 0
-        class_correct: dict[int, int] = {i: 0 for i in range(num_classes)}
-        class_total: dict[int, int] = {i: 0 for i in range(num_classes)}
+        class_correct: dict[int, int] = dict.fromkeys(range(num_classes), 0)
+        class_total: dict[int, int] = dict.fromkeys(range(num_classes), 0)
 
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(test_loader):
@@ -203,7 +203,7 @@ class Evaluator:
                 correct += ensemble_pred.eq(target).sum().item()
                 total += len(target)
 
-                for t, p in zip(target, ensemble_pred):
+                for t, p in zip(target, ensemble_pred, strict=True):
                     cls = t.item()
                     class_total[cls] += 1
                     if p.item() == cls:

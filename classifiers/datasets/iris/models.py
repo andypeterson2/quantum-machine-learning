@@ -13,7 +13,7 @@ the shared :class:`~classifiers.trainer.Trainer`.
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from classifiers.base_model import BaseModel
 from classifiers.losses import multi_class_hinge_loss

@@ -2,7 +2,7 @@
 
 import torch
 
-from classifiers.layers import Quadratic, Polynomial
+from classifiers.layers import Polynomial, Quadratic
 
 
 class TestQuadratic:
