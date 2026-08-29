@@ -59,10 +59,12 @@ jobs:
           python-version: "3.12"
 
       - name: Install linter
-        run: pip install ruff
+        # Same compatible-release pin as the [dev] extra — the enforced rule
+        # set must not float with ruff releases.
+        run: pip install "ruff~=0.15.16"
 
       - name: Run linter
-        run: ruff check classifiers/ tests/
+        run: ruff check .
 
   docker:
     runs-on: ubuntu-latest

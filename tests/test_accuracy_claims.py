@@ -13,9 +13,8 @@ learn the task — rather than exact numbers.
 import pytest
 import torch
 
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet, SVMNet
 from classifiers.datasets.iris.models import IrisLinear, IrisSVM
-
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 
 # --- Helpers ---
 
@@ -118,7 +117,7 @@ class TestMNISTAccuracyClaims:
 
     def test_cnn_produces_valid_predictions(self, mnist_loaders):
         """CNN should produce valid probability distributions."""
-        train_loader, test_loader = mnist_loaders
+        _train_loader, test_loader = mnist_loaders
         model = MNISTNet()
         model.eval()
         with torch.no_grad():

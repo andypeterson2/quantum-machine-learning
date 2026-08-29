@@ -21,14 +21,13 @@ Usage::
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 from torch.autograd import Function
-
 
 # ── Dependency check ────────────────────────────────────────────────────────
 
@@ -37,11 +36,11 @@ def _check_qiskit() -> None:
     try:
         import qiskit  # noqa: F401
         import qiskit_aer  # noqa: F401
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "Qiskit models require the 'qiskit' and 'qiskit-aer' packages. "
             "Install with:  pip install qiskit qiskit-aer"
-        )
+        ) from err
 
 
 # ── Executor (circuit runner) ───────────────────────────────────────────────
@@ -50,7 +49,7 @@ class _QCExecutor(ABC):
     """Abstract base for quantum circuit execution strategies."""
 
     @abstractmethod
-    def run(self, qc: "QuantumCircuit") -> np.ndarray:  # noqa: F821
+    def run(self, qc: QuantumCircuit) -> np.ndarray:  # noqa: F821
         ...
 
 
@@ -79,7 +78,7 @@ class _QCSampler(_QCExecutor):
         self.interpret = _IndependentInterpret()
         self.shots = shots
 
-    def run(self, qc: "QuantumCircuit", shots: int | None = None) -> np.ndarray:  # noqa: F821
+    def run(self, qc: QuantumCircuit, shots: int | None = None) -> np.ndarray:  # noqa: F821
         from qiskit import transpile
 
         shots = shots or self.shots
@@ -161,9 +160,7 @@ class _RunCircuit(Function):
     def forward(ctx, pc: _ParametricCircuit, w: torch.Tensor, x_batch: torch.Tensor):
         ctx.pc = pc
         w_list = w.tolist()
-        values = []
-        for s in range(len(x_batch)):
-            values.append(pc.run(w_list, x_batch[s].tolist()))
+        values = [pc.run(w_list, x_batch[s].tolist()) for s in range(len(x_batch))]
         result = torch.tensor(np.array(values), dtype=torch.float32)
         ctx.save_for_backward(result, w, x_batch)
         return result
@@ -200,7 +197,11 @@ class _RunCircuit(Function):
             df_dw = []
             for k in range(w.shape[-1]):
                 df_dw_k = _RunCircuit._estimate_partial(
-                    f=lambda ww: ctx.pc.run(ww.tolist(), x_list), v=w, pos=k
+                    # Bind x_list per iteration — the lambda is consumed
+                    # immediately, but the explicit default makes that safe.
+                    f=lambda ww, x_list=x_list: ctx.pc.run(ww.tolist(), x_list),
+                    v=w,
+                    pos=k,
                 )
                 df_dw.append(torch.dot(df_dw_k, g))
             batch_df_dw.append(df_dw)

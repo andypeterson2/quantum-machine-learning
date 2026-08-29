@@ -2,8 +2,8 @@
 
 import torch
 
-from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.base_model import BaseModel
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 
 
 class TestLinearNet:

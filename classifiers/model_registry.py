@@ -20,8 +20,8 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field
 
-from .evaluator import EvalResult
 from .base_model import BaseModel
+from .evaluator import EvalResult
 
 
 @dataclass
@@ -52,7 +52,7 @@ class ModelEntry:
 
 
 class ModelRegistry:
-    """Thread-safe* in-memory store mapping ``(dataset, name)`` pairs to :class:`ModelEntry` objects.
+    """Thread-safe* in-memory store of :class:`ModelEntry` objects keyed by ``(dataset, name)``.
 
     Models are partitioned by dataset slug, so ``"Model 1"`` in MNIST is
     independent of ``"Model 1"`` in Iris.  An auto-incrementing counter
@@ -92,7 +92,9 @@ class ModelRegistry:
 
     # ── Write operations ───────────────────────────────────────────────────────
 
-    def add(
+    # The parameters mirror the training metadata stored per entry; a config
+    # object would rename the same surface.
+    def add(  # noqa: PLR0913
         self,
         dataset: str,
         name: str,

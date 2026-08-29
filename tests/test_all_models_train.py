@@ -13,19 +13,24 @@ from __future__ import annotations
 import pytest
 import torch
 
-from classifiers.trainer import Trainer, TrainResult
+from classifiers.datasets.iris.models import IrisLinear, IrisSVM
+from classifiers.datasets.mnist.models import (
+    LinearNet,
+    MNISTNet,
+    MNISTPolynomialNet,
+    MNISTQuadraticNet,
+    SVMNet,
+)
 from classifiers.evaluator import Evaluator
 from classifiers.server import create_app
-from classifiers.datasets.mnist.models import (
-    MNISTNet, LinearNet, SVMNet, MNISTQuadraticNet, MNISTPolynomialNet,
-)
-from classifiers.datasets.iris.models import IrisLinear, IrisSVM
+from classifiers.trainer import Trainer, TrainResult
 from tests.conftest import (
-    make_fake_train_loader,
     make_fake_test_loader,
+    make_fake_train_loader,
+)
+from tests.conftest import (
     parse_sse as _parse_sse,
 )
-
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -61,6 +66,7 @@ _HAS_QISKIT = False
 try:
     import qiskit  # noqa: F401
     import qiskit_aer  # noqa: F401
+
     from classifiers.datasets.mnist.models import QiskitCNN, QiskitLinear
     _HAS_QISKIT = True
 except ImportError:
@@ -69,6 +75,7 @@ except ImportError:
 _HAS_PENNYLANE = False
 try:
     import pennylane  # noqa: F401
+
     from classifiers.datasets.iris.models import IrisQVC
     _HAS_PENNYLANE = True
 except ImportError:
@@ -277,10 +284,9 @@ class TestEvaluateAfterTraining:
         )
         result = trainer.train()
         evaluator = Evaluator()
-        eval_result = evaluator.evaluate(
+        return evaluator.evaluate(
             result.model, test_loader, num_classes, class_labels,
         )
-        return eval_result
 
     @pytest.mark.parametrize("model_cls", [
         MNISTNet, LinearNet, SVMNet, MNISTQuadraticNet, MNISTPolynomialNet,

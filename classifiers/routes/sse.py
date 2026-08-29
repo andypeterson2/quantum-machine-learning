@@ -28,7 +28,7 @@ def format_event(obj: dict) -> str:
     return f"data: {json.dumps(obj)}\n\n"
 
 
-def sse_response(q: "queue.Queue[dict | None]") -> Response:
+def sse_response(q: queue.Queue[dict | None]) -> Response:
     """Build a streaming :class:`~flask.Response` that reads events from *q*.
 
     The internal generator reads dicts from *q* and yields them as SSE frames

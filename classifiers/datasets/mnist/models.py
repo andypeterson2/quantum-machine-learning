@@ -7,13 +7,12 @@ Includes classical models (CNN, Linear, SVM), feature-expansion models
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from classifiers.base_model import BaseModel
-from classifiers.layers import Quadratic, Polynomial
+from classifiers.layers import Polynomial, Quadratic
 from classifiers.losses import multi_class_hinge_loss
-
 
 # ── CNN ───────────────────────────────────────────────────────────────────────
 

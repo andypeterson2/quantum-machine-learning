@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from classifiers.base_model import BaseModel
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet, SVMNet
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 from classifiers.datasets.mnist.plugin import MNISTPlugin
 
 

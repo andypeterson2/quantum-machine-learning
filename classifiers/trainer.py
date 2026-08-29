@@ -74,7 +74,9 @@ class Trainer:
         val_loader:   Optional validation data loader for intermediate eval.
     """
 
-    def __init__(
+    # The parameters mirror the training-run knobs the API exposes; a config
+    # object would rename the same surface.
+    def __init__(  # noqa: PLR0913
         self,
         model_cls: type[BaseModel],
         train_loader: DataLoader,
@@ -94,7 +96,9 @@ class Trainer:
         self.val_loader = val_loader
         self.early_stop_min_accuracy = early_stop_min_accuracy
 
-    def train(self, on_status: StatusCallback | None = None) -> TrainResult:
+    # The epoch/batch loop with status emission, validation, and early-stop in
+    # one place — long but linear, so the budget is waived here.
+    def train(self, on_status: StatusCallback | None = None) -> TrainResult:  # noqa: C901, PLR0915
         """Run the training loop and return a :class:`TrainResult`.
 
         Args:
@@ -241,7 +245,8 @@ class Trainer:
 
     def _validate(self, model: BaseModel) -> float:
         """Run a quick validation pass and return accuracy."""
-        assert self.val_loader is not None
+        if self.val_loader is None:
+            raise RuntimeError("_validate called without a val_loader")
         model.eval()
         correct = 0
         total = 0

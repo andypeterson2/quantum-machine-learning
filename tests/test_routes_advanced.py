@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import pytest
 
-from classifiers.server import create_app
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
 from classifiers.datasets.iris.models import IrisLinear
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
+from classifiers.server import create_app
 from tests.conftest import (
     blank_png_b64 as _blank_png_b64,
+)
+from tests.conftest import (
     make_fake_test_loader,
+)
+from tests.conftest import (
     parse_sse as _parse_sse,
 )
-
 
 DS = "mnist"
 

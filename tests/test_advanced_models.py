@@ -3,7 +3,7 @@
 import torch
 
 from classifiers.base_model import BaseModel
-from classifiers.datasets.mnist.models import MNISTQuadraticNet, MNISTPolynomialNet
+from classifiers.datasets.mnist.models import MNISTPolynomialNet, MNISTQuadraticNet
 
 
 class TestQuadraticNet:

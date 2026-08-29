@@ -13,10 +13,8 @@ from typing import Any
 import numpy as np
 import torch
 from PIL import Image
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
-
-from torch.utils.data import Subset
 
 from classifiers.base_model import BaseModel
 from classifiers.dataset_plugin import DatasetPlugin
@@ -59,9 +57,12 @@ class MNISTPlugin(DatasetPlugin):
             transforms.Normalize((MNIST_MEAN,), (MNIST_STD,)),
         ])
         train_data = datasets.MNIST(
-            str(Path(__file__).resolve().parent.parent.parent / "data"), train=True, download=True, transform=transform
+            str(Path(__file__).resolve().parent.parent.parent / "data"),
+            train=True,
+            download=True,
+            transform=transform,
         )
-        train_subset = Subset(train_data, range(0, 55_000))
+        train_subset = Subset(train_data, range(55_000))
         return DataLoader(train_subset, batch_size=batch_size, shuffle=True)
 
     def get_val_loader(self, batch_size: int) -> DataLoader:
@@ -75,7 +76,10 @@ class MNISTPlugin(DatasetPlugin):
             transforms.Normalize((MNIST_MEAN,), (MNIST_STD,)),
         ])
         full_train = datasets.MNIST(
-            str(Path(__file__).resolve().parent.parent.parent / "data"), train=True, download=True, transform=transform
+            str(Path(__file__).resolve().parent.parent.parent / "data"),
+            train=True,
+            download=True,
+            transform=transform,
         )
         val_subset = Subset(full_train, range(55_000, 60_000))
         return DataLoader(val_subset, batch_size=batch_size, shuffle=False)
@@ -91,7 +95,10 @@ class MNISTPlugin(DatasetPlugin):
             transforms.Normalize((MNIST_MEAN,), (MNIST_STD,)),
         ])
         test_data = datasets.MNIST(
-            str(Path(__file__).resolve().parent.parent.parent / "data"), train=False, download=True, transform=transform
+            str(Path(__file__).resolve().parent.parent.parent / "data"),
+            train=False,
+            download=True,
+            transform=transform,
         )
         return DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
@@ -125,7 +132,11 @@ class MNISTPlugin(DatasetPlugin):
         Conditionally includes Qiskit models if ``qiskit`` is installed.
         """
         from .models import (
-            MNISTNet, LinearNet, SVMNet, MNISTQuadraticNet, MNISTPolynomialNet,
+            LinearNet,
+            MNISTNet,
+            MNISTPolynomialNet,
+            MNISTQuadraticNet,
+            SVMNet,
         )
 
         types: dict[str, type[BaseModel]] = {

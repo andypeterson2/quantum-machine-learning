@@ -1,16 +1,16 @@
 """Integration tests: end-to-end pipelines combining multiple modules."""
 
-import torch
 import numpy as np
+import torch
 from PIL import Image, ImageDraw
 
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet, SVMNet
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 from classifiers.datasets.mnist.plugin import MNISTPlugin
-from classifiers.trainer import Trainer
-from classifiers.predictor import Predictor
-from classifiers.evaluator import Evaluator, EvalResult
+from classifiers.evaluator import EvalResult, Evaluator
 from classifiers.model_registry import ModelRegistry
-from tests.conftest import make_fake_train_loader, make_fake_test_loader
+from classifiers.predictor import Predictor
+from classifiers.trainer import Trainer
+from tests.conftest import make_fake_test_loader, make_fake_train_loader
 
 DS = "mnist"
 NUM_CLASSES = 10
@@ -209,7 +209,7 @@ class TestMultiModelComparison:
             )
             registry.update_eval_result(DS, name, ev)
 
-        for name, entry in registry.items(DS):
+        for _name, entry in registry.items(DS):
             assert entry.eval_result is not None
             assert 0.0 <= entry.eval_result.accuracy <= 1.0
 
@@ -221,7 +221,9 @@ class TestRegistryLifecycleAllModels:
         registry = ModelRegistry()
 
         registry.add(DS, "cnn_1", MNISTNet(), model_type="CNN", epochs=1, batch_size=32, lr=0.01)
-        registry.add(DS, "linear_1", LinearNet(), model_type="Linear", epochs=2, batch_size=64, lr=0.01)
+        registry.add(
+            DS, "linear_1", LinearNet(), model_type="Linear", epochs=2, batch_size=64, lr=0.01
+        )
         registry.add(DS, "svm_1", SVMNet(), model_type="SVM", epochs=3, batch_size=32, lr=0.01)
 
         assert len(registry) == 3

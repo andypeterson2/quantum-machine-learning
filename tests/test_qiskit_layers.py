@@ -10,14 +10,15 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 import torch
-import torch.nn as nn
-
+from torch import nn
 
 # ---------------------------------------------------------------------------
 # Mock Qiskit modules before importing the module under test
 # ---------------------------------------------------------------------------
 
-def _install_qiskit_mocks():
+# Builds the whole fake qiskit module tree in one place; the branching is the
+# mock surface, not logic.
+def _install_qiskit_mocks():  # noqa: C901
     """Insert fake qiskit / qiskit_aer modules into sys.modules."""
     qiskit_mod = ModuleType("qiskit")
     qiskit_circuit = ModuleType("qiskit.circuit")
@@ -86,15 +87,14 @@ def _install_qiskit_mocks():
 _FakeParameterVector, _FakeQuantumCircuit, _FakeBackend = _install_qiskit_mocks()
 
 from classifiers.qiskit_layers import (  # noqa: E402
+    QiskitQLayer,
     _ExampleCircuit,
     _Head,
     _IndependentInterpret,
     _ParametricCircuit,
     _QCExecutor,
     _RunCircuit,
-    QiskitQLayer,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -200,8 +200,7 @@ class TestParametricCircuit:
         executor = _StubExecutor(output_dim=2)
 
         def builder(params, inputs):
-            qc = _FakeQuantumCircuit(len(inputs))
-            return qc
+            return _FakeQuantumCircuit(len(inputs))
 
         pc = _ParametricCircuit(builder, 4, 2, executor)
         pc.qc.assign_parameters = MagicMock(return_value=_FakeQuantumCircuit(2))

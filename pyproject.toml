@@ -36,7 +36,9 @@ quantum = [
 ]
 dev = [
     "pytest>=8.0",
-    "ruff>=0.3",
+    # Compatible-release pin: the enforced rule set shifts with ruff minors, so
+    # CI must not float across them.
+    "ruff~=0.15.16",
 ]
 
 [tool.pytest.ini_options]
@@ -45,3 +47,34 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+
+[tool.ruff.lint]
+# Complexity budgets (C90/PLR) + rewrite-to-shorter families (SIM/RET/C4/PIE/
+# PERF/FURB/PTH) on top of the correctness floor. Deliberately excluded as
+# noise for this codebase: D, ANN, EM, FBT, COM, Q.
+select = [
+  "E", "W", "F", "I",             # correctness + style + imports
+  "N", "UP", "B", "A",            # naming, modernize, bugbear, builtin-shadowing
+  "S", "T20",                     # security, stray prints
+  "C90", "PLR", "PLW", "PLE",     # complexity budgets: mccabe + pylint
+  "SIM", "RET", "RSE", "PIE", "C4",  # simplify, returns, comprehensions
+  "PERF", "FURB", "PTH",          # perf anti-patterns, modern idioms, pathlib
+  "ARG", "ISC", "TID", "TRY", "RUF",
+]
+ignore = [
+  "TRY003",   # long exception messages — verbosity pedantry
+  "PLR2004",  # magic-value comparisons — noisy outside tests
+  "RUF001", "RUF002", "RUF003",  # typographic chars in prose/output are intentional
+  "PERF203",  # try/except in loop — flags legitimate per-item error isolation
+  "N812",     # `import torch.nn.functional as F` is the canonical torch idiom
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S110", "S310", "PLR0913", "ARG", "T201", "N806"]
+# Dataset plugins follow ML naming conventions (X / X_train feature matrices),
+# use asserts as tensor-shape invariants in data prep, and declare class-level
+# config dicts.
+"classifiers/datasets/**" = ["N806", "S101", "RUF012"]

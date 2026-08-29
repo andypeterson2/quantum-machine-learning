@@ -4,12 +4,12 @@ import base64
 import io
 import json
 
+import numpy as np
 import pytest
 import torch
-import numpy as np
 from PIL import Image
 
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet, SVMNet
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 from classifiers.datasets.mnist.plugin import MNISTPlugin
 
 
@@ -81,8 +81,8 @@ def blank_png_b64(width: int = 280, height: int = 280) -> str:
 def parse_sse(raw: bytes) -> list[dict]:
     """Parse raw SSE bytes into a list of event dicts."""
     events = []
-    for chunk in raw.decode().split("\n\n"):
-        chunk = chunk.strip()
+    for raw_chunk in raw.decode().split("\n\n"):
+        chunk = raw_chunk.strip()
         if not chunk.startswith("data:"):
             continue
         events.append(json.loads(chunk[len("data:"):].strip()))

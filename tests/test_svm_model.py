@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import pytest
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
-from classifiers.datasets.mnist.models import SVMNet, MNISTNet, LinearNet
 from classifiers.base_model import BaseModel
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 from classifiers.losses import multi_class_hinge_loss
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

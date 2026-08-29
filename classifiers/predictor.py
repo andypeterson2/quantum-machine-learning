@@ -10,7 +10,7 @@ image sizes, normalisation constants, or feature schemas.
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -41,7 +41,7 @@ class Predictor:
         >>> print(f"Predicted: {probs.argmax()} ({probs.max():.1%} confidence)")
     """
 
-    def __init__(self, model: BaseModel, plugin: "DatasetPlugin") -> None:
+    def __init__(self, model: BaseModel, plugin: DatasetPlugin) -> None:
         self.model = model
         self.plugin = plugin
 
@@ -65,5 +65,4 @@ class Predictor:
         tensor = self.plugin.preprocess(raw_input)
         with torch.no_grad():
             output = self.model(tensor)
-            probs = F.softmax(output, dim=1).squeeze().numpy()
-        return probs
+            return F.softmax(output, dim=1).squeeze().numpy()

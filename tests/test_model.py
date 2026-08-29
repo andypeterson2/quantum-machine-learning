@@ -1,10 +1,10 @@
 """Unit tests for MNISTNet (CNN) architecture."""
 
-import torch
 import pytest
+import torch
 
-from classifiers.datasets.mnist.models import MNISTNet
 from classifiers.base_model import BaseModel
+from classifiers.datasets.mnist.models import MNISTNet
 
 
 class TestMNISTNet:

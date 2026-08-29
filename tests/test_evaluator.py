@@ -1,11 +1,12 @@
 """Unit tests for classifiers.evaluator.Evaluator and EvalResult."""
 
-import pytest
-import torch
 from unittest.mock import patch
 
-from classifiers.evaluator import Evaluator, EvalResult
-from classifiers.datasets.mnist.models import MNISTNet, LinearNet
+import pytest
+import torch
+
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
+from classifiers.evaluator import EvalResult, Evaluator
 from tests.conftest import make_fake_test_loader
 
 NUM_CLASSES = 10
@@ -114,5 +115,5 @@ class TestAblationEvaluator:
         )
         assert isinstance(results, dict)
         assert len(results) > 0
-        for layer_name, result in results.items():
+        for result in results.values():
             assert isinstance(result, EvalResult)

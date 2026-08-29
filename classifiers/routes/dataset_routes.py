@@ -23,8 +23,9 @@ from flask import (
     g,
 )
 
-from ..plugin_registry import get_plugin
-from . import train_routes, eval_routes, model_routes
+from classifiers.plugin_registry import get_plugin
+
+from . import eval_routes, model_routes, train_routes
 from .errors import error_response
 
 bp = Blueprint("dataset", __name__, url_prefix="/d/<dataset>")
@@ -34,7 +35,7 @@ bp = Blueprint("dataset", __name__, url_prefix="/d/<dataset>")
 
 
 @bp.url_value_preprocessor
-def pull_dataset(endpoint: str | None, values: dict[str, Any] | None) -> None:
+def pull_dataset(_endpoint: str | None, values: dict[str, Any] | None) -> None:
     """Extract ``dataset`` from the URL and store the plugin on ``g``.
 
     Using a :meth:`~flask.Blueprint.url_value_preprocessor` removes
