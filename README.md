@@ -4,19 +4,17 @@
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-A full-stack web application for training, evaluating, and comparing classical and quantum-hybrid neural network classifiers across multiple datasets. Containerized with Docker and served via Flask.
+An API-only Flask service for training, evaluating, and comparing classical and quantum-hybrid neural network classifiers across multiple datasets. Containerized with Docker and served via gunicorn in production.
 
 > **Note on naming:** The repository directory may still appear as `quantum-protein-kernel` in some contexts — this is a historical artifact. The project is a general-purpose multi-dataset classifier platform (package name: `quantum-machine-learning`). No protein or bioinformatics data is used.
 
-Ships with **MNIST** (handwritten digit recognition via canvas drawing) and **Iris** (flower species classification via numeric features), and is designed so adding a new dataset requires zero changes to existing code.
-
-![Dark theme UI showing the train panel on the left and the drawing canvas + model comparison table on the right](.github/screenshot.png)
+Ships with **MNIST** (handwritten digit recognition from image input) and **Iris** (flower species classification from numeric features), and is designed so adding a new dataset requires zero changes to existing code.
 
 ## Architecture
 
 ```mermaid
 graph LR
-    A[Browser Frontend] -->|REST API + SSE| B[Flask Server]
+    A[Portal Frontend<br/>external repo] -->|REST API + SSE| B[Flask API Server]
     B --> C[Trainer]
     B --> D[Evaluator]
     B --> E[Predictor]
@@ -35,12 +33,12 @@ graph LR
 ### Core
 - **Plugin architecture** — each dataset is a self-contained plugin; add new ones without modifying any shared code
 - **Multiple model architectures per dataset** — CNN, Linear, SVM, Quadratic, Polynomial, and Qiskit quantum models for MNIST; Linear, SVM, and PennyLane QVC for Iris
-- **Live training progress** via Server-Sent Events — watch loss and epoch updates as they stream in
-- **Training curves** — real-time loss and validation accuracy charts rendered on a canvas during training
-- **Auto-evaluation** — test-set accuracy, per-class accuracy, and parameter counts computed automatically
-- **Multi-model comparison** — train as many models as you like and compare metrics side-by-side
-- **Draw-to-predict** (MNIST) — freehand canvas with auto-predict on pen lift
-- **Form-to-predict** (Iris) — enter sepal/petal measurements and predict species
+- **Live training progress** via Server-Sent Events — loss and epoch updates stream as they happen, with synchronous (`/sync`) fallbacks for scripts and CI
+- **Training history** — loss and validation-accuracy data points emitted as structured `history` events during training and returned with the final result
+- **Auto-evaluation** — test-set accuracy, per-class accuracy, and parameter counts computed on demand
+- **Multi-model comparison** — train as many models as you like and compare metrics side-by-side via `GET /d/<dataset>/models`
+- **Image prediction** (MNIST) — POST a base64-encoded image and get predictions from every trained model
+- **Feature prediction** (Iris) — POST sepal/petal measurements and predict species
 - **Model persistence** — export trained models to `.pt` checkpoint files (including training history) and re-import them across sessions
 
 ### Advanced Training
@@ -52,13 +50,10 @@ graph LR
 ### Advanced Evaluation
 - **Ensemble evaluation** — majority-vote ensemble across multiple models with logit-based tie-breaking
 - **Ablation study** — zero out each layer's parameters and measure the accuracy drop, streamed via SSE
-- **Parameter counting** — automatic trainable parameter counts displayed in the comparison table
+- **Parameter counting** — automatic trainable parameter counts in every training and evaluation result
 
-### UI
-- **Dark / light theme** — toggle with one click, persisted in `localStorage`
-- **Resizable split layout** — drag to adjust the column ratio; width is persisted across sessions
-- **Smart naming** — defaults to the bare model type (`"CNN"`), only appends a number if that name is already taken
-- **Tooltips** — contextual help on form labels and action buttons
+### Frontend
+This repository is **API-only** — it serves no HTML, templates, or static assets (`static_folder=None`). The browser UI (canvas drawing, training curves, comparison tables, theming) lives in the separate portfolio portal repository, which consumes this API over the HTTP + SSE contract documented below and enforced by the live-HTTP contract tests in `tests/contract/`.
 
 ---
 
@@ -66,84 +61,115 @@ graph LR
 
 ### Docker (recommended)
 
+The container runs gunicorn against the production WSGI entry point (`classifiers.wsgi:app`) and listens on `$PORT` (default **8080**; the image `EXPOSE`s 8080). The image also installs the quantum extras (PennyLane, Qiskit, Qiskit Aer), so all model types are available.
+
 ```bash
 git clone https://github.com/andypeterson2/quantum-machine-learning.git
 cd quantum-machine-learning
-docker compose up --build
+docker build -t qml-classifiers .
+docker run --rm -p 8080:8080 qml-classifiers
 ```
 
-Open `http://localhost:5001` in your browser.
+Or with Docker Compose (`CLASSIFIER_PORT` selects the host port mapping; use 8080 to match the container's listen port):
+
+```bash
+CLASSIFIER_PORT=8080 docker compose up --build
+```
+
+Verify it's up:
+
+```bash
+curl http://localhost:8080/health
+```
 
 ### Local
 
 #### 1. Install dependencies
 
 ```bash
-pip install torch torchvision flask pillow numpy scikit-learn
+pip install -r requirements.txt
 ```
 
-Or with conda:
+(That includes `flask`, `flask-cors`, `mistune`, `torch`, `torchvision`, `numpy`, `Pillow`, `scikit-learn`, and `gunicorn`. For a GPU-enabled torch build, install `torch`/`torchvision` manually first — see the comments in `requirements.txt`.)
+
+**Optional** — for the quantum model architectures:
 
 ```bash
-conda install pytorch torchvision scikit-learn -c pytorch
-pip install flask pillow
+pip install qiskit qiskit-aer   # MNIST Qiskit-CNN / Qiskit-Linear
+pip install "pennylane<0.45"    # Iris QVC (0.45+ needs numpy>=2, incompatible with torch 2.2)
 ```
 
-**Optional** — for Qiskit quantum model architectures:
+#### 2. Run the server
 
 ```bash
-pip install qiskit qiskit-aer
+CLASSIFIERS_PORT=5001 python -m classifiers
 ```
 
-### 2. Run the server
+If `CLASSIFIERS_PORT` is not set, the dev server picks a **random free port** and logs it at startup (`Running on http://localhost:<port>`). There is no `GET /` route — check the service with:
 
 ```bash
-python -m classifiers
+curl http://localhost:5001/health
+curl http://localhost:5001/api        # discovery index of every endpoint
 ```
 
-The app starts at **http://localhost:5001** and redirects to `/d/mnist/`.
 MNIST data is downloaded automatically to `./data/` on first run (~11 MB).
 Iris data is loaded from scikit-learn (bundled, no download needed).
 
-### 3. Train a model
+#### 3. Train a model
 
-1. Select a **Model** type from the dropdown
-2. Adjust **Epochs**, **Batch Size**, and **Learning Rate** as needed
-3. Give the model a **name** (or leave blank for smart auto-naming)
-4. *(Optional)* Expand **Advanced** to configure early stopping, validation frequency, or knowledge distillation
-5. Click **Train**
+Stream progress over SSE:
 
-Training streams live epoch/loss updates to the LOG panel and renders training curves in real time. When complete, the test set is evaluated automatically and results fill the comparison table.
+```bash
+curl -N -X POST http://localhost:5001/d/mnist/train \
+  -H "Content-Type: application/json" \
+  -d '{"model_type": "CNN", "epochs": 3, "batch_size": 64, "lr": 0.001, "name": "My CNN"}'
+```
 
-### 4. Switch datasets
+Or train synchronously (no SSE client needed — the response body is the final result):
 
-Click the **hamburger menu** in the top-right corner to switch between MNIST, Iris, or any other registered dataset.
+```bash
+curl -X POST http://localhost:5001/d/mnist/train/sync \
+  -H "Content-Type: application/json" \
+  -d '{"model_type": "Linear", "epochs": 1}'
+```
 
-### 5. Predict
+Optional fields configure early stopping, validation frequency, and knowledge distillation (see [Advanced Training Options](#advanced-training-options)).
 
-- **MNIST**: Draw a digit (0-9) on the canvas — predictions fire automatically on pen lift
-- **Iris**: Enter four measurements (sepal length/width, petal length/width) and click **Predict**
+#### 4. Evaluate and predict
 
-### 6. Ensemble & Ablation
+```bash
+# Evaluate every trained model (synchronous variant)
+curl -X POST http://localhost:5001/d/mnist/evaluate/sync
 
-- **Ensemble**: When 2+ models are trained, click **Ensemble** to run majority-vote ensemble evaluation
-- **Ablation**: Click the ablation button on any model to measure each layer's contribution to accuracy
+# Predict with every trained Iris model
+curl -X POST http://localhost:5001/d/iris/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features": {"sepal_length": 5.1, "sepal_width": 3.5, "petal_length": 1.4, "petal_width": 0.2}}'
+```
 
-### 7. Save and load models
+#### 5. Save and load models
 
-- Click the save icon next to any session model to export it as a `.pt` file to the `models/` folder
-- Use the **Saved Models** dropdown in the MODELS card to import previously saved checkpoints
+```bash
+# Export a trained model to ./models/ as a .pt checkpoint
+curl -X POST http://localhost:5001/d/mnist/models/My%20CNN/export
+
+# List and re-import saved checkpoints
+curl http://localhost:5001/d/mnist/models/disk
+curl -X POST http://localhost:5001/d/mnist/models/disk/<filename>/load
+```
 
 ---
 
 ## Project Layout
 
 ```
-quantum-protein-kernel/
+quantum-machine-learning/
 ├── classifiers/                    # Application package
 │   ├── __init__.py                 # Package docstring
-│   ├── __main__.py                 # Entry point  (python -m classifiers)
-│   ├── server.py                   # Flask app factory + DI setup
+│   ├── __main__.py                 # Dev entry point  (python -m classifiers)
+│   ├── wsgi.py                     # Production WSGI entry (gunicorn classifiers.wsgi:app)
+│   ├── server.py                   # Flask app factory (API-only) + CORS + DI setup
+│   ├── connections.py              # ConnectionTracker (SSE heartbeat client registry)
 │   ├── dataset_plugin.py           # DatasetPlugin ABC (the OCP extension point)
 │   ├── plugin_registry.py          # Plugin discovery + registration
 │   ├── base_model.py               # BaseModel ABC (forward + loss_fn)
@@ -157,36 +183,33 @@ quantum-protein-kernel/
 │   ├── layers.py                   # Reusable layers (Quadratic, Polynomial)
 │   ├── qiskit_layers.py            # Qiskit quantum circuit layer (optional dep)
 │   ├── types.py                    # Shared types (StatusCallback, TrainingEvent)
+│   ├── LAYERS.md                   # Custom-layer documentation
 │   ├── routes/
 │   │   ├── __init__.py             # Blueprint registration
-│   │   ├── main.py                 # GET / (redirect), GET /api/datasets
-│   │   ├── dataset_routes.py       # Blueprint shell, hooks, page route
-│   │   ├── train_routes.py         # POST /train endpoint
-│   │   ├── eval_routes.py          # POST /evaluate, /ensemble, /ablation endpoints
-│   │   ├── model_routes.py         # POST /predict, GET /models, DELETE, export, disk
+│   │   ├── main.py                 # GET /health, GET /api, GET /api/datasets[...]
+│   │   ├── connection_routes.py    # GET /connect (SSE heartbeat), POST /pong, /disconnect
+│   │   ├── dataset_routes.py       # /d/<dataset> blueprint shell + plugin-resolution hooks
+│   │   ├── train_routes.py         # POST /train (SSE) + POST /train/sync
+│   │   ├── eval_routes.py          # POST /evaluate(/sync), /ensemble, /ablation
+│   │   ├── model_routes.py         # /predict, /models CRUD, /model-info, export, disk
 │   │   ├── errors.py               # Centralized error_response() helper
 │   │   └── sse.py                  # SSE streaming helpers
-│   ├── datasets/
-│   │   ├── __init__.py             # Auto-discovery trigger
-│   │   ├── mnist/
-│   │   │   ├── __init__.py         # Register MNISTPlugin
-│   │   │   ├── plugin.py           # MNISTPlugin (loaders, preprocessing, config)
-│   │   │   └── models.py           # MNISTNet, LinearNet, SVMNet, Quadratic,
-│   │   │                           #   Polynomial, QiskitCNN, QiskitLinear
-│   │   └── iris/
-│   │       ├── __init__.py         # Register IrisPlugin
-│   │       ├── plugin.py           # IrisPlugin (sklearn data, standardisation)
-│   │       └── models.py           # IrisLinear, IrisSVM
-│   ├── templates/
-│   │   └── index.html              # Single-page UI (Jinja2)
-│   └── static/
-│       ├── css/app.css             # Theming, layout, chart styles
-│       ├── js/
-│       │   ├── app.js              # Canvas, state management, tables, UI logic
-│       │   ├── sse.js              # SSE stream consumer (consumeSSE)
-│       │   └── chart.js            # Canvas-based training curve renderer
-│       └── ui-kit/                 # Shared UI component library
-├── tests/                          # Pytest test suite (425 tests)
+│   └── datasets/
+│       ├── __init__.py             # Auto-discovery trigger
+│       ├── mnist/
+│       │   ├── __init__.py         # Register MNISTPlugin
+│       │   ├── plugin.py           # MNISTPlugin (loaders, preprocessing, config)
+│       │   ├── models.py           # MNISTNet, LinearNet, SVMNet, Quadratic,
+│       │   │                       #   Polynomial, QiskitCNN, QiskitLinear
+│       │   └── MODELS.md           # Per-model docs served by /model-info
+│       └── iris/
+│           ├── __init__.py         # Register IrisPlugin
+│           ├── plugin.py           # IrisPlugin (sklearn data, standardisation)
+│           ├── models.py           # IrisLinear, IrisSVM, IrisQVC
+│           └── MODELS.md           # Per-model docs served by /model-info
+├── tests/                          # Pytest suite (438 test functions)
+│   └── contract/                   # Live-HTTP contract tests + JSON schemas
+├── docs/                           # Architecture, API, and model reference
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── data/                           # Dataset cache (git-ignored)
 ```
@@ -210,12 +233,12 @@ Each module has one clear job:
 | `model_registry.py` | In-memory model storage — no file I/O |
 | `persistence.py` | Disk checkpoint I/O — no in-memory state |
 | `layers.py` | Reusable neural network layers — no model assembly |
+| `connections.py` | SSE heartbeat client tracking — no route handling |
 | `train_routes.py` | HTTP orchestration for training — delegates to `Trainer` |
 | `eval_routes.py` | HTTP orchestration for evaluation — delegates to `Evaluator` |
 | `model_routes.py` | HTTP orchestration for model CRUD — delegates to registry/persistence |
 | `errors.py` | Consistent JSON error response formatting |
-| `sse.js` | SSE transport only — no business logic |
-| `chart.js` | Chart rendering only — no data fetching |
+| `sse.py` | SSE frame formatting and streaming — no business logic |
 
 ### Open/Closed (OCP)
 
@@ -237,7 +260,7 @@ All `DatasetPlugin` subclasses and all `BaseModel` subclasses are fully intercha
 
 ### Dependency Inversion (DIP)
 
-Route handlers never import concrete services directly. Instead, shared services (`ModelRegistry`, `ModelPersistence`) are attached to `app.extensions` during factory setup and accessed via `current_app.extensions[...]` at request time. This makes each component independently testable and replaceable.
+Route handlers never import concrete services directly. Instead, shared services (`ModelRegistry`, `ModelPersistence`, `ConnectionTracker`) are attached to `app.extensions` during factory setup and accessed via `current_app.extensions[...]` at request time. This makes each component independently testable and replaceable.
 
 The trainer depends on the `DataLoader` abstraction (not concrete dataset libraries), and the evaluator depends on `BaseModel` (not specific architectures). Qiskit is lazy-imported only when a quantum model is instantiated — the rest of the codebase has no awareness of it.
 
@@ -285,29 +308,52 @@ class FashionMNISTPlugin(DatasetPlugin):
     def get_model_types(self): ...
 ```
 
-That's it. No changes to any existing file. The new dataset appears automatically in the hamburger menu, with its own scoped routes, models, and UI configuration.
+That's it. No changes to any existing file. The new dataset appears automatically in `GET /api/datasets`, with its own scoped routes under `/d/fashion_mnist/` and its own UI configuration at `/api/datasets/fashion_mnist/config`.
 
 ---
 
 ## API Reference
 
-All dataset-scoped endpoints live under `/d/<dataset>/`:
+Full request/response shapes are in [docs/api.md](docs/api.md). Machine-readable schemas live in `tests/contract/schemas/`, and `GET /api` returns a live discovery index of every endpoint.
+
+### Top-level
 
 | Method | Path | Body | Response |
 |--------|------|------|----------|
-| `GET` | `/` | — | 302 redirect → `/d/mnist/` |
+| `GET` | `/health` | — | `{status, service, version, uptime_s, uptime, clients, timestamp}` |
+| `GET` | `/api` | — | Discovery index: `{service, version, endpoints, streaming}` |
 | `GET` | `/api/datasets` | — | `[{name, display_name, input_type}, ...]` |
-| `GET` | `/d/<dataset>/` | — | `index.html` (rendered for that dataset) |
+| `GET` | `/api/datasets/<name>/config` | — | `{ui_config, model_types}` |
+
+### Connection lifecycle
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| `GET` | `/connect` | — | SSE stream: `welcome` event (`client_id`, `heartbeat_interval`), then periodic `ping` events |
+| `POST` | `/pong` | `{client_id}` | `204` (heartbeat acknowledged) or `404` |
+| `POST` | `/disconnect` | `{client_id}` | `204` (graceful teardown) |
+
+### Dataset-scoped (`/d/<dataset>/`)
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
 | `POST` | `/d/<dataset>/train` | `{model_type, epochs, batch_size, lr, name, patience?, val_gap?, teacher?, distill_weight?}` | SSE stream |
+| `POST` | `/d/<dataset>/train/sync` | same as `/train` | JSON: final training result |
 | `POST` | `/d/<dataset>/evaluate` | `{}` | SSE stream |
+| `POST` | `/d/<dataset>/evaluate/sync` | `{}` | `{results: {name: {accuracy, avg_loss, per_class_accuracy, num_params}}}` |
 | `POST` | `/d/<dataset>/ensemble` | `{model_names: ["Model 1", "Model 2", ...]}` | JSON result |
 | `POST` | `/d/<dataset>/ablation` | `{model_name: "Model 1"}` | SSE stream |
 | `POST` | `/d/<dataset>/predict` | `{image: "<b64>"}` or `{features: {...}}` | `{results: {name: {prediction, confidence, probs}}}` |
 | `GET` | `/d/<dataset>/models` | — | `{name: {model_type, epochs, ..., eval_result}}` |
+| `GET` | `/d/<dataset>/model-info/<type>` | — | `{html}` (rendered MODELS.md section) |
 | `DELETE` | `/d/<dataset>/models/<name>` | — | `{ok: true}` |
 | `POST` | `/d/<dataset>/models/<name>/export` | — | `{ok: true, filename}` |
 | `GET` | `/d/<dataset>/models/disk` | — | `[{filename, name, model_type, ...}]` |
 | `POST` | `/d/<dataset>/models/disk/<fn>/load` | — | `{ok: true, name, model_type, ...}` |
+
+### Streaming vs. sync
+
+Training and evaluation stream progress over Server-Sent Events; each streaming route has a synchronous REST equivalent (`/train/sync`, `/evaluate/sync`) that runs the same work to completion and returns the final result directly — every operation is reachable with plain `curl`, no SSE client required.
 
 ### SSE Event Format
 
@@ -323,7 +369,7 @@ data: {"type": "error", "msg": "..."}\n\n
 
 ### Advanced Training Options
 
-The `/train` endpoint accepts optional fields for advanced training:
+The `/train` and `/train/sync` endpoints accept optional fields for advanced training:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -348,7 +394,7 @@ The `/train` endpoint accepts optional fields for advanced training:
 | **Qiskit-CNN** (`QiskitCNN`) | CNN backbone + Qiskit quantum circuit layer | varies* |
 | **Qiskit-Linear** (`QiskitLinear`) | Linear backbone + Qiskit quantum circuit layer | varies* |
 
-\* Qiskit models require `qiskit` and `qiskit-aer` to be installed. They only appear in the model dropdown when these packages are available. Training is significantly slower due to quantum circuit simulation.
+\* Qiskit models require `qiskit` and `qiskit-aer` to be installed. They only appear in the dataset's `model_types` when these packages are available. Training is significantly slower due to quantum circuit simulation.
 
 ### Iris
 
@@ -358,7 +404,7 @@ The `/train` endpoint accepts optional fields for advanced training:
 | **SVM** (`IrisSVM`) | Linear layer + multi-class hinge loss | ~94-96% |
 | **QVC** (`IrisQVC`) | PennyLane quantum variational classifier (4 qubits, 2 layers) | ~93-96%* |
 
-\* QVC requires `pennylane` to be installed. It only appears in the model dropdown when PennyLane is available.
+\* QVC requires `pennylane` to be installed. It only appears in the dataset's `model_types` when PennyLane is available.
 
 ### Custom Layers
 
@@ -376,7 +422,7 @@ The `/train` endpoint accepts optional fields for advanced training:
 python -m pytest tests/ -v
 ```
 
-The test suite (425 tests) covers:
+The test suite (438 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
@@ -384,18 +430,27 @@ The test suite (425 tests) covers:
 - Model registry (CRUD, dataset isolation, eval result storage)
 - Checkpoint persistence (save/load including training history)
 - All Flask routes via `app.test_client()` (train, evaluate, ensemble, predict, model management)
+- CORS behaviour and documentation accuracy checks
+
+`tests/contract/` additionally holds live-HTTP contract tests (run against a booted server with JSON-schema validation) that pin the API surface the portal frontend depends on; CI runs them in a dedicated job.
 
 ---
 
 ## Configuration
 
-| Setting | Default | Location |
-|---------|---------|----------|
-| Port | `5001` | `classifiers/__main__.py` (env: `CLASSIFIERS_PORT`) |
-| Debug mode | `True` | `classifiers/__main__.py` |
-| Checkpoint directory | `./models/` | `classifiers/server.py` |
-| MNIST data directory | `./data/` | `classifiers/datasets/mnist/plugin.py` |
-| Max log entries | `200` | `classifiers/static/js/app.js` |
+All configuration is via environment variables:
+
+| Setting | Env var | Default | Read in |
+|---------|---------|---------|---------|
+| Dev server port | `CLASSIFIERS_PORT` | random free port (logged at startup) | `classifiers/__main__.py` |
+| Dev server host | `CLASSIFIERS_HOST` | `127.0.0.1` | `classifiers/__main__.py` |
+| Debug mode (dev server) | `CLASSIFIERS_DEBUG` | on for `python -m classifiers`; `0` in the container | `classifiers/__main__.py` |
+| Container port (gunicorn) | `PORT` | `8080` | `Dockerfile` CMD |
+| Allowed CORS origins | `CLASSIFIERS_CORS_ORIGINS` | `http://localhost:*,https://andypeterson.dev` | `classifiers/server.py` |
+| Max request body size | `CLASSIFIERS_MAX_CONTENT_LENGTH` | 2 MB | `classifiers/server.py` |
+| Gateway origin guard | `ORIGIN_SECRET` | unset (guard inactive) | `classifiers/server.py` |
+| Checkpoint directory | — | `./models/` | `classifiers/server.py` |
+| MNIST data directory | — | `./data/` | `classifiers/datasets/mnist/plugin.py` |
 
 ---
 
@@ -406,9 +461,12 @@ The test suite (425 tests) covers:
 | `torch` | Model definition, training, inference |
 | `torchvision` | MNIST dataset + transforms |
 | `flask` | Web server and routing |
-| `pillow` | Image preprocessing (canvas PNG → tensor) |
+| `flask-cors` | CORS headers for the cross-origin portal frontend |
+| `mistune` | Markdown rendering for the `/model-info` endpoint |
+| `pillow` | Image preprocessing (base64 PNG → tensor) |
 | `numpy` | Array operations and softmax probabilities |
 | `scikit-learn` | Iris dataset loader |
+| `gunicorn` | Production WSGI server (container) |
 | `qiskit` | *(optional)* Quantum circuit definition for Qiskit models |
 | `qiskit-aer` | *(optional)* Quantum circuit simulation backend |
 | `pennylane` | *(optional)* Quantum variational classifier for Iris |
@@ -418,8 +476,8 @@ The test suite (425 tests) covers:
 ## Tech Stack
 
 **Backend:** Python 3.12, PyTorch 2.2, Flask 3.0, NumPy, Pillow, scikit-learn
-**Frontend:** Vanilla JS, HTML5 Canvas, custom UI kit (40+ components)
-**Infrastructure:** Docker, GitHub Actions CI
+**Serving:** gunicorn (single worker, threaded) in Docker; Werkzeug dev server locally
+**Infrastructure:** Docker, GitHub Actions CI (4 jobs: unit tests, live-HTTP contract tests, ruff lint, Docker build)
 **Quantum:** Qiskit (MNIST), PennyLane (Iris) — both optional
 
 ---

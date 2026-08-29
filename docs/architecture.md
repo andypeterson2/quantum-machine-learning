@@ -2,18 +2,19 @@
 
 ## System Overview
 
-The Multi-Dataset Classifier Platform is a full-stack application that decouples dataset-specific concerns from shared infrastructure using the plugin pattern.
+The Multi-Dataset Classifier Platform is an API-only Flask service that decouples dataset-specific concerns from shared infrastructure using the plugin pattern. It serves no HTML or static assets: the browser frontend lives in the separate portfolio portal repository and is an external client of this service, consuming the HTTP + SSE contract (pinned by the live-HTTP contract tests in `tests/contract/`).
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    Browser Frontend                       │
-│  (Vanilla JS, HTML5 Canvas, UI Kit)                      │
+│           Portal Frontend  (external repo)                │
+│  consumes the HTTP + SSE contract over CORS               │
 └──────────────┬──────────────────────┬────────────────────┘
                │ REST API             │ SSE Streams
 ┌──────────────▼──────────────────────▼────────────────────┐
-│                    Flask Server                           │
-│  server.py → create_app() factory                        │
-│  routes/  → Blueprints (train, eval, model, main)        │
+│                Flask API Server (this repo)               │
+│  server.py → create_app() factory (static_folder=None)   │
+│  routes/  → Blueprints (main, connection, dataset:       │
+│             train, eval, model)                          │
 └──────┬──────────┬──────────┬──────────┬──────────────────┘
        │          │          │          │
   ┌────▼───┐ ┌───▼────┐ ┌──▼───┐ ┌───▼──────────┐
