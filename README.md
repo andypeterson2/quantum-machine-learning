@@ -179,6 +179,8 @@ quantum-machine-learning/
 │   ├── predictor.py                # Inference pipeline (raw input → probabilities)
 │   ├── model_registry.py           # In-memory model store, namespaced by dataset
 │   ├── persistence.py              # Disk I/O for .pt checkpoint files
+│   ├── web_export.py               # Browser weight exporter (make export-web) — trains the
+│   │                               #   Linear models via the real plugins/Trainer, stamps provenance
 │   ├── losses.py                   # Shared loss functions (hinge loss)
 │   ├── layers.py                   # Reusable layers (Quadratic, Polynomial)
 │   ├── qiskit_layers.py            # Qiskit quantum circuit layer (optional dep)
@@ -210,6 +212,8 @@ quantum-machine-learning/
 ├── tests/                          # Pytest suite (438 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── docs/                           # Architecture, API, and model reference
+├── exports/web/                    # Browser-served linear weights for the portfolio site
+│                                   #   (committed; drift-checked by tests/test_web_export.py)
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── data/                           # Dataset cache (git-ignored)
 ```

@@ -111,6 +111,17 @@ class IrisPlugin(DatasetPlugin):
         ds = TensorDataset(val_X, val_y)
         return DataLoader(ds, batch_size=batch_size, shuffle=False)
 
+    def normalization(self) -> tuple[list[float], list[float]]:
+        """Return the (mean, std) standardisation constants as plain lists.
+
+        These are computed from the training split (see :meth:`_ensure_loaded`)
+        and are the exact constants any external consumer — e.g. the browser
+        inference demo fed by :mod:`classifiers.web_export` — must reproduce.
+        """
+        self._ensure_loaded()
+        assert self._mean is not None and self._std is not None
+        return self._mean.tolist(), self._std.tolist()
+
     # ── Preprocessing ─────────────────────────────────────────────────────────
 
     def preprocess(self, raw_input: Any) -> torch.Tensor:
