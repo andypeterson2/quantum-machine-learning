@@ -1,0 +1,10 @@
+qiskit>=2.0
+qiskit-aer>=0.15
+scikit-learn
+matplotlib
+pylatexenc
+nbconvert
+latex2mathml
+ipykernel
+jupyter_client
+jupyterlab
