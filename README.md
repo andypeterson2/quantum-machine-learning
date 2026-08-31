@@ -215,8 +215,8 @@ quantum-machine-learning/
 ├── exports/web/                    # Browser-served linear weights for the portfolio site
 │                                   #   (committed; drift-checked by tests/test_web_export.py)
 ├── notebooks/qsvm-iris/            # QSVM paper recreation (Yang et al. 2019) — executed
-│                                   #   notebook, own venv, `make export-site` renders it to
-│                                   #   CSP-clean HTML for the portfolio site's AI/ML page
+│                                   #   notebook; its solved decision rule ships as browser
+│                                   #   weights via `make export-qsvm` (classifiers/qsvm_export.py)
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── data/                           # Dataset cache (git-ignored)
 ```
