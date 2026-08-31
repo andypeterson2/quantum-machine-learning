@@ -78,3 +78,8 @@ max-complexity = 10
 # use asserts as tensor-shape invariants in data prep, and declare class-level
 # config dicts.
 "classifiers/datasets/**" = ["N806", "S101", "RUF012"]
+# The executed notebook keeps its cells as-run: prints are its output medium,
+# and compact exploratory idioms (semicolons, long lines, asserts as inline
+# sanity checks, notebook-scope imports) are the genre. Re-linting them would
+# force a full re-execution for zero reader benefit.
+"*.ipynb" = ["T201", "E702", "E501", "S101", "I001", "RET505", "N816", "N802", "E731", "E402", "B905", "FURB", "PLR"]

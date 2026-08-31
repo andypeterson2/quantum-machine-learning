@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web
+.PHONY: run test lint clean docker export-web sync-web export-site
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 WEB ?= ../website
@@ -14,6 +14,11 @@ export-web:
 # Copy the canonical exports into the website checkout's model directory.
 sync-web:
 	cp exports/web/*.json $(WEB)/public/classifiers/models/
+
+# Export the QSVM notebook as CSP-clean HTML into the website checkout
+# (needs the notebook venv: make -C notebooks/qsvm-iris venv).
+export-site:
+	$(MAKE) -C notebooks/qsvm-iris export-site
 
 test:
 	python -m pytest tests/ -v
