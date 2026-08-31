@@ -46,9 +46,34 @@ def _mathml(latex_src: str, *, display: bool) -> str:
     )
 
 
+# latex2mathml emits MathML3 named space constants (e.g. \\! ->
+# width="negativethinmathspace"), which MathML Core dropped — Chromium paints
+# the invalid mspace as a tofu box. Map them to lengths; negative kerns become
+# zero (mspace widths can't go negative in Core).
+_NAMED_SPACES = {
+    "veryverythinmathspace": "0.056em",
+    "verythinmathspace": "0.111em",
+    "thinmathspace": "0.167em",
+    "mediummathspace": "0.222em",
+    "thickmathspace": "0.278em",
+    "verythickmathspace": "0.333em",
+    "veryverythickmathspace": "0.389em",
+}
+_NAMED_SPACE = re.compile(r'width="(negative)?([a-z]+mathspace)"')
+
+
+def _fix_named_spaces(mathml: str) -> str:
+    return _NAMED_SPACE.sub(
+        lambda m: (
+            'width="0"' if m.group(1) else f'width="{_NAMED_SPACES.get(m.group(2), "0.167em")}"'
+        ),
+        mathml,
+    )
+
+
 def _convert_math(segment: str) -> str:
-    segment = _DISPLAY.sub(lambda m: _mathml(m.group(1), display=True), segment)
-    return _INLINE.sub(lambda m: _mathml(m.group(1), display=False), segment)
+    segment = _DISPLAY.sub(lambda m: _fix_named_spaces(_mathml(m.group(1), display=True)), segment)
+    return _INLINE.sub(lambda m: _fix_named_spaces(_mathml(m.group(1), display=False)), segment)
 
 
 def render_math(body: str) -> str:
