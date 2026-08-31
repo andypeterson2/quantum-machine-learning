@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-site
+.PHONY: run test lint clean docker export-web sync-web export-qsvm
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 WEB ?= ../website
@@ -15,10 +15,10 @@ export-web:
 sync-web:
 	cp exports/web/*.json $(WEB)/public/classifiers/models/
 
-# Export the QSVM notebook as CSP-clean HTML into the website checkout
-# (needs the notebook venv: make -C notebooks/qsvm-iris venv).
-export-site:
-	$(MAKE) -C notebooks/qsvm-iris export-site
+# Derive the QSVM paper-recreation weights (closed-form, from the notebook's
+# recorded solution) into exports/web/ (drift-checked in CI; ship via sync-web).
+export-qsvm:
+	python -m classifiers.qsvm_export
 
 test:
 	python -m pytest tests/ -v

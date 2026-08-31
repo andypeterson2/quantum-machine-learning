@@ -144,3 +144,94 @@ class TestMnistExport:
         acc = evaluate_payload(payload, plugin.get_test_loader(512))
         assert round(acc, 4) == payload["test_accuracy"]
         assert acc >= 0.85
+
+
+# ── QSVM paper-recreation exports (classifiers/qsvm_export.py) ────────────────
+
+from pathlib import Path  # noqa: E402
+
+from sklearn.datasets import get_data_home  # noqa: E402
+
+from classifiers import qsvm_export  # noqa: E402
+
+# fetch_openml stores the ARFF cache under <data_home>/openml; presence of any
+# openml cache is our (coarse but CI-safe) signal that mnist_784 is available.
+_OPENML_DIR = Path(get_data_home()) / "openml"
+MNIST_OPENML_CACHE = _OPENML_DIR.is_dir() and any(_OPENML_DIR.rglob("*.gz"))
+
+
+class TestQsvmProvenance:
+    """The qsvm exports carry the same provenance discipline, QSVM-flavoured."""
+
+    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist"])
+    def test_provenance_block(self, name: str) -> None:
+        prov = _load(name)["provenance"]
+        assert set(prov) >= PROVENANCE_KEYS
+        assert prov["source_repo"] == "quantum-machine-learning"
+        assert re.fullmatch(r"[0-9a-f]{40}", prov["source_sha"])
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", prov["exported_at"])
+        assert prov["training"]["model"] == "QSVM"
+        assert prov["training"]["paper"] == "arXiv:1909.11988"
+        assert "scikit-learn" in prov["versions"]
+
+
+class TestQsvmSchema:
+    """Both files honour the browser contract for kind=qsvm."""
+
+    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist"])
+    def test_contract(self, name: str) -> None:
+        payload = _load(name)
+        assert payload["kind"] == "qsvm"
+        assert payload["dataset"] in {"iris", "mnist"}
+        assert len(payload["classes"]) == 2
+        assert len(payload["w"]) == 2
+        assert set(payload["map"]) == {"a", "b", "c", "d"}
+        assert all(isinstance(v, float) for v in payload["map"].values())
+        assert len(payload["features"]) == 2
+        assert payload["raw_input"] in {"features", "pixels"}
+        assert 0.0 < payload["test_accuracy"] <= 1.0
+        assert payload["num_params"] == 6
+
+
+class TestQsvmIrisDrift:
+    """Full re-derivation in CI — Iris ships with scikit-learn, no download."""
+
+    def test_map_and_weights_rederive(self) -> None:
+        payload = _load("qsvm-iris")
+        feats, labels = qsvm_export.iris_features()
+        t1 = feats[labels == 1].mean(axis=0)
+        t2 = feats[labels == -1].mean(axis=0)
+        a, b = qsvm_export.solve_map(t1, t2, *qsvm_export.IRIS_CD)
+        assert payload["map"]["a"] == pytest.approx(a, abs=1e-9)
+        assert payload["map"]["b"] == pytest.approx(b, abs=1e-9)
+        w = qsvm_export.weight_vector(qsvm_export.ALPHA_SHOTS)
+        assert payload["w"] == pytest.approx(w.tolist(), abs=1e-9)
+
+    def test_accuracy_claim_reproduces(self) -> None:
+        payload = _load("qsvm-iris")
+        feats, labels = qsvm_export.iris_features()
+        import numpy as np
+
+        acc = float(
+            (qsvm_export.decide(np.array(payload["w"]), payload["map"], feats) == labels).mean()
+        )
+        assert round(acc, 4) == payload["test_accuracy"]
+        assert acc >= 0.9
+
+
+class TestQsvmMnistDrift:
+    """Re-derivation only when the openml mnist_784 cache exists (CI never downloads)."""
+
+    @pytest.mark.skipif(
+        not MNIST_OPENML_CACHE, reason="openml mnist_784 not cached locally; CI never downloads"
+    )
+    def test_accuracy_claim_reproduces(self) -> None:
+        payload = _load("qsvm-mnist")
+        feats, labels = qsvm_export.mnist_features()
+        import numpy as np
+
+        acc = float(
+            (qsvm_export.decide(np.array(payload["w"]), payload["map"], feats) == labels).mean()
+        )
+        assert round(acc, 4) == payload["test_accuracy"]
+        assert acc >= 0.85

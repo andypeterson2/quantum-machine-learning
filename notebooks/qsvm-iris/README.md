@@ -33,14 +33,12 @@ or open `qsvm_iris.ipynb` in JupyterLab (`make -C notebooks/qsvm-iris run`) and
 run all cells. The first run downloads MNIST (~15 MB) via `fetch_openml`; it is
 cached afterwards.
 
-## Export to the website
+## How this reaches the website
 
-```
-make export-site        # from the repo root (or from this directory)
-```
-
-renders the executed notebook to CSP-clean HTML for the portfolio site's AI/ML
-page: nbconvert's chrome-free `basic` template, LaTeX pre-rendered to native
-MathML (zero JavaScript, no CDN), and a provenance comment stamped with this
-repo's commit — the same convention as the browser weight exports
-(`classifiers/web_export.py`).
+The notebook's *narrative* ships as the AI/ML project writeup on the portfolio
+site, and its *deployable result* — the paper's solved 2-D decision rule —
+ships as in-browser QSVM classifiers on the site's train/test/try demo page.
+The weights are derived closed-form by `classifiers/qsvm_export.py`
+(`make export-qsvm` at the repo root, then `make sync-web`), provenance-stamped
+and drift-checked in CI like every other browser export. This executed
+notebook is the source of truth for the derivation.
