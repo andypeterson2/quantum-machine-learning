@@ -141,5 +141,7 @@ jobs:
       - name: Compose smoke test (gunicorn boots, /health answers)
         run: |
           docker compose up -d
-          curl --retry 30 --retry-delay 1 --retry-connrefused -sf http://127.0.0.1:8080/health
+          # --retry-all-errors: docker-proxy accepts connections before gunicorn
+          # binds inside the container, so early requests get RESET, not REFUSED.
+          curl --retry 60 --retry-delay 1 --retry-all-errors -sf http://127.0.0.1:8080/health
           docker compose down
