@@ -21,13 +21,21 @@ SERVICE = "classifiers"
 
 
 def _service_version() -> str:
-    """Resolve the installed package version, falling back to the pyproject value."""
+    """Resolve the installed package version, else the package's own constant.
+
+    The fallback is the path actually taken in a non-installed checkout and in
+    the Docker image (which ships the package directory, not an install), so it
+    must not be a literal that drifts — ``classifiers.__version__`` is asserted
+    against pyproject by the test suite.
+    """
     try:
-        from importlib.metadata import version
+        from importlib.metadata import PackageNotFoundError, version
 
         return version("quantum-machine-learning")
-    except Exception:
-        return "0.2.0"
+    except PackageNotFoundError:
+        from classifiers import __version__
+
+        return __version__
 
 
 # SSE channels are not in the HTTP url-map; each has a synchronous REST

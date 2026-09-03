@@ -26,9 +26,18 @@ ROOT = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 
 def _read(relpath: str) -> str:
-    """Read a project file relative to the repository root."""
+    """Read a project file relative to the repository root.
+
+    Outside a git checkout (e.g. the test suite running inside the Docker
+    image, which ships only the package), a missing file means the repo-shape
+    subject simply is not present in this environment — skip rather than fail.
+    In the checkout it stays a hard failure.
+    """
     path = ROOT / relpath
-    assert path.is_file(), f"Expected file not found: {relpath}"
+    if not path.is_file():
+        if not (ROOT / ".git").exists():
+            pytest.skip(f"{relpath} not shipped in this environment (repo-shape check)")
+        raise AssertionError(f"Expected file not found: {relpath}")
     with path.open(encoding="utf-8") as fh:
         return fh.read()
 
@@ -289,7 +298,7 @@ class TestDockerDeployment:
         assert "build:" in src
 
     def test_dockerignore_exists(self):
-        assert (ROOT / ".dockerignore").is_file()
+        _read(".dockerignore")
 
     def test_docker_compose_port_binding(self):
         src = _read("docker-compose.yml")

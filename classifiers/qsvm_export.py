@@ -27,12 +27,10 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import logging
-import platform
-from datetime import datetime, timezone
 
 import numpy as np
 
-from classifiers.web_export import OUT_DIR, SEED, _git
+from classifiers.web_export import OUT_DIR, provenance_base
 
 logger = logging.getLogger(__name__)
 
@@ -164,25 +162,16 @@ def build_payload(dataset: str) -> dict:
     }
     if dataset == "mnist":
         payload["ink_threshold"] = INK_THRESHOLD
-    payload["provenance"] = {
-        "source_repo": "quantum-machine-learning",
-        "source_sha": _git("rev-parse", "HEAD"),
-        "source_dirty": bool(_git("status", "--porcelain", "--", ".", ":(exclude)exports/web")),
-        "exported_at": datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
-        "seed": SEED,
-        "training": {
+    payload["provenance"] = provenance_base(
+        {
             "model": "QSVM",
             "paper": "arXiv:1909.11988",
             "alpha": "shot readout (0.51048996, -0.49487372), seed 42",
             "alpha_note": "the exact analytic alpha (0.5, -0.5) is sign-identical on Iris",
             "derivation": "closed-form Eq. 24 map from class means; see notebooks/qsvm-iris/",
         },
-        "versions": {
-            "python": platform.python_version(),
-            "numpy": np.__version__,
-            "scikit-learn": importlib.metadata.version("scikit-learn"),
-        },
-    }
+        {"numpy": np.__version__, "scikit-learn": importlib.metadata.version("scikit-learn")},
+    )
     return payload
 
 

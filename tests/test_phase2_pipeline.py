@@ -23,9 +23,18 @@ ROOT = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 
 def _read(relpath: str) -> str:
-    """Read a project file relative to the repository root."""
+    """Read a project file relative to the repository root.
+
+    Outside a git checkout (e.g. the test suite running inside the Docker
+    image, which ships only the package), a missing file means the repo-shape
+    subject simply is not present in this environment — skip rather than fail.
+    In the checkout it stays a hard failure.
+    """
     path = ROOT / relpath
-    assert path.is_file(), f"Expected file not found: {relpath}"
+    if not path.is_file():
+        if not (ROOT / ".git").exists():
+            pytest.skip(f"{relpath} not shipped in this environment (repo-shape check)")
+        raise AssertionError(f"Expected file not found: {relpath}")
     with path.open(encoding="utf-8") as fh:
         return fh.read()
 
@@ -216,7 +225,7 @@ class TestDockerfileBuild:
     """#691 — Verify Dockerfile syntax and structure."""
 
     def test_dockerfile_exists(self):
-        assert (ROOT / "Dockerfile").is_file()
+        _read("Dockerfile")
 
     def test_dockerfile_has_from(self):
         src = _read("Dockerfile")
@@ -257,7 +266,7 @@ class TestContainerEnvironment:
     """#692 — Verify environment variables and requirements config."""
 
     def test_docker_compose_exists(self):
-        assert (ROOT / "docker-compose.yml").is_file()
+        _read("docker-compose.yml")
 
     def test_docker_compose_port_mapping(self):
         """Compose publishes a configurable host port onto gunicorn's fixed 8080."""
@@ -297,7 +306,7 @@ class TestContainerEnvironment:
         assert "scikit-learn" in src or "sklearn" in src
 
     def test_pyproject_toml_exists(self):
-        assert (ROOT / "pyproject.toml").is_file()
+        _read("pyproject.toml")
 
 
 # ── WP #693: Classifier frontend rendering ────────────────────────────────
@@ -354,8 +363,7 @@ class TestCIPipeline:
     """#695 — Verify CI configuration exists and is correct."""
 
     def test_ci_config_exists(self):
-        path = ROOT / ".github" / "workflows" / "ci.yml"
-        assert path.is_file()
+        _read(".github/workflows/ci.yml")
 
     def test_ci_runs_pytest(self):
         src = _read(".github/workflows/ci.yml")
@@ -400,7 +408,7 @@ class TestAPIDocumentationAccuracy:
         return _read("README.md")
 
     def test_api_docs_exist(self):
-        assert (ROOT / "docs" / "api.md").is_file()
+        _read("docs/api.md")
 
     def test_docs_cover_train_endpoint(self, api_docs):
         assert "/train" in api_docs
