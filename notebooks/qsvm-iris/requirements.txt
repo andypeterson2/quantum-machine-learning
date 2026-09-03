@@ -1,10 +1,12 @@
-qiskit>=2.0
-qiskit-aer>=0.15
-scikit-learn
-matplotlib
-pylatexenc
-nbconvert
-latex2mathml
-ipykernel
-jupyter_client
-jupyterlab
+# Frozen from the executed environment so `make execute` stays reproducible
+# (the notebook itself uses fixed seeds; unpinned deps were the drift risk).
+ipykernel==7.3.0
+jupyterlab==4.6.3
+latex2mathml==3.81.0
+matplotlib==3.11.1
+nbconvert==7.17.1
+pylatexenc==2.11
+qiskit==2.5.2
+qiskit-aer==0.17.2
+scikit-learn==1.9.0
+jupyter_client==8.10.0

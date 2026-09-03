@@ -2,21 +2,22 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir \
-    torch==2.2.2+cpu torchvision==0.17.2+cpu \
-    --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
+# CPU-only torch first — its own layer, the biggest download. The linux image
+# is free of the Intel-macOS ceiling that pins local dev to torch 2.2 (PyTorch
+# shipped its last x86_64-macOS wheels at 2.2.2), so production runs the
+# current stack: latest torch, numpy 2, current pennylane/qiskit.
+RUN pip install --no-cache-dir torch torchvision \
+    --index-url https://download.pytorch.org/whl/cpu
 
-# Quantum extra (full-quantum deploy): pennylane lights up the iris QVC; qiskit +
-# qiskit-aer the MNIST quantum models (the code gates each model on its lib being
-# importable). PINNED, and numpy re-pinned to 1.26.4: pennylane>=0.45 requires
-# numpy>=2, which breaks torch 2.2.2's numpy bridge ("Numpy is not available").
-# Keep this set in lockstep with the torch/numpy pins.
-RUN pip install --no-cache-dir \
-    "numpy==1.26.4" "pennylane==0.44.1" "qiskit==2.4.2" "qiskit-aer==0.17.2"
-
+COPY pyproject.toml README.md ./
 COPY classifiers/ classifiers/
+
+# The package plus the quantum extra, resolved from pyproject's ranges — the
+# environment markers keep the numpy<2 / pennylane<0.45 pins Intel-Mac-only,
+# so this resolves the modern stack here. Installing the package also lets
+# /health report the real version via importlib.metadata.
+RUN pip install --no-cache-dir .[quantum]
+
 COPY .cert[s]/ .certs/
 
 ENV DEV_CERT_DIR=/app/.certs

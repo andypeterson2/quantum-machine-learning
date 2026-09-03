@@ -20,9 +20,15 @@ keywords = [
 dependencies = [
     "flask>=3.0",
     "flask-cors>=6.0",
+    "gunicorn>=23.0",
+    # torch floor only: linux (Docker/CI) resolves the current release; Intel
+    # macOS resolves 2.2.2 — PyTorch's last x86_64-macOS wheel — which is why
+    # the numpy<2 pin below is marker-scoped to that platform (torch 2.2's
+    # numpy bridge breaks on numpy 2).
     "torch>=2.2",
     "torchvision>=0.17",
-    "numpy>=1.26,<2",  # torch 2.2 uses numpy's 1.x C-API; numpy 2 breaks it
+    "numpy>=1.26,<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "numpy>=1.26; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "Pillow>=12.0",
     "mistune>=3.0",
     "scikit-learn>=1.5",
@@ -32,7 +38,10 @@ dependencies = [
 quantum = [
     "qiskit>=1.0",
     "qiskit-aer>=0.13",
-    "pennylane>=0.35,<0.45",  # 0.45+ requires numpy>=2, which breaks torch 2.2
+    # pennylane 0.45+ requires numpy>=2 — impossible beside torch 2.2, so the
+    # ceiling applies only where torch 2.2 does (Intel macOS).
+    "pennylane>=0.35,<0.45; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "pennylane>=0.35; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 dev = [
     "pytest>=8.0",
@@ -40,6 +49,13 @@ dev = [
     # CI must not float across them.
     "ruff~=0.15.16",
 ]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["classifiers*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
