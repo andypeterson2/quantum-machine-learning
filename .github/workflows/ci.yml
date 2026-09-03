@@ -23,6 +23,43 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      # Dataset caches: the drift tests re-score committed browser weights on
+      # the REAL test splits, so CI needs the datasets — but must not download
+      # them on every run. Static keys mean each dataset is fetched once and
+      # restored forever after; the populate steps only fire on a cold cache.
+      - name: Restore MNIST cache
+        uses: actions/cache@v4
+        with:
+          path: classifiers/data/MNIST
+          key: mnist-raw-v1
+
+      - name: Populate MNIST cache (cold cache only)
+        run: |
+          if [ ! -f classifiers/data/MNIST/raw/t10k-images-idx3-ubyte ]; then
+            mkdir -p classifiers/data/MNIST/raw
+            cd classifiers/data/MNIST/raw
+            for f in train-images-idx3-ubyte train-labels-idx1-ubyte t10k-images-idx3-ubyte t10k-labels-idx1-ubyte; do
+              curl -sfO "https://ossci-datasets.s3.amazonaws.com/mnist/$f.gz"
+              gunzip -kf "$f.gz"
+            done
+          fi
+
+      - name: Restore openml cache (qsvm mnist drift check)
+        uses: actions/cache@v4
+        with:
+          path: ~/scikit_learn_data
+          key: openml-mnist784-v1
+
+      - name: Populate openml cache (cold cache only)
+        run: |
+          python - <<'EOF'
+          from pathlib import Path
+          from sklearn.datasets import fetch_openml, get_data_home
+
+          if not any((Path(get_data_home()) / "openml").rglob("*.gz")):
+              fetch_openml("mnist_784", version=1, as_frame=False, parser="liac-arff")
+          EOF
+
       - name: Run tests
         run: python -m pytest tests/ -v
 
@@ -73,3 +110,30 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t qml-classifiers .
+
+      - name: Restore MNIST cache
+        uses: actions/cache@v4
+        with:
+          path: classifiers/data/MNIST
+          key: mnist-raw-v1
+
+      # The image is the only CI environment with the quantum extra installed
+      # (pennylane + qiskit) — running the full suite inside it is what
+      # actually executes the quantum code paths, which the plain test job
+      # skips. Tests and pytest config are mounted (the image ships only the
+      # package); the MNIST cache rides along when warm.
+      - name: Run the test suite inside the image (quantum extra active)
+        run: |
+          docker run --rm \
+            -v "$PWD/tests:/app/tests:ro" \
+            -v "$PWD/exports:/app/exports:ro" \
+            -v "$PWD/pyproject.toml:/app/pyproject.toml:ro" \
+            -v "$PWD/classifiers/data:/app/classifiers/data" \
+            --entrypoint sh qml-classifiers \
+            -c "pip install --no-cache-dir --quiet pytest && python -m pytest tests/ -v"
+
+      - name: Compose smoke test (gunicorn boots, /health answers)
+        run: |
+          docker compose up -d
+          curl --retry 30 --retry-delay 1 --retry-connrefused -sf http://127.0.0.1:8080/health
+          docker compose down
