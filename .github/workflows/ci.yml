@@ -28,7 +28,7 @@ jobs:
       # them on every run. Static keys mean each dataset is fetched once and
       # restored forever after; the populate steps only fire on a cold cache.
       - name: Restore MNIST cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: classifiers/data/MNIST
           key: mnist-raw-v1
@@ -45,7 +45,7 @@ jobs:
           fi
 
       - name: Restore openml cache (qsvm mnist drift check)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/scikit_learn_data
           key: openml-mnist784-v1
@@ -112,7 +112,7 @@ jobs:
         run: docker build -t qml-classifiers .
 
       - name: Restore MNIST cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: classifiers/data/MNIST
           key: mnist-raw-v1
