@@ -1,4 +1,4 @@
-"""WP #698: Test: Documentation completeness.
+"""Documentation completeness and honesty gates.
 
 Verify README has working setup instructions, architecture matches code,
 all configuration options are documented, and common issues are covered.
@@ -21,8 +21,6 @@ class TestReadmeExists:
         content = (ROOT / "README.md").read_text()
         assert len(content) > 1000, "README too short"
 
-    def test_changelog_exists(self):
-        assert (ROOT / "CHANGELOG.md").is_file()
 
     def test_contributing_exists(self):
         assert (ROOT / "CONTRIBUTING.md").is_file()
@@ -169,3 +167,43 @@ class TestDockerDocumentation:
 
     def test_makefile_exists(self):
         assert (ROOT / "Makefile").is_file()
+
+
+class TestReadmeHonesty:
+    """The README's checkable claims must actually check out — the gates that
+    would have caught the drift a 2026-08 audit found by hand."""
+
+    def test_readme_test_count_matches_reality(self):
+        """The stated test-function count is asserted, not decorative."""
+        import re
+
+        readme = (ROOT / "README.md").read_text()
+        stated = {int(n) for n in re.findall(r"\((\d+) test functions\)", readme)}
+        assert stated, "README no longer states a test-function count"
+        actual = sum(
+            len(re.findall(r"^\s*def test_", p.read_text(), re.MULTILINE))
+            for p in (ROOT / "tests").rglob("test_*.py")
+        )
+        assert stated == {actual}, (
+            f"README says {stated} test functions; tests/ defines {actual} — update the README"
+        )
+
+    def test_readme_tree_paths_resolve(self):
+        """Key paths the README documents must exist on disk."""
+        for rel in (
+            "classifiers/web_export.py",
+            "classifiers/qsvm_export.py",
+            "classifiers/wsgi.py",
+            "exports/web/iris.json",
+            "exports/web/qsvm-mnist.json",
+            "notebooks/qsvm-iris/qsvm_iris.ipynb",
+            "tests/contract/schemas",
+        ):
+            assert (ROOT / rel).exists(), f"README-documented path missing: {rel}"
+
+    def test_version_single_source(self):
+        """classifiers.__version__ (the /health fallback) matches pyproject."""
+        import classifiers
+
+        pyproject = (ROOT / "pyproject.toml").read_text()
+        assert f'version = "{classifiers.__version__}"' in pyproject

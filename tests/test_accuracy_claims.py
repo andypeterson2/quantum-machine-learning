@@ -1,4 +1,4 @@
-"""WP #697: Test: Accuracy claims match reproducible results.
+"""Structural trainability checks on synthetic data.
 
 Verify that training each model architecture for a short run produces
 accuracy within a plausible range of the documented claims. We use very
@@ -92,7 +92,10 @@ def iris_loaders():
 
 
 class TestMNISTAccuracyClaims:
-    """README claims: CNN ~99%, Linear ~92%, SVM ~91-92%."""
+    """MNIST architectures learn above chance on synthetic data.
+
+    The real accuracy gate is tests/test_web_export.py, which re-scores the
+    committed browser weights on the actual test splits."""
 
     def test_cnn_learns_above_chance(self, mnist_loaders):
         """CNN should learn well above 10% random chance."""
@@ -132,7 +135,10 @@ class TestMNISTAccuracyClaims:
 
 
 class TestIrisAccuracyClaims:
-    """README claims: Linear ~95-97%, SVM ~94-96%."""
+    """Iris architectures learn above chance on synthetic data.
+
+    The real accuracy gate is tests/test_web_export.py (measured: 90%
+    at default hyper-parameters, committed in exports/web/iris.json)."""
 
     def test_linear_learns_above_chance(self, iris_loaders):
         """Iris Linear should learn above 33% chance."""

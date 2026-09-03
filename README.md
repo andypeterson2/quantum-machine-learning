@@ -112,7 +112,7 @@ curl http://localhost:5001/health
 curl http://localhost:5001/api        # discovery index of every endpoint
 ```
 
-MNIST data is downloaded automatically to `./data/` on first run (~11 MB).
+MNIST data is downloaded automatically to `classifiers/data/` on first run (~11 MB).
 Iris data is loaded from scikit-learn (bundled, no download needed).
 
 #### 3. Train a model
@@ -181,6 +181,8 @@ quantum-machine-learning/
 │   ├── persistence.py              # Disk I/O for .pt checkpoint files
 │   ├── web_export.py               # Browser weight exporter (make export-web) — trains the
 │   │                               #   Linear models via the real plugins/Trainer, stamps provenance
+│   ├── qsvm_export.py              # QSVM paper-recreation weights (make export-qsvm) —
+│   │                               #   closed-form derivation from notebooks/qsvm-iris/
 │   ├── losses.py                   # Shared loss functions (hinge loss)
 │   ├── layers.py                   # Reusable layers (Quadratic, Polynomial)
 │   ├── qiskit_layers.py            # Qiskit quantum circuit layer (optional dep)
@@ -209,16 +211,17 @@ quantum-machine-learning/
 │           ├── plugin.py           # IrisPlugin (sklearn data, standardisation)
 │           ├── models.py           # IrisLinear, IrisSVM, IrisQVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (438 test functions)
+├── tests/                          # Pytest suite (454 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── docs/                           # Architecture, API, and model reference
-├── exports/web/                    # Browser-served linear weights for the portfolio site
-│                                   #   (committed; drift-checked by tests/test_web_export.py)
+├── exports/web/                    # Browser-served model weights for the portfolio site —
+│                                   #   linear baselines + the kind:"qsvm" paper-recreation
+│                                   #   rules (committed; drift-checked by tests/test_web_export.py)
 ├── notebooks/qsvm-iris/            # QSVM paper recreation (Yang et al. 2019) — executed
 │                                   #   notebook; its solved decision rule ships as browser
 │                                   #   weights via `make export-qsvm` (classifiers/qsvm_export.py)
 ├── models/                         # Saved .pt checkpoints (git-ignored)
-└── data/                           # Dataset cache (git-ignored)
+└── classifiers/data/               # Dataset cache (git-ignored; cached in CI)
 ```
 
 ---
@@ -407,7 +410,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 
 | Architecture | Description | Typical Accuracy |
 |-------------|-------------|-----------------|
-| **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | ~95-97% |
+| **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | 90% (measured: exports/web/iris.json) |
 | **SVM** (`IrisSVM`) | Linear layer + multi-class hinge loss | ~94-96% |
 | **QVC** (`IrisQVC`) | PennyLane quantum variational classifier (4 qubits, 2 layers) | ~93-96%* |
 
@@ -429,7 +432,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 python -m pytest tests/ -v
 ```
 
-The test suite (438 test functions) covers:
+The test suite (454 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies

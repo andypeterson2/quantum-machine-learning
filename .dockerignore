@@ -2,7 +2,6 @@
 .gitignore
 README.md
 CONTRIBUTING.md
-CHANGELOG.md
 LICENSE
 docs/
 tests/
@@ -14,6 +13,4 @@ __pycache__
 .pytest_cache/
 models/
 data/
-Digit-Classifier-main/
-ui-kit.zip
 .claude/
