@@ -5,9 +5,12 @@ numpy==1.26.4
 Pillow==12.1.1
 mistune==3.2.0
 scikit-learn==1.8.0
-# torch and torchvision are installed separately:
-#   - Docker: CPU-only wheels via --index-url (see Dockerfile)
-#   - CI: CPU-only wheels (see ci.yml)
-#   - Local: install manually with GPU or CPU variant
+# LOCAL-PARITY LOCKFILE. torch is pinned at 2.2.2 because PyTorch shipped its
+# LAST x86_64-macOS wheels at 2.2.2 — the primary dev machine is an Intel Mac,
+# so this is a hardware ceiling, not a choice. It chains two more pins:
+# numpy<2 (torch 2.2's numpy bridge breaks on numpy 2) and, in the quantum
+# extra, pennylane<0.45 (0.45+ requires numpy>=2). The production image and
+# CI's docker job run the CURRENT stack on linux (see Dockerfile) — the
+# ceiling is this machine's, not the code's. Lifts when dev moves off Intel.
 torch==2.2.2
 torchvision==0.17.2
