@@ -96,24 +96,31 @@ def _git(*args: str) -> str:
     return result.stdout.strip()
 
 
-def _provenance(dataset: str, hyperparams: dict) -> dict:
-    """Build the provenance block stamped into every export."""
-    data_dep = "scikit-learn" if dataset == "iris" else "torchvision"
+def provenance_base(training: dict, versions: dict) -> dict:
+    """The provenance block every export carries — one definition, two exporters.
+
+    The exports themselves are excluded from the dirty check: a fresh export
+    always rewrites them, and they must not count as dirt in their own
+    provenance.
+    """
     return {
         "source_repo": "quantum-machine-learning",
         "source_sha": _git("rev-parse", "HEAD"),
-        # The exports themselves are excluded — a fresh export always rewrites
-        # them, and they must not count as dirt in their own provenance.
         "source_dirty": bool(_git("status", "--porcelain", "--", ".", ":(exclude)exports/web")),
         "exported_at": datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
         "seed": SEED,
-        "training": {"model": "Linear", "trainer": "classifiers.trainer.Trainer", **hyperparams},
-        "versions": {
-            "python": platform.python_version(),
-            "torch": torch.__version__,
-            data_dep: importlib.metadata.version(data_dep),
-        },
+        "training": training,
+        "versions": {"python": platform.python_version(), **versions},
     }
+
+
+def _provenance(dataset: str, hyperparams: dict) -> dict:
+    """Provenance for a Linear platform-model export."""
+    data_dep = "scikit-learn" if dataset == "iris" else "torchvision"
+    return provenance_base(
+        {"model": "Linear", "trainer": "classifiers.trainer.Trainer", **hyperparams},
+        {"torch": torch.__version__, data_dep: importlib.metadata.version(data_dep)},
+    )
 
 
 def _train_linear(plugin: DatasetPlugin) -> tuple[torch.nn.Linear, dict]:
