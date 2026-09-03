@@ -130,7 +130,14 @@ jobs:
             -v "$PWD/pyproject.toml:/app/pyproject.toml:ro" \
             -v "$PWD/classifiers/data:/app/classifiers/data" \
             --entrypoint sh qml-classifiers \
-            -c "pip install --no-cache-dir --quiet pytest && python -m pytest tests/ -v"
+            -c "pip install --no-cache-dir --quiet pytest && python -m pytest tests/ -v \
+                --ignore=tests/test_documentation.py \
+                --deselect tests/test_phase2_pipeline.py::TestDockerfileBuild \
+                --deselect tests/test_phase2_pipeline.py::TestContainerEnvironment"
+        # The ignored/deselected tests assert repo shape (README, docs,
+        # Dockerfile, compose) — files .dockerignore correctly keeps out of the
+        # image. They run in the plain test job; in here we test runtime
+        # behavior, quantum paths included.
 
       - name: Compose smoke test (gunicorn boots, /health answers)
         run: |
