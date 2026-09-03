@@ -1,6 +1,6 @@
 services:
-  - name: protein-kernel
+  - name: quantum-machine-learning
     display_name: Classifier
     compose_service: classifier
-    default_port: 5001
+    default_port: 8080
     submodule_path: "../ui-kit/"

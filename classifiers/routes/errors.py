@@ -7,8 +7,8 @@ Implements the cross-repo backend contract (see the website repo at
 
 The HTTP status carries the class; the envelope never restates it.  ``code`` is a
 stable snake_case slug clients may switch on; ``message`` is human text.  When a
-caller omits ``code`` one is derived from the HTTP status, so the 14 existing
-``error_response(msg, status)`` call sites become compliant with no change.
+caller omits ``code`` one is derived from the HTTP status, so the plain
+``error_response(msg, status)`` call sites are compliant with no change.
 """
 
 from __future__ import annotations

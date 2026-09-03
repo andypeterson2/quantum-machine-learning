@@ -88,7 +88,7 @@ Linear(4→3)
 ```
 
 - **Parameters:** 15
-- **Typical accuracy:** ~95-97%
+- **Typical accuracy:** 90% at the default hyper-parameters — the measured, committed number in `exports/web/iris.json` (drift-checked in CI)
 
 ### SVM (`IrisSVM`)
 

@@ -1,8 +1,9 @@
 """Flask blueprint registration for the classifiers package.
 
-Two blueprints are registered:
+Three blueprints are registered (there is no ``/`` route — API-only service):
 
-* **main** — root redirect (``/``) and ``/api/datasets`` listing.
+* **main** — ``/health``, ``/api``, and the ``/api/datasets`` listing.
+* **connection** — the SSE heartbeat (``/connect``, ``/pong``, ``/disconnect``).
 * **dataset** — all dataset-scoped routes under ``/d/<dataset>/``.
 """
 

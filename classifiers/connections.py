@@ -63,11 +63,3 @@ class ConnectionTracker:
         with self._lock:
             return len(self._clients)
 
-    def active_clients(self) -> list[dict]:
-        """Return a snapshot of connected clients with last-seen info."""
-        now = time.monotonic()
-        with self._lock:
-            return [
-                {"client_id": cid, "idle_seconds": round(now - ts, 1)}
-                for cid, ts in self._clients.items()
-            ]
