@@ -260,14 +260,17 @@ class TestContainerEnvironment:
         assert (ROOT / "docker-compose.yml").is_file()
 
     def test_docker_compose_port_mapping(self):
+        """Compose publishes a configurable host port onto gunicorn's fixed 8080."""
         src = _read("docker-compose.yml")
-        assert "CLASSIFIER_PORT" in src, (
-            "CLASSIFIER_PORT not referenced in docker-compose port mapping"
+        assert "${CLASSIFIERS_PORT:-8080}:8080" in src, (
+            "compose must map the (defaulted) host port onto the container's 8080"
         )
 
-    def test_docker_compose_env_port(self):
+    def test_docker_compose_sets_no_dead_env(self):
+        """The gunicorn entrypoint reads PORT, not the dev server's env vars —
+        compose must not set variables nothing reads (the old broken shape)."""
         src = _read("docker-compose.yml")
-        assert "CLASSIFIERS_PORT" in src
+        assert "CLASSIFIERS_HOST" not in src
 
     def test_dockerfile_env_cert_dir(self):
         src = _read("Dockerfile")
