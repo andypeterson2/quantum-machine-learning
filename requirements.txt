@@ -12,5 +12,5 @@ scikit-learn==1.8.0
 # extra, pennylane<0.45 (0.45+ requires numpy>=2). The production image and
 # CI's docker job run the CURRENT stack on linux (see Dockerfile) — the
 # ceiling is this machine's, not the code's. Lifts when dev moves off Intel.
-torch==2.2.2
+torch==2.13.0
 torchvision==0.17.2
