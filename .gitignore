@@ -19,7 +19,8 @@ venv/
 *.pth
 *.pt
 *.onnx
-data/
+# The MNIST cache — anchored so the intent is legible (and only this path).
+/classifiers/data/
 
 # Testing
 htmlcov/
