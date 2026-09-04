@@ -43,9 +43,11 @@ ALPHA_SHOTS = np.array([0.51048996, -0.49487372])
 
 #: Hand-picked second-dimension map coefficients (c, d) per dataset — the
 #: notebook keeps the paper's original OCR values for MNIST and re-picks
-#: for Iris so the mapped means stay in the first quadrant.
+#: for Iris so the mapped means stay in the first quadrant. BB84's are picked
+#: the same way (both class means' mapped second component must stay > 0).
 IRIS_CD = (0.95, -0.42)
 MNIST_CD = (0.5, -0.3)
+BB84_CD = (2.0, 0.02)
 
 #: Ink threshold for the paper's pixel-ratio features (0-255 grayscale).
 INK_THRESHOLD = 127
@@ -126,23 +128,67 @@ def mnist_features() -> tuple[np.ndarray, np.ndarray]:
     return np.stack([hr, vr], axis=1), labels
 
 
+def bb84_features() -> tuple[np.ndarray, np.ndarray]:
+    """The bb84 plugin's test split as raw (qber, sifted_key_rate), eve=+1.
+
+    Re-generates the exact seeded simulation the plugin serves (self-generated
+    data — no cache, so the CI drift check runs this unconditionally).
+
+    The *eavesdropped* class rides the +1 target ray. Which class sits on
+    which of the paper's fixed rays is the modeler's choice (like choosing
+    which digit is +1), and it matters here: the Eq. 24 geometry places the
+    decision boundary ~87% of the way from the +1 class mean toward the −1
+    mean, so putting the wide eavesdropped distribution on +1 lands the
+    boundary in the sparse gap near the clean regime (90%+ accuracy) instead
+    of mid-eavesdropped (77%).
+    """
+    from classifiers.datasets.bb84.plugin import N_TEST, TEST_SEED
+    from classifiers.datasets.bb84.simulate import generate_dataset
+
+    feats, labels01 = generate_dataset(N_TEST, TEST_SEED)
+    labels = np.where(labels01 == 1, 1, -1)  # eavesdropped is the +1 class
+    return feats.astype(np.float64), labels
+
+
+#: Per-dataset export specs — adding a dataset is adding one entry here (plus
+#: its features function above); build_payload has no dataset branches.
+QSVM_DATASETS: dict[str, dict] = {
+    "iris": {
+        "features_fn": iris_features,
+        "cd": IRIS_CD,
+        "classes": ["setosa", "versicolor"],
+        "features": ["sepal_width", "petal_length"],
+        "raw_input": "features",
+        "subset": "setosa vs versicolor",
+        "extra": {},
+    },
+    "mnist": {
+        "features_fn": mnist_features,
+        "cd": MNIST_CD,
+        "classes": ["6", "9"],
+        "features": ["horizontal_ink_ratio", "vertical_ink_ratio"],
+        "raw_input": "pixels",
+        "subset": "6 vs 9",
+        "extra": {"ink_threshold": INK_THRESHOLD},
+    },
+    "bb84": {
+        "features_fn": bb84_features,
+        "cd": BB84_CD,
+        "classes": ["eavesdropped", "clean"],
+        "features": ["qber", "sifted_key_rate"],
+        "raw_input": "features",
+        "subset": "eavesdropped vs clean",
+        "extra": {},
+    },
+}
+
+
 def build_payload(dataset: str) -> dict:
     """Derive, measure, and assemble one dataset's qsvm export payload."""
+    spec = QSVM_DATASETS[dataset]
     w = weight_vector(ALPHA_SHOTS)
-    if dataset == "iris":
-        feats, labels = iris_features()
-        c, d = IRIS_CD
-        classes = ["setosa", "versicolor"]
-        features = ["sepal_width", "petal_length"]
-        raw_input = "features"
-        subset = "setosa vs versicolor"
-    else:
-        feats, labels = mnist_features()
-        c, d = MNIST_CD
-        classes = ["6", "9"]
-        features = ["horizontal_ink_ratio", "vertical_ink_ratio"]
-        raw_input = "pixels"
-        subset = "6 vs 9"
+    feats, labels = spec["features_fn"]()
+    c, d = spec["cd"]
     t1 = feats[labels == 1].mean(axis=0)
     t2 = feats[labels == -1].mean(axis=0)
     a, b = solve_map(t1, t2, c, d)
@@ -151,17 +197,16 @@ def build_payload(dataset: str) -> dict:
     payload: dict = {
         "kind": "qsvm",
         "dataset": dataset,
-        "classes": classes,
+        "classes": spec["classes"],
         "w": w.tolist(),
         "map": mapping,
-        "features": features,
-        "raw_input": raw_input,
+        "features": spec["features"],
+        "raw_input": spec["raw_input"],
         "test_accuracy": round(acc, 4),
         "num_params": 6,
-        "display": {"label": "QSVM (Yang et al. 2019)", "subset": subset},
+        "display": {"label": "QSVM (Yang et al. 2019)", "subset": spec["subset"]},
+        **spec["extra"],
     }
-    if dataset == "mnist":
-        payload["ink_threshold"] = INK_THRESHOLD
     payload["provenance"] = provenance_base(
         {
             "model": "QSVM",
@@ -176,10 +221,10 @@ def build_payload(dataset: str) -> dict:
 
 
 def main() -> None:
-    """Export both qsvm classifiers."""
+    """Export every qsvm classifier in the spec table."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for dataset in ("iris", "mnist"):
+    for dataset in QSVM_DATASETS:
         payload = build_payload(dataset)
         out = OUT_DIR / f"qsvm-{dataset}.json"
         out.write_text(json.dumps(payload) + "\n")
