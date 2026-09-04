@@ -20,6 +20,17 @@ The notebook implements the paper's full pipeline:
    the same quantum solution — only the mapping coefficients change per dataset.
 5. **Noise** — the paper's Jensen–Shannon divergence analysis repeated under a
    depolarizing + readout noise model in place of the retired IBMQX2 device.
+6. **The real-hardware epilogue** — the same optimized circuit executed on a
+   current IBM backend (`tools/hardware_run.py`, cached under
+   `exports/hardware/`): on **ibm_marrakesh** (2026-09-04, 8192 raw shots,
+   transpiled depth 18 / 4 two-qubit gates), **D_JS = 0.0127** against the
+   ideal distribution vs. the paper's **0.130** on IBMQX2 — a **10×
+   improvement in seven years, measured with the paper's own yardstick**.
+   The error-suppressed run (dynamical decoupling + Pauli twirling) scored
+   0.0211 — slightly *worse* than raw, because at this depth the coherent
+   errors twirling randomizes cost less than the randomization itself. The
+   hardware α readout (+0.5010, −0.4851) reproduces every deployed accuracy
+   within a point and is now the α the browser exports ship.
 
 ## Run
 
@@ -41,4 +52,6 @@ ships as in-browser QSVM classifiers on the site's train/test/try demo page.
 The weights are derived closed-form by `classifiers/qsvm_export.py`
 (`make export-qsvm` at the repo root, then `make sync-web`), provenance-stamped
 and drift-checked in CI like every other browser export. This executed
-notebook is the source of truth for the derivation.
+notebook is the source of truth for the derivation — and since 2026-09-04 the
+α inside those weights is the **real-hardware readout** from the epilogue's
+ibm_marrakesh run, not a simulator number.
