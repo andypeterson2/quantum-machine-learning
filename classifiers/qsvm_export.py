@@ -37,9 +37,14 @@ logger = logging.getLogger(__name__)
 #: The paper's fixed training geometry (its two mapped training points).
 TARGETS = np.array([[0.987, 0.159], [0.345, 0.935]])
 
-#: alpha as measured from the notebook's 8192-shot HHL readout
-#: (seed_simulator=42): sqrt(P(0001)), -sqrt(P(0011)).
-ALPHA_SHOTS = np.array([0.51048996, -0.49487372])
+#: alpha as measured from the REAL-HARDWARE HHL readout: 8192 raw shots on
+#: ibm_marrakesh (2026-09-04, job dad49jdnj4cs73adbp90 — the committed artifact
+#: exports/hardware/hhl-ibm_marrakesh-2026-09-04.json): sqrt(P(0001)),
+#: -sqrt(P(0011)). Adopted over the notebook's Aer readout
+#: (0.51048996, -0.49487372, seed 42) after the re-measured accuracies matched
+#: within a point on every dataset — so the deployed in-browser rule's quantum
+#: coefficients come from a real quantum computer.
+ALPHA_SHOTS = np.array([0.50097561, -0.48513046])
 
 #: Hand-picked second-dimension map coefficients (c, d) per dataset — the
 #: notebook keeps the paper's original OCR values for MNIST and re-picks
@@ -211,8 +216,12 @@ def build_payload(dataset: str) -> dict:
         {
             "model": "QSVM",
             "paper": "arXiv:1909.11988",
-            "alpha": "shot readout (0.51048996, -0.49487372), seed 42",
-            "alpha_note": "the exact analytic alpha (0.5, -0.5) is sign-identical on Iris",
+            "alpha": "hardware shot readout (0.50097561, -0.48513046), ibm_marrakesh raw 8192",
+            "alpha_note": (
+                "adopted from exports/hardware/hhl-ibm_marrakesh-2026-09-04.json; "
+                "the Aer readout (0.51048996, -0.49487372, seed 42) and the exact "
+                "analytic alpha (0.5, -0.5) are sign-identical"
+            ),
             "derivation": "closed-form Eq. 24 map from class means; see notebooks/qsvm-iris/",
         },
         {"numpy": np.__version__, "scikit-learn": importlib.metadata.version("scikit-learn")},
