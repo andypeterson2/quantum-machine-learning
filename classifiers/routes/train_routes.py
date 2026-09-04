@@ -161,7 +161,8 @@ def _result_payload(name: str, result) -> dict[str, Any]:
     return payload
 
 
-def register(bp) -> None:
+# One registrar per blueprint — the length is the route table (see eval_routes).
+def register(bp) -> None:  # noqa: C901
     """Attach training routes to *bp*."""
 
     @bp.post("/train")
@@ -177,10 +178,14 @@ def register(bp) -> None:
         """
         plugin = g.plugin
         registry = current_app.extensions["registry"]
+        slots = current_app.extensions["job_slots"]
+        if not slots.acquire(blocking=False):
+            return error_response("Server busy — try again shortly", 409, code="busy")
         body = request.get_json(force=True)
         try:
             trainer, name = _setup_trainer(plugin, registry, body)
         except _TrainingInputError as exc:
+            slots.release()
             return error_response(exc.msg, exc.status)
 
         q: queue.Queue[dict | None] = queue.Queue()
@@ -198,6 +203,7 @@ def register(bp) -> None:
             except Exception as exc:
                 q.put({"type": "error", "msg": str(exc)})
             finally:
+                slots.release()
                 q.put(None)
 
         threading.Thread(target=run, daemon=True).start()
@@ -212,14 +218,20 @@ def register(bp) -> None:
         """
         plugin = g.plugin
         registry = current_app.extensions["registry"]
-        body = request.get_json(force=True)
+        slots = current_app.extensions["job_slots"]
+        if not slots.acquire(blocking=False):
+            return error_response("Server busy — try again shortly", 409, code="busy")
         try:
-            trainer, name = _setup_trainer(plugin, registry, body)
-        except _TrainingInputError as exc:
-            return error_response(exc.msg, exc.status)
-        try:
-            result = trainer.train(on_status=lambda *_: None)
-            _register_trained(registry, plugin, name, result)
-        except Exception as exc:
-            return error_response(str(exc), 500)
-        return jsonify(_result_payload(name, result))
+            body = request.get_json(force=True)
+            try:
+                trainer, name = _setup_trainer(plugin, registry, body)
+            except _TrainingInputError as exc:
+                return error_response(exc.msg, exc.status)
+            try:
+                result = trainer.train(on_status=lambda *_: None)
+                _register_trained(registry, plugin, name, result)
+            except Exception as exc:
+                return error_response(str(exc), 500)
+            return jsonify(_result_payload(name, result))
+        finally:
+            slots.release()

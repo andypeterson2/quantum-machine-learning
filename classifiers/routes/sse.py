@@ -10,7 +10,9 @@ Principle).
 from __future__ import annotations
 
 import json
+import os
 import queue
+import time
 
 from flask import Response, stream_with_context
 
@@ -47,13 +49,28 @@ def sse_response(q: queue.Queue[dict | None]) -> Response:
         (``Cache-Control: no-cache``).
     """
 
+    # Both bounds are read per-request so tests (and deploys) can tune them
+    # via the environment without re-importing the module.
+    lifetime = float(os.environ.get("CLASSIFIERS_SSE_LIFETIME", "3600"))
+    get_timeout = float(os.environ.get("CLASSIFIERS_SSE_GET_TIMEOUT", "30"))
+
     @stream_with_context
     def _generate():
-        while True:
-            event = q.get()
+        # Bounded stream: an unbounded q.get() pinned a gthread worker thread
+        # forever when a worker died without its sentinel, and a stream with
+        # no lifetime cap let one client hold a thread for days. The periodic
+        # keepalive also surfaces dead client sockets (the yield raises).
+        deadline = time.monotonic() + lifetime
+        while time.monotonic() < deadline:
+            try:
+                event = q.get(timeout=get_timeout)
+            except queue.Empty:
+                yield ": keepalive\n\n"
+                continue
             if event is None:
-                break
+                return
             yield format_event(event)
+        yield format_event({"type": "error", "msg": "stream lifetime exceeded"})
 
     return Response(
         _generate(),

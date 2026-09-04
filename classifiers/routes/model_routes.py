@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import inspect
 import io
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,32 @@ from flask import Response, current_app, g, jsonify, request
 from classifiers.predictor import Predictor
 
 from .errors import error_response
+
+# escape=True: MODELS.md ships with the repo today, but the renderer's output
+# is injected into the portal DOM — escaping inline HTML closes the stored-XSS
+# lane if that file (or a future plugin's) ever carries markup.
+_markdown = mistune.create_markdown(escape=True)
+
+
+def _decode_image(b64: str):
+    """Decode a base64 predict image with decompression-bomb + size guards.
+
+    Returns a grayscale PIL image, or ``None`` for anything invalid or
+    oversized — model inputs are 28x28-class thumbnails, so a huge canvas is
+    an attack or a mistake, never a legitimate request.
+    """
+    from PIL import Image
+
+    max_dim = int(os.environ.get("CLASSIFIERS_MAX_IMAGE_DIM", "4096"))
+    # Pillow's bomb guard: raises before allocating a giant canvas.
+    Image.MAX_IMAGE_PIXELS = max_dim * max_dim
+    try:
+        img = Image.open(io.BytesIO(base64.b64decode(b64)))
+        if img.width > max_dim or img.height > max_dim:
+            return None
+        return img.convert("L")
+    except Exception:
+        return None
 
 
 def _read_model_section(plugin, model_type: str) -> str | None:
@@ -39,7 +66,7 @@ def _read_model_section(plugin, model_type: str) -> str | None:
     match = re.search(pattern, text, re.DOTALL | re.MULTILINE)
     if not match:
         return None
-    return mistune.html(match.group(1).strip())
+    return _markdown(match.group(1).strip())
 
 
 # One registrar per blueprint — the length is the route table (see
@@ -62,13 +89,8 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         data = request.get_json(force=True)
 
         if plugin.input_type == "image":
-            from PIL import Image
-
-            b64: str = data.get("image", "")
-            try:
-                img_bytes = base64.b64decode(b64)
-                raw_input: Any = Image.open(io.BytesIO(img_bytes)).convert("L")
-            except Exception:
+            raw_input: Any = _decode_image(data.get("image", ""))
+            if raw_input is None:
                 return error_response("Invalid image data", 400, code="invalid_image")
         else:
             raw_input = data.get("features", {})
@@ -146,6 +168,19 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         entry = registry.get(plugin.name, name)
         if entry is None:
             return error_response(f"Model '{name}' not found", 404)
+
+        # Disk ceiling: exports are user-triggered writes into the container's
+        # filesystem; cap them per dataset so they cannot fill the volume.
+        max_files = int(os.environ.get("CLASSIFIERS_MAX_CHECKPOINTS", "50"))
+        dataset_files = [
+            f for f in persistence.list_files() if f.get("dataset", "mnist") == plugin.name
+        ]
+        if len(dataset_files) >= max_files:
+            return error_response(
+                f"Checkpoint limit reached ({max_files}) — delete old exports first",
+                409,
+                code="too_many_checkpoints",
+            )
 
         filename = persistence.save(name, entry)
         return jsonify({"ok": True, "filename": filename})
