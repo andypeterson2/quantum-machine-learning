@@ -26,7 +26,10 @@ ENV CLASSIFIERS_DEBUG=0
 
 # Production WSGI server (gunicorn). ONE worker — the model registry is per-process
 # in-memory state; --threads gives concurrency for SSE/parallel requests within it.
-# --timeout 0 because SSE/training stream unbounded. Bind Railway's injected $PORT
+# --timeout 120: SSE streams are lifetime-bounded server-side now (see
+# routes/sse.py), and gthread's timeout watches the worker process, not
+# individual streaming threads — a hung worker gets restarted instead of
+# wedging forever behind --timeout 0. Bind Railway's injected $PORT
 # (default 8080). `sh -c exec` so gunicorn becomes PID 1 and gets SIGTERM on restart.
 EXPOSE 8080
-CMD ["sh", "-c", "exec gunicorn --worker-class gthread --workers 1 --threads 8 --timeout 0 --bind 0.0.0.0:${PORT:-8080} classifiers.wsgi:app"]
+CMD ["sh", "-c", "exec gunicorn --worker-class gthread --workers 1 --threads 8 --timeout 120 --bind 0.0.0.0:${PORT:-8080} classifiers.wsgi:app"]

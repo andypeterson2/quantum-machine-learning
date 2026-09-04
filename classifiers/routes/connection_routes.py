@@ -9,9 +9,10 @@ teardown (also used by ``navigator.sendBeacon`` on page unload).
 from __future__ import annotations
 
 import json
+import os
 import time
 
-from flask import Blueprint, Response, current_app, request, stream_with_context
+from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 
 from .sse import format_event
 
@@ -30,6 +31,20 @@ def connect() -> Response:
     events.  The generator cleans up the client on exit.
     """
     tracker = current_app.extensions["connections"]
+
+    # Each stream holds one gthread worker thread for its whole life, so the
+    # cap is what keeps a handful of idle tabs from exhausting the thread
+    # pool and taking every other route down with it.
+    max_clients = int(os.environ.get("CLASSIFIERS_MAX_CLIENTS", "8"))
+    if tracker.count >= max_clients:
+        return (
+            jsonify({"error": {"code": "too_many_clients", "message": "connection limit reached"}}),
+            409,
+        )
+
+    # Bounded lifetime: the server ends the stream after this long and the
+    # client reconnects — no permanently-parked threads.
+    lifetime = float(os.environ.get("CLASSIFIERS_CONNECT_LIFETIME", "1800"))
     client_id = tracker.register()
 
     @stream_with_context
@@ -40,12 +55,14 @@ def connect() -> Response:
                 "client_id": client_id,
                 "heartbeat_interval": HEARTBEAT_INTERVAL,
             })
-            while True:
+            deadline = time.monotonic() + lifetime
+            while time.monotonic() < deadline:
                 time.sleep(HEARTBEAT_INTERVAL)
                 yield format_event({
                     "type": "ping",
                     "ts": time.time(),
                 })
+            yield format_event({"type": "reconnect", "msg": "stream lifetime reached"})
         except GeneratorExit:
             pass
         finally:

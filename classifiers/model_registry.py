@@ -17,6 +17,7 @@ surface for state changes (Single Responsibility Principle).
 
 from __future__ import annotations
 
+import os
 import threading
 from dataclasses import dataclass, field
 
@@ -66,10 +67,15 @@ class ModelRegistry:
         a lock.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, max_per_dataset: int | None = None) -> None:
         self._lock = threading.Lock()
         self._models: dict[str, dict[str, ModelEntry]] = {}
         self._counters: dict[str, int] = {}
+        # Memory ceiling: each entry holds a live model. Unbounded adds let a
+        # client (or a runaway script) grow the process without limit.
+        self._max_per_dataset = max_per_dataset or int(
+            os.environ.get("CLASSIFIERS_MAX_MODELS", "20")
+        )
 
     # ── Name generation ────────────────────────────────────────────────────────
 
@@ -116,7 +122,10 @@ class ModelRegistry:
             lr:         Training learning rate.
         """
         with self._lock:
-            self._models.setdefault(dataset, {})[name] = ModelEntry(
+            ns = self._models.setdefault(dataset, {})
+            if name not in ns and len(ns) >= self._max_per_dataset:
+                self._evict_locked(ns)
+            ns[name] = ModelEntry(
                 model=model,
                 model_type=model_type,
                 dataset=dataset,
@@ -124,6 +133,19 @@ class ModelRegistry:
                 batch_size=batch_size,
                 lr=lr,
             )
+
+    def _evict_locked(self, ns: dict[str, ModelEntry]) -> None:
+        """Drop one entry to make room (caller holds the lock).
+
+        Prefers the oldest UNEVALUATED entry — evaluated models embody work the
+        user has inspected — and falls back to the oldest entry outright so the
+        cap always holds. Dict insertion order gives "oldest".
+        """
+        for victim, entry in ns.items():
+            if entry.eval_result is None:
+                del ns[victim]
+                return
+        del ns[next(iter(ns))]
 
     def remove(self, dataset: str, name: str) -> None:
         """Remove the model named *name* from *dataset*'s namespace.

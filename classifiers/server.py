@@ -88,6 +88,13 @@ def create_app(models_dir: Path | None = None) -> Flask:
     )
     app.extensions["start_time"] = time.monotonic()
 
+    # Heavy-compute concurrency gate: training/evaluation on the single-worker
+    # server. Routes acquire non-blocking and 409 when saturated, so a burst of
+    # requests degrades to "busy" instead of an unbounded thread pile-up.
+    app.extensions["job_slots"] = threading.Semaphore(
+        int(os.environ.get("CLASSIFIERS_MAX_JOBS", "2"))
+    )
+
     tracker = ConnectionTracker()
     app.extensions["connections"] = tracker
 

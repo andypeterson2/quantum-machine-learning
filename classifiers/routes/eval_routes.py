@@ -63,8 +63,12 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         """Evaluate every registered model for this dataset via SSE."""
         plugin = g.plugin
         registry = current_app.extensions["registry"]
+        slots = current_app.extensions["job_slots"]
+        if not slots.acquire(blocking=False):
+            return error_response("Server busy — try again shortly", 409, code="busy")
 
         if not registry.items(plugin.name):
+            slots.release()
             return error_response("No models to evaluate")
 
         q: queue.Queue[dict | None] = queue.Queue()
@@ -78,6 +82,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             except Exception as exc:
                 q.put({"type": "error", "msg": str(exc)})
             finally:
+                slots.release()
                 q.put(None)
 
         threading.Thread(target=run, daemon=True).start()
@@ -88,14 +93,19 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         """Evaluate every registered model synchronously; returns {"results": {...}}."""
         plugin = g.plugin
         registry = current_app.extensions["registry"]
-
-        if not registry.items(plugin.name):
-            return error_response("No models to evaluate")
+        slots = current_app.extensions["job_slots"]
+        if not slots.acquire(blocking=False):
+            return error_response("Server busy — try again shortly", 409, code="busy")
         try:
-            results = _evaluate_all(plugin, registry)
-        except Exception as exc:
-            return error_response(str(exc), 500)
-        return jsonify({"results": results})
+            if not registry.items(plugin.name):
+                return error_response("No models to evaluate")
+            try:
+                results = _evaluate_all(plugin, registry)
+            except Exception as exc:
+                return error_response(str(exc), 500)
+            return jsonify({"results": results})
+        finally:
+            slots.release()
 
     # ── Ensemble ─────────────────────────────────────────────────────────────
 
@@ -105,28 +115,34 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         plugin = g.plugin
         registry = current_app.extensions["registry"]
 
-        body = request.get_json(force=True)
-        model_names: list[str] = body.get("model_names", [])
-        if len(model_names) < 2:
-            return error_response("Need at least 2 models for ensemble")
+        slots = current_app.extensions["job_slots"]
+        if not slots.acquire(blocking=False):
+            return error_response("Server busy — try again shortly", 409, code="busy")
+        try:
+            body = request.get_json(force=True)
+            model_names: list[str] = body.get("model_names", [])
+            if len(model_names) < 2:
+                return error_response("Need at least 2 models for ensemble")
 
-        models = []
-        for mn in model_names:
-            entry = registry.get(plugin.name, mn)
-            if entry is None:
-                return error_response(f"Model '{mn}' not found", 404)
-            models.append(entry.model)
+            models = []
+            for mn in model_names:
+                entry = registry.get(plugin.name, mn)
+                if entry is None:
+                    return error_response(f"Model '{mn}' not found", 404)
+                models.append(entry.model)
 
-        evaluator = Evaluator()
-        test_loader = plugin.get_test_loader(1000)
-        result = evaluator.ensemble_evaluate(
-            models, test_loader, plugin.num_classes, plugin.class_labels
-        )
-        return jsonify({
-            "accuracy": result.accuracy,
-            "avg_loss": result.avg_loss,
-            "per_class_accuracy": result.per_class_accuracy,
-        })
+            evaluator = Evaluator()
+            test_loader = plugin.get_test_loader(1000)
+            result = evaluator.ensemble_evaluate(
+                models, test_loader, plugin.num_classes, plugin.class_labels
+            )
+            return jsonify({
+                "accuracy": result.accuracy,
+                "avg_loss": result.avg_loss,
+                "per_class_accuracy": result.per_class_accuracy,
+            })
+        finally:
+            slots.release()
 
     # ── Ablation ─────────────────────────────────────────────────────────────
 
@@ -141,6 +157,10 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         entry = registry.get(plugin.name, model_name)
         if entry is None:
             return error_response(f"Model '{model_name}' not found", 404)
+
+        slots = current_app.extensions["job_slots"]
+        if not slots.acquire(blocking=False):
+            return error_response("Server busy — try again shortly", 409, code="busy")
 
         q: queue.Queue[dict | None] = queue.Queue()
 
@@ -173,6 +193,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             except Exception as exc:
                 q.put({"type": "error", "msg": str(exc)})
             finally:
+                slots.release()
                 q.put(None)
 
         threading.Thread(target=run, daemon=True).start()
