@@ -114,9 +114,18 @@ def provenance_base(training: dict, versions: dict) -> dict:
     }
 
 
+#: Datasets exported for the browser demo tier, with the package that supplies
+#: their data (recorded in provenance). Adding a dataset is adding one entry.
+EXPORTED_DATASETS: dict[str, str] = {
+    "iris": "scikit-learn",
+    "mnist": "torchvision",
+    "bb84": "numpy",  # self-generated seeded simulation
+}
+
+
 def _provenance(dataset: str, hyperparams: dict) -> dict:
     """Provenance for a Linear platform-model export."""
-    data_dep = "scikit-learn" if dataset == "iris" else "torchvision"
+    data_dep = EXPORTED_DATASETS[dataset]
     return provenance_base(
         {"model": "Linear", "trainer": "classifiers.trainer.Trainer", **hyperparams},
         {"torch": torch.__version__, data_dep: importlib.metadata.version(data_dep)},
@@ -145,7 +154,7 @@ def _train_linear(plugin: DatasetPlugin) -> tuple[torch.nn.Linear, dict]:
     return result.model.fc, hp
 
 
-def _iris_feature_ranges(plugin: DatasetPlugin, batch_size: int) -> list[list[float]]:
+def _feature_ranges(plugin: DatasetPlugin, batch_size: int) -> list[list[float]]:
     """Recover per-feature raw min/max from the plugin's normalised tensors.
 
     De-normalises every sample the plugin serves (train + val + test covers
@@ -177,11 +186,14 @@ def _payload(plugin: DatasetPlugin) -> dict:
         "weight": fc.weight.detach().tolist(),
         "bias": fc.bias.detach().tolist(),
     }
-    if plugin.name == "iris":
-        mean, std = plugin.normalization()
+    if plugin.input_type == "tabular":
+        # Every tabular plugin carries its z-score constants (normalization())
+        # and a feature list; the demo form's slider bounds are de-normalised
+        # from the same pipeline that trains the weights.
+        mean, std = plugin.normalization()  # type: ignore[attr-defined]
         payload["features"] = list(plugin.feature_names or [])
         payload["normalize"] = {"scale": 1.0, "mean": mean, "std": std}
-        payload["feature_ranges"] = _iris_feature_ranges(plugin, hp["batch_size"])
+        payload["feature_ranges"] = _feature_ranges(plugin, hp["batch_size"])
     else:
         from classifiers.datasets.mnist.plugin import MNIST_MEAN, MNIST_STD
 
@@ -217,7 +229,7 @@ def main() -> None:
     """Export every browser-served dataset."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     discover_plugins()
-    for name in ("iris", "mnist"):
+    for name in EXPORTED_DATASETS:
         export_dataset(name)
 
 
