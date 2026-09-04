@@ -58,8 +58,9 @@ if not os.environ.get("WERKZEUG_RUN_MAIN"):
     logger.info("Running on %s://localhost:%d", scheme, port)
 
 host = os.environ.get("CLASSIFIERS_HOST", "127.0.0.1")
-# Debug (Werkzeug reloader + interactive debugger) is convenient locally but is a
-# remote-code-execution risk in production, so it defaults on for dev and is turned
-# off by setting CLASSIFIERS_DEBUG=0 (as the container / Fly deploy does).
-debug = os.environ.get("CLASSIFIERS_DEBUG", "1").lower() not in ("0", "false", "no", "")
+# Debug (Werkzeug reloader + interactive debugger) is a remote-code-execution
+# risk if the host is ever exposed, so the parse FAILS CLOSED: only an explicit
+# opt-in value enables it, and any unrecognized string ("off", "disabled", a
+# stray space) leaves it disabled. Local dev opts in with CLASSIFIERS_DEBUG=1.
+debug = os.environ.get("CLASSIFIERS_DEBUG", "0").strip().lower() in ("1", "true", "yes")
 app.run(debug=debug, host=host, port=port, ssl_context=ssl_ctx)

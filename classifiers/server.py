@@ -24,6 +24,7 @@ every dataset plugin.  Adding a new dataset is therefore zero-config.
 
 from __future__ import annotations
 
+import hmac
 import os
 import threading
 import time
@@ -60,7 +61,16 @@ def create_app(models_dir: Path | None = None) -> Flask:
     # serving (static_folder=None disables the default /static/<path> route too).
     app = Flask(__name__, static_folder=None)
     app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY") or os.urandom(32).hex()
-    CORS(app, origins=os.environ.get("CLASSIFIERS_CORS_ORIGINS", "http://localhost:*,https://andypeterson.dev").split(","))
+    # NOTE the anchored regex: flask-cors treats any entry containing "*" as an
+    # UNANCHORED-at-the-end regex, so the old "http://localhost:*" allowed the
+    # registrable origin http://localhostevil.com. The ^...$ form does not.
+    CORS(
+        app,
+        origins=os.environ.get(
+            "CLASSIFIERS_CORS_ORIGINS",
+            r"^https?://localhost(:\d+)?$,https://andypeterson.dev",
+        ).split(","),
+    )
 
     # Cap request-body size. Predict images and JSON bodies are a few KB; anything
     # larger is rejected with 413 before parsing (a DoS guard). Overridable via env.
@@ -105,8 +115,11 @@ def create_app(models_dir: Path | None = None) -> Flask:
     @app.before_request
     def _origin_guard():
         want = os.environ.get("ORIGIN_SECRET")
-        if want and request.path != "/health" and request.headers.get("X-Origin-Secret") != want:
-            return jsonify({"error": {"code": "forbidden", "message": "origin"}}), 403
+        if want and request.path != "/health":
+            got = request.headers.get("X-Origin-Secret") or ""
+            # compare_digest: a plain != on a secret leaks timing.
+            if not hmac.compare_digest(got, want):
+                return jsonify({"error": {"code": "forbidden", "message": "origin"}}), 403
         return None
 
     return app

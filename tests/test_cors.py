@@ -31,3 +31,37 @@ class TestCORS:
         res = client.get("/d/mnist/models",
                          headers={"Origin": "https://andypeterson2.github.io"})
         assert res.headers.get("Access-Control-Allow-Origin") is not None
+
+
+class TestCORSDefaultAllowlist:
+    """Regression for the unanchored-regex hole: flask-cors treats a '*' entry
+    as a start-anchored-only regex, so the old ``http://localhost:*`` allowed
+    the registrable origin ``http://localhostevil.com``. The default list now
+    uses an explicitly anchored regex."""
+
+    @pytest.fixture()
+    def default_client(self, monkeypatch):
+        monkeypatch.delenv("CLASSIFIERS_CORS_ORIGINS", raising=False)
+        app = create_app()
+        app.config["TESTING"] = True
+        yield app.test_client()
+
+    @pytest.mark.parametrize(
+        "origin", ["http://localhost:4321", "http://localhost", "https://andypeterson.dev"]
+    )
+    def test_intended_origins_allowed(self, default_client, origin):
+        res = default_client.get("/api/datasets", headers={"Origin": origin})
+        assert res.headers.get("Access-Control-Allow-Origin") == origin
+
+    @pytest.mark.parametrize(
+        "origin",
+        [
+            "http://localhostevil.com",
+            "http://localhost.evil.com",
+            "https://localhostevil.com:4321",
+            "https://evil.andypeterson.dev",
+        ],
+    )
+    def test_lookalike_origins_rejected(self, default_client, origin):
+        res = default_client.get("/api/datasets", headers={"Origin": origin})
+        assert res.headers.get("Access-Control-Allow-Origin") is None
