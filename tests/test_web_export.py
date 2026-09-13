@@ -188,7 +188,7 @@ class TestBb84Export:
         assert acc >= 0.9
 
 
-# ── QSVM paper-recreation exports (classifiers/qsvm_export.py) ────────────────
+# ── QSVM paper-recreation exports ─────────────────────────────────────────────
 
 from pathlib import Path  # noqa: E402
 

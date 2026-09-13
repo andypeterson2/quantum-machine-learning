@@ -22,9 +22,8 @@ from classifiers.predictor import Predictor
 
 from .errors import error_response
 
-# escape=True: MODELS.md ships with the repo today, but the renderer's output
-# is injected into the portal DOM — escaping inline HTML closes the stored-XSS
-# lane if that file (or a future plugin's) ever carries markup.
+# escape=True: rendered model docs are injected into the portal DOM, so inline HTML
+# in any plugin's docs is escaped rather than trusted (stored XSS).
 _markdown = mistune.create_markdown(escape=True)
 
 
@@ -136,7 +135,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             }
         return jsonify(result)
 
-    # ── Model info (rendered MODELS.md section) ────────────────────────────
+    # ── Model info (a rendered section of the plugin's model docs) ─────────
 
     @bp.get("/model-info/<model_type>")
     def model_info(model_type: str) -> Response | tuple[Response, int]:

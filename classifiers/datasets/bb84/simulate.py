@@ -36,9 +36,8 @@ ATTENUATION_DB_PER_KM = 0.2
 #: Raw pulses per simulated session (matches the video chat's protocol scale).
 NUM_PULSES = 4096
 
-# ── Per-session parameter regimes ─────────────────────────────────────────────
-# Channel parameters vary session-to-session so the sifted-key rate carries
-# real information about the link, not a constant.
+# ── Per-session parameter regimes: varied so the sifted-key rate says something ──
+# about the link instead of being a constant.
 FIBER_KM_RANGE = (0.5, 2.0)
 SOURCE_INTENSITY_RANGE = (0.4, 0.6)
 DETECTOR_EFFICIENCY_RANGE = (0.4, 0.6)
@@ -102,9 +101,8 @@ def simulate_session(
     intercepted = arrived & (rng.random(n) < config.intercept_fraction)
     eve_registered = intercepted & (rng.random(n) < config.eve_detector_efficiency)
     lost_to_eve = intercepted & ~eve_registered
-    # Eve measures in a random basis; a wrong-basis interception leaves Bob
-    # (measuring in Alice's basis after sifting) with a coin-flip — i.e. a
-    # bit error half the time. Same model as the video chat's channel.
+    # Eve measures in a random basis; a wrong-basis interception leaves Bob a coin
+    # flip, i.e. a bit error half the time (the video chat's channel model).
     eve_wrong_basis = eve_registered & (rng.random(n) < 0.5)
     eve_flip = eve_wrong_basis & (rng.random(n) < 0.5)
 
