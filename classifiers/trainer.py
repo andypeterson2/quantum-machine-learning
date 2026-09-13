@@ -74,8 +74,7 @@ class Trainer:
         val_loader:   Optional validation data loader for intermediate eval.
     """
 
-    # The parameters mirror the training-run knobs the API exposes; a config
-    # object would rename the same surface.
+    # One parameter per training knob the API exposes; a config object would only rename them.
     def __init__(  # noqa: PLR0913
         self,
         model_cls: type[BaseModel],

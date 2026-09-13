@@ -33,6 +33,7 @@ def multi_class_hinge_loss(
     n = output.size(0)
     correct_scores = output[torch.arange(n), target].unsqueeze(1)  # (N, 1)
     margins = (output - correct_scores + margin).clamp(min=0)       # (N, C)
+
     # Zero out the ground-truth class via multiplicative mask (autograd-safe)
     mask = torch.ones_like(margins)
     mask[torch.arange(n), target] = 0.0

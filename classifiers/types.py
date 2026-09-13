@@ -10,15 +10,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-#: Type alias for status/progress messages.
-#:
-#: A status message is either:
-#:   - A ``str`` — human-readable progress text (e.g. ``"Epoch 1/3 done"``).
-#:   - A ``dict[str, Any]`` — structured event with at least a ``"type"`` key
-#:     (e.g. ``{"type": "history", "train_loss": 0.4, "val_accuracy": 0.9}``).
-#:
-#: Both :class:`~classifiers.trainer.Trainer` and
-#: :class:`~classifiers.evaluator.Evaluator` accept an optional argument of
-#: this type, decoupling progress reporting from any specific transport
-#: (SSE queue, stdout, log file, etc.).
+#: Progress callback: a ``str`` ("Epoch 1/3 done") or a ``dict`` event with a ``"type"``
+#: key. Trainer and Evaluator take one, so progress reporting is transport-agnostic.
 StatusCallback = Callable[[str | dict[str, Any]], None]
