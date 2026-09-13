@@ -73,3 +73,39 @@ class TestPredictWithLinear:
         predictor = Predictor(untrained_linear, mnist_plugin)
         probs = predictor.predict(blank_image)
         assert (probs >= 0).all()
+
+
+class TestCenterDigit:
+    """Drawn digits get MNIST's crop / fit-20x20 / centre-by-mass normalisation."""
+
+    def test_corner_digit_is_scaled_and_centred(self):
+        from classifiers.datasets.mnist.plugin import center_digit
+
+        img = Image.new("L", (280, 280), 0)
+        arr = np.array(img)
+        arr[10:90, 10:60] = 255  # an 80x50 block in the top-left corner
+        out = center_digit(Image.fromarray(arr))
+        ys, _ = np.nonzero(out > 64)
+        assert ys.max() - ys.min() + 1 in (19, 20, 21)  # longer side fills the 20px box
+        cy = (out.sum(axis=1) * np.arange(28)).sum() / out.sum()
+        cx = (out.sum(axis=0) * np.arange(28)).sum() / out.sum()
+        assert abs(cy - 13.5) <= 1 and abs(cx - 13.5) <= 1
+
+    def test_faint_grid_lines_do_not_count_as_ink(self):
+        from classifiers.datasets.mnist.plugin import center_digit
+
+        arr = np.zeros((280, 280), dtype=np.uint8)
+        arr[::10, :] = 20  # the portal canvas's faint grid
+        arr[:, ::10] = 20
+        arr[100:180, 130:150] = 255  # a vertical stroke
+        out = center_digit(Image.fromarray(arr))
+        ys, xs = np.nonzero(out > 64)
+        assert ys.max() - ys.min() + 1 in (19, 20, 21)
+        assert xs.max() - xs.min() + 1 <= 7  # stays a thin stroke, not the whole grid
+
+    def test_blank_image_is_just_resized(self):
+        from classifiers.datasets.mnist.plugin import center_digit
+
+        out = center_digit(Image.new("L", (280, 280), 0))
+        assert out.shape == (28, 28)
+        assert out.max() == 0
