@@ -187,9 +187,7 @@ def _payload(plugin: DatasetPlugin) -> dict:
         "bias": fc.bias.detach().tolist(),
     }
     if plugin.input_type == "tabular":
-        # Every tabular plugin carries its z-score constants (normalization())
-        # and a feature list; the demo form's slider bounds are de-normalised
-        # from the same pipeline that trains the weights.
+        # The demo form's slider bounds come from the training pipeline's z-scores.
         mean, std = plugin.normalization()  # type: ignore[attr-defined]
         payload["features"] = list(plugin.feature_names or [])
         payload["normalize"] = {"scale": 1.0, "mean": mean, "std": std}

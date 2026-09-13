@@ -32,9 +32,8 @@ def connect() -> Response:
     """
     tracker = current_app.extensions["connections"]
 
-    # Each stream holds one gthread worker thread for its whole life, so the
-    # cap is what keeps a handful of idle tabs from exhausting the thread
-    # pool and taking every other route down with it.
+    # Each stream pins a gthread worker for its whole life; the cap keeps idle tabs
+    # from exhausting the pool and taking every other route down.
     max_clients = int(os.environ.get("CLASSIFIERS_MAX_CLIENTS", "8"))
     if tracker.count >= max_clients:
         return (

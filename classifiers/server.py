@@ -117,8 +117,7 @@ def create_app(models_dir: Path | None = None) -> Flask:
 
     # Origin guard (the gate's teeth): reject anything that didn't arrive through the
     # gateway, which injects X-Origin-Secret. /health stays public so the host's health
-    # check + scale-to-zero wake work. Inert until ORIGIN_SECRET is set, so it's safe to
-    # land before the gateway is wired. See andypeterson-gateway/PHASE3-DEPLOY.md §3.
+    # check + scale-to-zero wake work. Inert until ORIGIN_SECRET is set.
     @app.before_request
     def _origin_guard():
         want = os.environ.get("ORIGIN_SECRET")

@@ -98,8 +98,7 @@ class ModelRegistry:
 
     # ── Write operations ───────────────────────────────────────────────────────
 
-    # The parameters mirror the training metadata stored per entry; a config
-    # object would rename the same surface.
+    # One parameter per stored metadata field; a config object would only rename them.
     def add(  # noqa: PLR0913
         self,
         dataset: str,
