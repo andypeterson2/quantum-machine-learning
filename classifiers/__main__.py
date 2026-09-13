@@ -58,9 +58,7 @@ if not os.environ.get("WERKZEUG_RUN_MAIN"):
     logger.info("Running on %s://localhost:%d", scheme, port)
 
 host = os.environ.get("CLASSIFIERS_HOST", "127.0.0.1")
-# Debug (Werkzeug reloader + interactive debugger) is a remote-code-execution
-# risk if the host is ever exposed, so the parse FAILS CLOSED: only an explicit
-# opt-in value enables it, and any unrecognized string ("off", "disabled", a
-# stray space) leaves it disabled. Local dev opts in with CLASSIFIERS_DEBUG=1.
+# The debugger is remote code execution if the host is exposed, so this fails closed:
+# only CLASSIFIERS_DEBUG=1/true/yes enables it; any other value leaves it off.
 debug = os.environ.get("CLASSIFIERS_DEBUG", "0").strip().lower() in ("1", "true", "yes")
 app.run(debug=debug, host=host, port=port, ssl_context=ssl_ctx)

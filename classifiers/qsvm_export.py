@@ -37,19 +37,12 @@ logger = logging.getLogger(__name__)
 #: The paper's fixed training geometry (its two mapped training points).
 TARGETS = np.array([[0.987, 0.159], [0.345, 0.935]])
 
-#: alpha as measured from the REAL-HARDWARE HHL readout: 8192 raw shots on
-#: ibm_marrakesh (2026-09-04, job dad49jdnj4cs73adbp90 — the committed artifact
-#: exports/hardware/hhl-ibm_marrakesh-2026-09-04.json): sqrt(P(0001)),
-#: -sqrt(P(0011)). Adopted over the notebook's Aer readout
-#: (0.51048996, -0.49487372, seed 42) after the re-measured accuracies matched
-#: within a point on every dataset — so the deployed in-browser rule's quantum
-#: coefficients come from a real quantum computer.
+#: alpha = (sqrt(P(0001)), -sqrt(P(0011))) from the HHL readout on ibm_marrakesh
+#: (2026-09-04, job dad49jdnj4cs73adbp90, 8192 raw shots), a real quantum computer.
 ALPHA_SHOTS = np.array([0.50097561, -0.48513046])
 
-#: Hand-picked second-dimension map coefficients (c, d) per dataset — the
-#: notebook keeps the paper's original OCR values for MNIST and re-picks
-#: for Iris so the mapped means stay in the first quadrant. BB84's are picked
-#: the same way (both class means' mapped second component must stay > 0).
+#: Hand-picked second-dimension map (c, d): the paper's values for MNIST; Iris and
+#: BB84 are picked so both mapped class means stay in the first quadrant.
 IRIS_CD = (0.95, -0.42)
 MNIST_CD = (0.5, -0.3)
 BB84_CD = (2.0, 0.02)

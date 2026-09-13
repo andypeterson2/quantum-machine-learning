@@ -132,11 +132,9 @@ jobs:
             --entrypoint sh qml-classifiers \
             -c "pip install --no-cache-dir --quiet pytest && python -m pytest tests/ -v \
                 --ignore=tests/test_documentation.py"
-        # test_documentation.py is pure repo shape (README/docs/CHANGELOG) and
-        # is ignored wholesale; the mixed phase2/phase3 files self-skip their
-        # repo-shape tests when the subject file isn't shipped in the image
-        # (see the guarded _read helpers). In here we test runtime behavior,
-        # quantum paths included.
+        # Runtime behavior only, quantum paths included: the repo-shape suite is
+        # ignored, and mixed suites skip their repo-shape tests when the file
+        # they check isn't shipped in the image.
 
       - name: Compose smoke test (gunicorn boots, /health answers)
         run: |

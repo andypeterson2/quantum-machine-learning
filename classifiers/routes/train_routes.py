@@ -31,9 +31,8 @@ class _TrainingInputError(Exception):
         self.status = status
 
 
-# Bounds on training inputs. Unbounded values let one request monopolise the
-# single-worker server for hours (epochs) or exhaust its memory (batch_size), so
-# out-of-range values are rejected with a 400 rather than silently clamped.
+# Unbounded epochs or batch_size let one request hold the single worker for hours or
+# exhaust its memory, so out-of-range values get a 400 instead of a silent clamp.
 _MAX_EPOCHS = 50
 _MAX_BATCH_SIZE = 512
 _MAX_LR = 1.0
