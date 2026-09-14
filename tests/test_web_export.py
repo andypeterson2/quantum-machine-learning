@@ -232,6 +232,9 @@ class TestQsvmSchema:
         assert len(payload["features"]) == 2
         assert payload["raw_input"] in {"features", "pixels"}
         assert 0.0 < payload["test_accuracy"] <= 1.0
+        assert payload["test_n"] > 0
+        assert payload["train_n"] > 0
+        assert payload["test_protocol"]
         assert payload["num_params"] == 6
 
 
@@ -240,9 +243,9 @@ class TestQsvmIrisDrift:
 
     def test_map_and_weights_rederive(self) -> None:
         payload = _load("qsvm-iris")
-        feats, labels = qsvm_export.iris_features()
-        t1 = feats[labels == 1].mean(axis=0)
-        t2 = feats[labels == -1].mean(axis=0)
+        split = qsvm_export.iris_features()
+        t1 = split.train_x[split.train_y == 1].mean(axis=0)
+        t2 = split.train_x[split.train_y == -1].mean(axis=0)
         a, b = qsvm_export.solve_map(t1, t2, *qsvm_export.IRIS_CD)
         assert payload["map"]["a"] == pytest.approx(a, abs=1e-9)
         assert payload["map"]["b"] == pytest.approx(b, abs=1e-9)
@@ -251,13 +254,13 @@ class TestQsvmIrisDrift:
 
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("qsvm-iris")
-        feats, labels = qsvm_export.iris_features()
+        split = qsvm_export.iris_features()
         import numpy as np
 
-        acc = float(
-            (qsvm_export.decide(np.array(payload["w"]), payload["map"], feats) == labels).mean()
-        )
+        pred = qsvm_export.decide(np.array(payload["w"]), payload["map"], split.test_x)
+        acc = float((pred == split.test_y).mean())
         assert round(acc, 4) == payload["test_accuracy"]
+        assert len(split.test_y) == payload["test_n"]
         assert acc >= 0.9
 
 
@@ -269,13 +272,13 @@ class TestQsvmMnistDrift:
     )
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("qsvm-mnist")
-        feats, labels = qsvm_export.mnist_features()
+        split = qsvm_export.mnist_features()
         import numpy as np
 
-        acc = float(
-            (qsvm_export.decide(np.array(payload["w"]), payload["map"], feats) == labels).mean()
-        )
+        pred = qsvm_export.decide(np.array(payload["w"]), payload["map"], split.test_x)
+        acc = float((pred == split.test_y).mean())
         assert round(acc, 4) == payload["test_accuracy"]
+        assert len(split.test_y) == payload["test_n"]
         assert acc >= 0.85
 
 
@@ -284,9 +287,9 @@ class TestQsvmBb84Drift:
 
     def test_map_and_weights_rederive(self) -> None:
         payload = _load("qsvm-bb84")
-        feats, labels = qsvm_export.bb84_features()
-        t1 = feats[labels == 1].mean(axis=0)
-        t2 = feats[labels == -1].mean(axis=0)
+        split = qsvm_export.bb84_features()
+        t1 = split.train_x[split.train_y == 1].mean(axis=0)
+        t2 = split.train_x[split.train_y == -1].mean(axis=0)
         a, b = qsvm_export.solve_map(t1, t2, *qsvm_export.BB84_CD)
         assert payload["map"]["a"] == pytest.approx(a, abs=1e-9)
         assert payload["map"]["b"] == pytest.approx(b, abs=1e-9)
@@ -295,13 +298,13 @@ class TestQsvmBb84Drift:
 
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("qsvm-bb84")
-        feats, labels = qsvm_export.bb84_features()
+        split = qsvm_export.bb84_features()
         import numpy as np
 
-        acc = float(
-            (qsvm_export.decide(np.array(payload["w"]), payload["map"], feats) == labels).mean()
-        )
+        pred = qsvm_export.decide(np.array(payload["w"]), payload["map"], split.test_x)
+        acc = float((pred == split.test_y).mean())
         assert round(acc, 4) == payload["test_accuracy"]
+        assert len(split.test_y) == payload["test_n"]
         assert acc >= 0.9
 
     def test_eavesdropped_rides_the_plus_one_ray(self) -> None:
