@@ -33,7 +33,11 @@ class TrainingConfig:
         regularization_fn:  Callable ``(model) → scalar tensor`` added to the loss.
         teacher_model:      Frozen teacher model for knowledge distillation.
         distill_weight:     Blend ratio: ``(1-w)*true + w*distill``.
-        teacher_process:    Post-processing applied to teacher output (e.g. softmax).
+        distill_temperature: Softmax temperature for the distillation term (Hinton
+                            et al., 2015); higher values expose more of the
+                            teacher's ranking over the wrong classes.
+        teacher_process:    Post-processing applied to the teacher's logits before
+                            they are softened.
     """
 
     patience: int | None = None
@@ -41,6 +45,7 @@ class TrainingConfig:
     regularization_fn: Callable[[torch.nn.Module], torch.Tensor] | None = None
     teacher_model: BaseModel | None = field(default=None, repr=False)
     distill_weight: float = 0.5
+    distill_temperature: float = 4.0
     teacher_process: Callable[[torch.Tensor], torch.Tensor] | None = None
 
 
