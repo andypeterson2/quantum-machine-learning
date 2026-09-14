@@ -217,7 +217,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (509 test functions)
+├── tests/                          # Pytest suite (513 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── docs/                           # Architecture, API, and model reference
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
@@ -353,7 +353,7 @@ Full request/response shapes are in [docs/api.md](docs/api.md). Machine-readable
 
 | Method | Path | Body | Response |
 |--------|------|------|----------|
-| `POST` | `/d/<dataset>/train` | `{model_type, epochs, batch_size, lr, name, patience?, val_gap?, teacher?, distill_weight?}` | SSE stream |
+| `POST` | `/d/<dataset>/train` | `{model_type, epochs, batch_size, lr, name, patience?, val_gap?, teacher?, distill_weight?, distill_temperature?}` | SSE stream |
 | `POST` | `/d/<dataset>/train/sync` | same as `/train` | JSON: final training result |
 | `POST` | `/d/<dataset>/evaluate` | `{}` | SSE stream |
 | `POST` | `/d/<dataset>/evaluate/sync` | `{}` | `{results: {name: {accuracy, avg_loss, per_class_accuracy, num_params}}}` |
@@ -393,6 +393,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 | `val_gap` | `int` | `50` | Batches between validation checks |
 | `teacher` | `string` | — | Name of a trained model to use as distillation teacher |
 | `distill_weight` | `float` | `0.5` | Blend weight: `(1-w)*true_loss + w*distill_loss` |
+| `distill_temperature` | `float` | `4.0` | Softmax temperature for the distillation term: KL divergence between the teacher's and student's softened outputs, scaled by T² |
 
 ---
 
@@ -438,7 +439,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 python -m pytest tests/ -v
 ```
 
-The test suite (509 test functions) covers:
+The test suite (513 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies

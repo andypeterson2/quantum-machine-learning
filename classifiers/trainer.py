@@ -25,6 +25,26 @@ from .base_model import BaseModel
 from .training_config import HistoryEntry, TrainingConfig
 from .types import StatusCallback
 
+
+def distillation_loss(
+    student_logits: torch.Tensor, teacher_logits: torch.Tensor, temperature: float
+) -> torch.Tensor:
+    """KL(teacher || student) between temperature-softened outputs, scaled by T².
+
+    The T² factor keeps the term's gradients on the same scale as the true-label
+    loss as the temperature changes (Hinton, Vinyals & Dean, 2015).
+    """
+    t = temperature
+    return (
+        F.kl_div(
+            F.log_softmax(student_logits / t, dim=1),
+            F.softmax(teacher_logits / t, dim=1),
+            reduction="batchmean",
+        )
+        * t
+        * t
+    )
+
 logger = logging.getLogger(__name__)
 
 
@@ -151,7 +171,7 @@ class Trainer:
                         teacher_out = teacher(data)
                         if cfg.teacher_process is not None:
                             teacher_out = cfg.teacher_process(teacher_out)
-                    distill_loss = F.mse_loss(output, teacher_out)
+                    distill_loss = distillation_loss(output, teacher_out, cfg.distill_temperature)
                     w = cfg.distill_weight
                     loss = (1 - w) * loss + w * distill_loss
 

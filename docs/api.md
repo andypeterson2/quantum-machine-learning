@@ -114,6 +114,7 @@ Content-Type: application/json
 | `val_gap` | `int` | `50` | Batches between validation checks |
 | `teacher` | `string` | — | Name of a trained model for distillation |
 | `distill_weight` | `float` | `0.5` | Blend: `(1-w)*true_loss + w*distill_loss` |
+| `distill_temperature` | `float` | `4.0` | Temperature for `distill_loss`: KL(teacher ∥ student) on softened outputs, times T² (0 < T ≤ 20) |
 
 **Response:** SSE stream with events:
 ```

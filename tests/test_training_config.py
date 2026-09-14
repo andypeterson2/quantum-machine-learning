@@ -1,6 +1,9 @@
 """Unit tests for TrainingConfig, HistoryEntry, and advanced training features."""
 
 
+import pytest
+import torch
+
 from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.trainer import Trainer, TrainResult
 from classifiers.training_config import HistoryEntry, TrainingConfig
@@ -34,6 +37,7 @@ class TestTrainingConfig:
         assert config.regularization_fn is None
         assert config.teacher_model is None
         assert config.distill_weight == 0.5
+        assert config.distill_temperature == 4.0
 
     def test_custom_values(self):
         config = TrainingConfig(patience=5, val_gap=25, distill_weight=0.3)
@@ -84,3 +88,32 @@ class TestTrainerWithConfig:
         result = trainer.train()
         assert isinstance(result, TrainResult)
         assert result.model_type == "Linear"
+
+
+class TestDistillationLoss:
+    """The distillation term is KL(teacher || student) on softened outputs, times T²."""
+
+    def test_zero_when_student_matches_teacher(self):
+        from classifiers.trainer import distillation_loss
+
+        logits = torch.tensor([[2.0, -1.0, 0.5], [0.1, 0.3, -2.0]])
+        assert distillation_loss(logits, logits.clone(), 4.0).item() == pytest.approx(0.0, abs=1e-6)
+
+    def test_matches_the_formula(self):
+        from classifiers.trainer import distillation_loss
+
+        s = torch.tensor([[1.0, 0.0, -1.0]])
+        t = torch.tensor([[0.0, 2.0, 0.0]])
+        temp = 2.0
+        p = torch.softmax(t / temp, dim=1)
+        q = torch.log_softmax(s / temp, dim=1)
+        expected = (p * (p.log() - q)).sum() * temp * temp
+        assert distillation_loss(s, t, temp).item() == pytest.approx(expected.item(), rel=1e-5)
+
+    def test_only_the_ranking_matters_not_the_logit_offset(self):
+        from classifiers.trainer import distillation_loss
+
+        s = torch.tensor([[1.0, 0.0, -1.0]])
+        t = torch.tensor([[0.0, 2.0, 0.0]])
+        shifted = distillation_loss(s + 5.0, t - 3.0, 4.0).item()
+        assert shifted == pytest.approx(distillation_loss(s, t, 4.0).item(), rel=1e-5)

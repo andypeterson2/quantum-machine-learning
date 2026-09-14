@@ -54,6 +54,13 @@ class TestJobSlots:
         assert resp.status_code == 409
         assert resp.get_json()["error"]["code"] == "busy"
 
+    @pytest.mark.parametrize("temperature", [0, -1, 25, "hot"])
+    def test_distill_temperature_out_of_range_is_400(self, client, temperature):
+        resp = client.post(
+            "/d/mnist/train/sync", json={"model_type": "CNN", "distill_temperature": temperature}
+        )
+        assert resp.status_code == 400
+
     def test_slot_released_after_rejected_input(self, app, client):
         # A 400 on bad input must give its slot back, or the server bricks.
         slots = app.extensions["job_slots"]
