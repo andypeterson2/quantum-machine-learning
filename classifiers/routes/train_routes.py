@@ -38,6 +38,7 @@ _MAX_BATCH_SIZE = 512
 _MAX_LR = 1.0
 _MAX_VAL_GAP = 10_000
 _MAX_PATIENCE = 1_000
+_MAX_TEMPERATURE = 20.0
 
 
 def _bounded_int(body, key, default, lo, hi):
@@ -87,6 +88,7 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
     val_gap = _bounded_int(body, "val_gap", 50, 1, _MAX_VAL_GAP)
     teacher_name: str | None = body.get("teacher")
     distill_weight = float(body.get("distill_weight", 0.5))
+    distill_temperature = _bounded_float(body, "distill_temperature", 4.0, 0.0, _MAX_TEMPERATURE)
 
     config: TrainingConfig | None = None
     val_loader = None
@@ -106,6 +108,7 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
             val_gap=val_gap,
             teacher_model=teacher_model,
             distill_weight=distill_weight,
+            distill_temperature=distill_temperature,
             teacher_process=None,
         )
         val_loader = plugin.get_val_loader(batch_size)
