@@ -12,7 +12,8 @@ notebook does (class means -> the Eq. 24 solve against the paper's fixed
 training geometry), pairs them with the notebook's quantum shot-readout
 ``alpha`` (the measured artifact of the recreation; the exact analytic
 ``alpha = (0.5, -0.5)`` is sign-identical on Iris and is recorded in the
-provenance), measures the accuracies by running the rule, and writes
+provenance), fits the map on a training split, scores the rule on a held-out
+split, and writes
 ``exports/web/qsvm-{iris,mnist}.json`` for the portfolio site's in-browser
 demo tier — same conventions as :mod:`classifiers.web_export`.
 
@@ -27,10 +28,11 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import logging
+from typing import NamedTuple
 
 import numpy as np
 
-from classifiers.web_export import OUT_DIR, provenance_base
+from classifiers.web_export import OUT_DIR, SEED, provenance_base
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,19 @@ BB84_CD = (2.0, 0.02)
 
 #: Ink threshold for the paper's pixel-ratio features (0-255 grayscale).
 INK_THRESHOLD = 127
+
+#: Held-out MNIST digits per class, drawn from outside the 100-per-class fit sample.
+MNIST_TEST_PER_CLASS = 500
+
+
+class Split(NamedTuple):
+    """Raw (N, 2) features and +1/-1 labels, fit and held-out."""
+
+    train_x: np.ndarray
+    train_y: np.ndarray
+    test_x: np.ndarray
+    test_y: np.ndarray
+    protocol: str
 
 
 def weight_vector(alpha: np.ndarray) -> np.ndarray:
@@ -93,19 +108,33 @@ def decide(w: np.ndarray, mapping: dict, feats: np.ndarray) -> np.ndarray:
     return np.sign(v @ w)
 
 
-def iris_features() -> tuple[np.ndarray, np.ndarray]:
-    """The notebook's Iris subset: (sepal_width, petal_length), setosa=+1."""
+def iris_features() -> Split:
+    """The notebook's Iris subset, (sepal_width, petal_length) with setosa=+1,
+    split 70/30 by class."""
     from sklearn.datasets import load_iris
+    from sklearn.model_selection import train_test_split
 
     iris = load_iris()
     mask = iris.target < 2
     feats = iris.data[mask][:, [1, 2]]
     labels = np.where(iris.target[mask] == 0, 1, -1)
-    return feats, labels
+    tx, vx, ty, vy = train_test_split(
+        feats, labels, test_size=0.3, stratify=labels, random_state=SEED
+    )
+    return Split(tx, ty, vx, vy, "stratified 70/30 split of the 100 setosa/versicolor samples")
 
 
-def mnist_features() -> tuple[np.ndarray, np.ndarray]:
-    """The notebook's 6-vs-9 subset as (HR, VR) ink ratios, "6"=+1.
+def _ink_ratios(images: np.ndarray) -> np.ndarray:
+    """(HR, VR): left/right and top/bottom ink counts, with an empty half counted as 1."""
+    binary = images > INK_THRESHOLD
+    hr = binary[:, :, :14].sum(axis=(1, 2)) / np.maximum(binary[:, :, 14:].sum(axis=(1, 2)), 1)
+    vr = binary[:, :14, :].sum(axis=(1, 2)) / np.maximum(binary[:, 14:, :].sum(axis=(1, 2)), 1)
+    return np.stack([hr, vr], axis=1)
+
+
+def mnist_features() -> Split:
+    """The notebook's 6-vs-9 fit sample (100 per class) as (HR, VR) ink ratios, "6"=+1,
+    and a disjoint held-out sample of MNIST_TEST_PER_CLASS per class.
 
     Requires the openml ``mnist_784`` cache (the notebook's first run created
     it); callers in CI must skip when it is absent.
@@ -116,20 +145,29 @@ def mnist_features() -> tuple[np.ndarray, np.ndarray]:
         "mnist_784", version=1, return_X_y=True, as_frame=False, parser="liac-arff"
     )
     rng = np.random.default_rng(42)
-    idx6 = rng.choice(np.where(y == "6")[0], 100, replace=False)
-    idx9 = rng.choice(np.where(y == "9")[0], 100, replace=False)
-    images = X[np.concatenate([idx6, idx9])].reshape(-1, 28, 28)
-    labels = np.concatenate([np.ones(100, dtype=int), -np.ones(100, dtype=int)])
-    binary = images > INK_THRESHOLD
-    hr = binary[:, :, :14].sum(axis=(1, 2)) / binary[:, :, 14:].sum(axis=(1, 2))
-    vr = binary[:, :14, :].sum(axis=(1, 2)) / binary[:, 14:, :].sum(axis=(1, 2))
-    return np.stack([hr, vr], axis=1), labels
+    pool6, pool9 = np.where(y == "6")[0], np.where(y == "9")[0]
+    idx6 = rng.choice(pool6, 100, replace=False)
+    idx9 = rng.choice(pool9, 100, replace=False)
+    held = np.random.default_rng(43)
+    test6 = held.choice(np.setdiff1d(pool6, idx6), MNIST_TEST_PER_CLASS, replace=False)
+    test9 = held.choice(np.setdiff1d(pool9, idx9), MNIST_TEST_PER_CLASS, replace=False)
+
+    def sample(i6: np.ndarray, i9: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        images = X[np.concatenate([i6, i9])].reshape(-1, 28, 28)
+        labels = np.concatenate([np.ones(len(i6), dtype=int), -np.ones(len(i9), dtype=int)])
+        return _ink_ratios(images), labels
+
+    tx, ty = sample(idx6, idx9)
+    vx, vy = sample(test6, test9)
+    n_test = 2 * MNIST_TEST_PER_CLASS
+    protocol = f"fit on the notebook's 200 digits; scored on {n_test} other 6s and 9s"
+    return Split(tx, ty, vx, vy, protocol)
 
 
-def bb84_features() -> tuple[np.ndarray, np.ndarray]:
-    """The bb84 plugin's test split as raw (qber, sifted_key_rate), eve=+1.
+def bb84_features() -> Split:
+    """The bb84 plugin's train and test splits as raw (qber, sifted_key_rate), eve=+1.
 
-    Re-generates the exact seeded simulation the plugin serves (self-generated
+    Re-generates the exact seeded simulations the plugin serves (self-generated
     data — no cache, so the CI drift check runs this unconditionally).
 
     The *eavesdropped* class rides the +1 target ray. Which class sits on
@@ -140,12 +178,17 @@ def bb84_features() -> tuple[np.ndarray, np.ndarray]:
     boundary in the sparse gap near the clean regime (90%+ accuracy) instead
     of mid-eavesdropped (77%).
     """
-    from classifiers.datasets.bb84.plugin import N_TEST, TEST_SEED
+    from classifiers.datasets.bb84.plugin import N_TEST, N_TRAIN, TEST_SEED, TRAIN_SEED
     from classifiers.datasets.bb84.simulate import generate_dataset
 
-    feats, labels01 = generate_dataset(N_TEST, TEST_SEED)
-    labels = np.where(labels01 == 1, 1, -1)  # eavesdropped is the +1 class
-    return feats.astype(np.float64), labels
+    def sessions(n: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
+        feats, labels01 = generate_dataset(n, seed)
+        return feats.astype(np.float64), np.where(labels01 == 1, 1, -1)  # eve is +1
+
+    tx, ty = sessions(N_TRAIN, TRAIN_SEED)
+    vx, vy = sessions(N_TEST, TEST_SEED)
+    protocol = f"fit on the {N_TRAIN} training sessions; scored on the {N_TEST} test sessions"
+    return Split(tx, ty, vx, vy, protocol)
 
 
 #: Per-dataset export specs — adding a dataset is adding one entry here (plus
@@ -185,13 +228,13 @@ def build_payload(dataset: str) -> dict:
     """Derive, measure, and assemble one dataset's qsvm export payload."""
     spec = QSVM_DATASETS[dataset]
     w = weight_vector(ALPHA_SHOTS)
-    feats, labels = spec["features_fn"]()
+    split = spec["features_fn"]()
     c, d = spec["cd"]
-    t1 = feats[labels == 1].mean(axis=0)
-    t2 = feats[labels == -1].mean(axis=0)
+    t1 = split.train_x[split.train_y == 1].mean(axis=0)
+    t2 = split.train_x[split.train_y == -1].mean(axis=0)
     a, b = solve_map(t1, t2, c, d)
     mapping = {"a": a, "b": b, "c": c, "d": d}
-    acc = float((decide(w, mapping, feats) == labels).mean())
+    acc = float((decide(w, mapping, split.test_x) == split.test_y).mean())
     payload: dict = {
         "kind": "qsvm",
         "dataset": dataset,
@@ -201,6 +244,9 @@ def build_payload(dataset: str) -> dict:
         "features": spec["features"],
         "raw_input": spec["raw_input"],
         "test_accuracy": round(acc, 4),
+        "train_n": len(split.train_y),
+        "test_n": len(split.test_y),
+        "test_protocol": split.protocol,
         "num_params": 6,
         "display": {"label": "QSVM (Yang et al. 2019)", "subset": spec["subset"]},
         **spec["extra"],
@@ -215,7 +261,7 @@ def build_payload(dataset: str) -> dict:
                 "the Aer readout (0.51048996, -0.49487372, seed 42) and the exact "
                 "analytic alpha (0.5, -0.5) are sign-identical"
             ),
-            "derivation": "closed-form Eq. 24 map from class means; see notebooks/qsvm-iris/",
+            "derivation": "closed-form Eq. 24 map from the training split's class means",
         },
         {"numpy": np.__version__, "scikit-learn": importlib.metadata.version("scikit-learn")},
     )
