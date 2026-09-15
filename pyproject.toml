@@ -47,7 +47,7 @@ dev = [
     "pytest>=8.0",
     # Compatible-release pin: the enforced rule set shifts with ruff minors, so
     # CI must not float across them.
-    "ruff~=0.15.16",
+    "ruff>=0.15.16,<0.17.0",
 ]
 
 [build-system]
