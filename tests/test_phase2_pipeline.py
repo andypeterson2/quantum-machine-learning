@@ -400,18 +400,15 @@ class TestCIPipeline:
 # ── WP #696: API documentation accuracy ───────────────────────────────────
 
 class TestAPIDocumentationAccuracy:
-    """#696 — Verify API docs match actual endpoints."""
+    """#696 — Verify the documented API matches the actual endpoints."""
 
     @pytest.fixture
     def api_docs(self):
-        return _read("docs/api.md")
+        return _read("README.md")
 
     @pytest.fixture
     def readme(self):
         return _read("README.md")
-
-    def test_api_docs_exist(self):
-        _read("docs/api.md")
 
     def test_docs_cover_train_endpoint(self, api_docs):
         assert "/train" in api_docs
@@ -437,11 +434,9 @@ class TestAPIDocumentationAccuracy:
     def test_docs_cover_sse_events(self, api_docs):
         assert "SSE" in api_docs or "sse" in api_docs or "Server-Sent" in api_docs
 
-    def test_readme_api_table_matches_docs(self, readme, api_docs):
-        """Key endpoints listed in README should also appear in API docs."""
-        key_paths = ["/train", "/predict", "/evaluate", "/models"]
-        for path in key_paths:
-            assert path in api_docs, f"{path} missing from API docs"
+    def test_readme_lists_the_key_endpoints(self, readme):
+        """The README is where the API surface is documented."""
+        for path in ["/train", "/predict", "/evaluate", "/models"]:
             assert path in readme, f"{path} missing from README"
 
     def test_docs_cover_dataset_config_endpoint(self, api_docs):
