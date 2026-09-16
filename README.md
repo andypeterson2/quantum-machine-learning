@@ -187,7 +187,6 @@ quantum-machine-learning/
 │   ├── layers.py                   # Reusable layers (Quadratic, Polynomial)
 │   ├── qiskit_layers.py            # Qiskit quantum circuit layer (optional dep)
 │   ├── types.py                    # Shared types (StatusCallback, TrainingEvent)
-│   ├── LAYERS.md                   # Custom-layer documentation
 │   ├── routes/
 │   │   ├── __init__.py             # Blueprint registration
 │   │   ├── main.py                 # GET /health, GET /api, GET /api/datasets[...]
@@ -217,7 +216,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (513 test functions)
+├── tests/                          # Pytest suite (508 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── docs/                           # Architecture, API, and model reference
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
@@ -330,7 +329,7 @@ That's it. No changes to any existing file. The new dataset appears automaticall
 
 ## API Reference
 
-Full request/response shapes are in [docs/api.md](docs/api.md). Machine-readable schemas live in `tests/contract/schemas/`, and `GET /api` returns a live discovery index of every endpoint.
+Machine-readable schemas live in `tests/contract/schemas/`, and `GET /api` returns a live discovery index of every endpoint.
 
 ### Top-level
 
@@ -439,7 +438,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 python -m pytest tests/ -v
 ```
 
-The test suite (513 test functions) covers:
+The test suite (508 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies

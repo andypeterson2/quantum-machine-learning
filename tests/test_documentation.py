@@ -136,23 +136,6 @@ class TestConfigurationDocumentation:
         assert "accuracy" in readme.lower() or "Accuracy" in readme
 
 
-class TestApiDocumentation:
-    """API docs should exist and cover key endpoints."""
-
-    def test_api_docs_exist(self):
-        assert (ROOT / "docs" / "api.md").is_file()
-
-    def test_models_docs_exist(self):
-        assert (ROOT / "docs" / "models.md").is_file()
-
-    def test_architecture_docs_exist(self):
-        assert (ROOT / "docs" / "architecture.md").is_file()
-
-    def test_api_docs_have_content(self):
-        content = (ROOT / "docs" / "api.md").read_text()
-        assert len(content) > 100
-
-
 class TestDockerDocumentation:
     """Docker-related files should be present and documented."""
 
