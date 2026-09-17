@@ -140,42 +140,37 @@ class _CountingExecutor(_QCExecutor):
 # ---------------------------------------------------------------------------
 
 class TestIndependentInterpret:
+    """Counts -> per-qubit P(1), read right-to-left (Qiskit prints qubit 0 last)
+    and divided by shots. tests/test_qiskit_gradients.py covers why the layer's
+    gradients depend on both."""
+
     def test_uniform_counts(self):
         interp = _IndependentInterpret()
-        counts = {"000": 500, "111": 500}
-        result = interp(counts)
+        result = interp({"000": 500, "111": 500})
         assert result.shape == (3,)
-        # bits "111" contribute to all 3 positions; normalised to sum=1
-        assert np.isclose(result.sum(), 1.0)
+        # Every qubit is 1 in half the shots.
+        assert result == pytest.approx([0.5, 0.5, 0.5])
 
     def test_single_outcome(self):
         interp = _IndependentInterpret()
-        counts = {"101": 1000}
-        result = interp(counts)
+        result = interp({"101": 1000})
         assert result.shape == (3,)
-        # bits 0 and 2 are '1', bit 1 is '0'
-        assert result[0] > 0
-        assert result[1] == 0.0
-        assert result[2] > 0
-        assert np.isclose(result.sum(), 1.0)
+        # "101" is q2 q1 q0: qubits 0 and 2 are 1 in every shot.
+        assert result == pytest.approx([1.0, 0.0, 1.0])
 
     def test_all_zeros_outcome(self):
         interp = _IndependentInterpret()
-        counts = {"000": 1024}
-        result = interp(counts)
+        result = interp({"000": 1024})
         assert result.shape == (3,)
-        # No '1' bits, total is 0 -> output should be all zeros.
         np.testing.assert_array_equal(result, np.zeros(3, dtype=np.float32))
 
     def test_mixed_outcomes(self):
         interp = _IndependentInterpret()
-        counts = {"10": 300, "01": 700}
-        result = interp(counts)
+        result = interp({"10": 300, "01": 700})
         assert result.shape == (2,)
-        assert np.isclose(result.sum(), 1.0)
-        # bit-0 is '1' in "10" (300 times), bit-1 is '1' in "01" (700 times)
-        assert result[0] == pytest.approx(300.0 / 1000.0)
-        assert result[1] == pytest.approx(700.0 / 1000.0)
+        # "01" puts qubit 0 high 700 times; "10" puts qubit 1 high 300 times.
+        assert result[0] == pytest.approx(0.7)
+        assert result[1] == pytest.approx(0.3)
 
 
 # ---------------------------------------------------------------------------

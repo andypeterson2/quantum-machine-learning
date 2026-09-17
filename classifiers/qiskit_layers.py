@@ -54,17 +54,28 @@ class _QCExecutor(ABC):
 
 
 class _IndependentInterpret:
-    """Interpret measurement counts as per-qubit mean of '1' outcomes."""
+    """Per-qubit probability of measuring 1: ``output[i] = P(qubit i == 1)``.
+
+    Two things this has to get right, because the layer's gradients depend on
+    them. The counts are divided by the shot total, not by the number of ones,
+    so each entry is that qubit's own probability rather than its share of the
+    ones (a share is not linear in the state, which the parameter-shift rule in
+    :class:`_RunCircuit` requires). And Qiskit's bitstrings are printed with the
+    highest qubit on the left, so they are read right-to-left to keep
+    ``output[i]`` on qubit ``i``.
+    """
 
     def __call__(self, counts: dict[str, int]) -> np.ndarray:
         output_dim = len(next(iter(counts)).split(" ")[0])
         output = np.zeros(output_dim, dtype=np.float32)
+        shots = 0
         for outcome, freq in counts.items():
-            for bit in range(output_dim):
-                if outcome[bit] == "1":
-                    output[bit] += freq
-        total = output.sum()
-        return output / total if total > 0 else output
+            bits = outcome.split(" ")[0][::-1]  # qubit 0 first
+            shots += freq
+            for qubit, bit in enumerate(bits):
+                if bit == "1":
+                    output[qubit] += freq
+        return output / shots if shots > 0 else output
 
 
 class _QCSampler(_QCExecutor):
@@ -153,8 +164,8 @@ class _ExampleCircuit(_ParametricCircuit):
 # ── Autograd bridge ─────────────────────────────────────────────────────────
 
 class _RunCircuit(Function):
-    """Custom autograd Function: forward runs the circuit, backward uses
-    finite-difference gradient estimation."""
+    """Custom autograd Function: forward runs the circuit, backward computes
+    parameter-shift gradients for both the weights and the inputs."""
 
     @staticmethod
     def forward(ctx, pc: _ParametricCircuit, w: torch.Tensor, x_batch: torch.Tensor):
@@ -169,14 +180,16 @@ class _RunCircuit(Function):
     def _estimate_partial(
         f: Callable, v: torch.Tensor, pos: int, delta: float = np.pi / 2
     ) -> torch.Tensor:
-        """Estimate partial derivative using the parameter-shift rule.
+        """Partial derivative by the parameter-shift rule.
 
-        For Pauli rotation gates the exact gradient is:
-            df/dθ = [f(θ + π/2) − f(θ − π/2)] / 2
-
-        This replaces the previous finite-difference approximation,
-        giving exact analytic gradients for parametric quantum circuits
-        composed of Pauli rotation gates (RX, RXX, RZZ, etc.).
+        For a Pauli rotation gate the derivative of an expectation value is
+        exactly ``df/dθ = [f(θ + π/2) − f(θ − π/2)] / 2``. It holds for every
+        parameter here — the inputs enter through RX, the weights through
+        RXX/RZZ — and for the measured quantity, because
+        :class:`_IndependentInterpret` returns per-qubit probabilities, which
+        are expectation values of projectors. With a sampling executor each
+        evaluation carries shot noise, so the estimate is unbiased rather than
+        exact.
         """
         e = F.one_hot(torch.tensor([pos]), num_classes=v.shape[-1]).flatten().float()
         fv_plus = f(v + delta * e)
@@ -214,8 +227,10 @@ class _RunCircuit(Function):
                 df_dx.append(torch.dot(df_dx_k, g))
             batch_df_dx.append(df_dx)
 
+        # df_dx[k] is the derivative with respect to x[k] — the shift was applied
+        # at position k — so the columns are already in input order.
         batch_df_dw = torch.tensor(batch_df_dw).sum(dim=0)
-        batch_df_dx = torch.flip(torch.tensor(batch_df_dx), dims=[1])
+        batch_df_dx = torch.tensor(batch_df_dx)
         return None, batch_df_dw, batch_df_dx
 
 
