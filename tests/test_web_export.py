@@ -200,6 +200,10 @@ class TestRegeneration:
     which is why the accuracy claim is what CI enforces.
     """
 
+    @pytest.mark.skipif(
+        not (REPO_ROOT / ".git").exists(),
+        reason="exporting stamps provenance from git; the image ships no checkout",
+    )
     @pytest.mark.parametrize("name", ["iris", "bb84"])
     def test_training_path_reproduces_the_committed_export(self, name: str) -> None:
         from classifiers.web_export import SEED, _payload, seed_everything
