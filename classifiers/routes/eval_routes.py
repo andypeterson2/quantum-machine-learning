@@ -44,6 +44,8 @@ def _evaluate_all(plugin, registry, on_status=None) -> dict:
         registry.update_eval_result(plugin.name, model_name, ev)
         results[model_name] = {
             "accuracy": ev.accuracy,
+            "accuracy_ci": list(ev.accuracy_ci),
+            "num_samples": ev.num_samples,
             "avg_loss": ev.avg_loss,
             "per_class_accuracy": ev.per_class_accuracy,
             "num_params": ev.num_params,
@@ -138,6 +140,8 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             )
             return jsonify({
                 "accuracy": result.accuracy,
+                "accuracy_ci": list(result.accuracy_ci),
+                "num_samples": result.num_samples,
                 "avg_loss": result.avg_loss,
                 "per_class_accuracy": result.per_class_accuracy,
             })
