@@ -98,7 +98,7 @@ jobs:
       - name: Install linter
         # Same range as pyproject's [dev] extra (keep the two in sync) — the
         # enforced rule set must not float with ruff releases.
-        run: pip install "ruff>=0.15.16,<0.17.0"
+        run: pip install "ruff>=0.15.16,<0.16.0"
 
       - name: Run linter
         run: ruff check .

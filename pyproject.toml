@@ -46,8 +46,11 @@ quantum = [
 dev = [
     "pytest>=8.0",
     # Compatible-release pin: the enforced rule set shifts with ruff minors, so
-    # CI must not float across them.
-    "ruff>=0.15.16,<0.17.0",
+    # CI must not float across them (0.16 stabilises PLR0917, which three
+    # deliberate call sites would have to waive — and those waivers are RUF100
+    # errors under 0.15, so no single tree satisfies both). Keep this in sync
+    # with the lint job in .github/workflows/ci.yml.
+    "ruff>=0.15.16,<0.16.0",
 ]
 
 [build-system]
