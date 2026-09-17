@@ -67,7 +67,7 @@ The simplest possible classifier -- a single linear transformation from pixel sp
 ## SVM (`SVMNet`)
 
 **Type:** Linear Support Vector Machine
-**Loss:** Crammer-Singer multi-class hinge loss
+**Loss:** Weston-Watkins multi-class hinge loss
 **Typical accuracy:** ~91-92%
 **Trainable parameters:** ~7.9K
 

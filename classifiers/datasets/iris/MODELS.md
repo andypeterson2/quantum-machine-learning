@@ -38,7 +38,7 @@ The 15 trainable parameters consist of a 4x3 weight matrix (12 parameters) and a
 ## SVM (`IrisSVM`)
 
 **Type:** Linear Support Vector Machine
-**Loss:** Crammer-Singer multi-class hinge loss
+**Loss:** Weston-Watkins multi-class hinge loss
 **Typical accuracy:** ~94-96%
 **Trainable parameters:** 15
 

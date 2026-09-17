@@ -123,7 +123,7 @@ class IrisSVM(BaseModel):
 
     @staticmethod
     def loss_fn(output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """Delegate to Crammer-Singer multi-class hinge loss."""
+        """Delegate to Weston-Watkins multi-class hinge loss."""
         return multi_class_hinge_loss(output, target)
 
 

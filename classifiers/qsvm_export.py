@@ -14,7 +14,7 @@ training geometry), pairs them with the notebook's quantum shot-readout
 ``alpha = (0.5, -0.5)`` is sign-identical on Iris and is recorded in the
 provenance), fits the map on a training split, scores the rule on a held-out
 split, and writes
-``exports/web/qsvm-{iris,mnist}.json`` for the portfolio site's in-browser
+``exports/web/qsvm-{iris,mnist,bb84}.json`` for the portfolio site's in-browser
 demo tier — same conventions as :mod:`classifiers.web_export`.
 
 Run via ``make export-qsvm``; ship with ``make sync-web``.
@@ -224,10 +224,23 @@ QSVM_DATASETS: dict[str, dict] = {
 }
 
 
-def build_payload(dataset: str) -> dict:
-    """Derive, measure, and assemble one dataset's qsvm export payload."""
+class Fit(NamedTuple):
+    """One dataset's derived rule and its held-out score."""
+
+    w: np.ndarray
+    mapping: dict
+    split: Split
+    accuracy: float
+
+
+def fit_and_score(dataset: str, alpha: np.ndarray) -> Fit:
+    """Fit the Eq. 24 map on the fit split and score the rule on the held-out split.
+
+    The one derivation both the exporter and ``tools/hardware_run.py`` use, so a
+    hardware alpha is scored exactly the way the shipped exports are.
+    """
     spec = QSVM_DATASETS[dataset]
-    w = weight_vector(ALPHA_SHOTS)
+    w = weight_vector(alpha)
     split = spec["features_fn"]()
     c, d = spec["cd"]
     t1 = split.train_x[split.train_y == 1].mean(axis=0)
@@ -235,6 +248,13 @@ def build_payload(dataset: str) -> dict:
     a, b = solve_map(t1, t2, c, d)
     mapping = {"a": a, "b": b, "c": c, "d": d}
     acc = float((decide(w, mapping, split.test_x) == split.test_y).mean())
+    return Fit(w, mapping, split, acc)
+
+
+def build_payload(dataset: str) -> dict:
+    """Derive, measure, and assemble one dataset's qsvm export payload."""
+    spec = QSVM_DATASETS[dataset]
+    w, mapping, split, acc = fit_and_score(dataset, ALPHA_SHOTS)
     payload: dict = {
         "kind": "qsvm",
         "dataset": dataset,

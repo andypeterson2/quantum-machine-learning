@@ -92,6 +92,11 @@ class Trainer:
         config:       Optional :class:`TrainingConfig` enabling early stopping,
                       validation, distillation, and regularisation.
         val_loader:   Optional validation data loader for intermediate eval.
+        early_stop_min_accuracy: Early stopping only fires once the best
+                      validation accuracy exceeds this, so a model still near
+                      chance is never stopped. Patience counts epochs since
+                      that best checkpoint (validation runs every
+                      ``config.val_gap`` batches).
     """
 
     # One parameter per training knob the API exposes; a config object would only rename them.

@@ -21,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          pip install "pytest>=8.0"
 
       # Dataset caches: the drift tests re-score committed browser weights on
       # the REAL test splits, so CI needs the datasets — but must not download
@@ -77,7 +77,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest jsonschema
+          pip install "pytest>=8.0" "jsonschema>=4"
 
       - name: Boot the classifier and run the live-HTTP contract tests
         run: |
@@ -96,9 +96,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install linter
-        # Same compatible-release pin as the [dev] extra — the enforced rule
-        # set must not float with ruff releases.
-        run: pip install "ruff~=0.15.16"
+        # Same range as pyproject's [dev] extra (keep the two in sync) — the
+        # enforced rule set must not float with ruff releases.
+        run: pip install "ruff>=0.15.16,<0.16.0"
 
       - name: Run linter
         run: ruff check .
