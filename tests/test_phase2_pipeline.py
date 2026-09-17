@@ -284,9 +284,13 @@ class TestContainerEnvironment:
         src = _read("docker-compose.yml")
         assert "CLASSIFIERS_HOST" not in src
 
-    def test_dockerfile_env_cert_dir(self):
+    def test_dockerfile_bakes_no_certs(self):
+        """gunicorn never reads dev certs, so the image must not copy them in
+        (a local .certs/ would otherwise ship its private key)."""
         src = _read("Dockerfile")
-        assert "DEV_CERT_DIR" in src
+        assert "DEV_CERT_DIR" not in src
+        assert ".cert" not in src
+        assert ".certs/" in _read(".dockerignore")
 
     def test_requirements_flask(self):
         src = _read("requirements.txt")

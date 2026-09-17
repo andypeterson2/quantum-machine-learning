@@ -8,7 +8,7 @@ An API-only Flask service for training, evaluating, and comparing classical and 
 
 > **Note on naming:** The repository directory may still appear as `quantum-protein-kernel` in some contexts — this is a historical artifact. The project is a general-purpose multi-dataset classifier platform (package name: `quantum-machine-learning`). No protein or bioinformatics data is used.
 
-Ships with **MNIST** (handwritten digit recognition from image input) and **Iris** (flower species classification from numeric features), and is designed so adding a new dataset requires zero changes to existing code.
+Ships with **MNIST** (handwritten digit recognition from image input), **Iris** (flower species classification from numeric features) and **BB84** (eavesdropper detection on simulated quantum-key-distribution sessions), and is designed so adding a new dataset requires zero changes to existing code.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ graph LR
 
 ### Core
 - **Plugin architecture** — each dataset is a self-contained plugin; add new ones without modifying any shared code
-- **Multiple model architectures per dataset** — CNN, Linear, SVM, Quadratic, Polynomial, and Qiskit quantum models for MNIST; Linear, SVM, and PennyLane QVC for Iris
+- **Multiple model architectures per dataset** — CNN, Linear, SVM, Quadratic, Polynomial, and Qiskit quantum models for MNIST; Linear, SVM, and PennyLane QVC for Iris and BB84
 - **Live training progress** via Server-Sent Events — loss and epoch updates stream as they happen, with synchronous (`/sync`) fallbacks for scripts and CI
 - **Training history** — loss and validation-accuracy data points emitted as structured `history` events during training and returned with the final result
 - **Auto-evaluation** — test-set accuracy, per-class accuracy, and parameter counts computed on demand
@@ -70,10 +70,10 @@ docker build -t qml-classifiers .
 docker run --rm -p 8080:8080 qml-classifiers
 ```
 
-Or with Docker Compose (`CLASSIFIER_PORT` selects the host port mapping; use 8080 to match the container's listen port):
+Or with Docker Compose (`CLASSIFIERS_PORT` selects the host port, default 8080; the container always listens on 8080):
 
 ```bash
-CLASSIFIER_PORT=8080 docker compose up --build
+CLASSIFIERS_PORT=8080 docker compose up --build
 ```
 
 Verify it's up:
@@ -90,7 +90,7 @@ curl http://localhost:8080/health
 pip install -r requirements.txt
 ```
 
-(That includes `flask`, `flask-cors`, `mistune`, `torch`, `torchvision`, `numpy`, `Pillow`, `scikit-learn`, and `gunicorn`. For a GPU-enabled torch build, install `torch`/`torchvision` manually first — see the comments in `requirements.txt`.)
+(That includes `flask`, `flask-cors`, `mistune`, `torch`, `torchvision`, `numpy`, `Pillow`, `scikit-learn`, and `gunicorn`, pinned to the versions the Intel-Mac dev machine can run — see the comments in `requirements.txt`. The Docker image installs the current torch instead.)
 
 **Optional** — for the quantum model architectures:
 
@@ -216,15 +216,17 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (508 test functions)
+├── tests/                          # Pytest suite (516 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
-├── docs/                           # Architecture, API, and model reference
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
 │                                   #   rules (committed; drift-checked by tests/test_web_export.py)
 ├── notebooks/qsvm-iris/            # QSVM paper recreation (Yang et al. 2019) — executed
 │                                   #   notebook; its solved decision rule ships as browser
 │                                   #   weights via `make export-qsvm` (classifiers/qsvm_export.py)
+├── exports/hardware/               # Cached IBM Quantum run of the paper's HHL circuit
+│                                   #   (tools/hardware_run.py; drift-checked by tests/test_hardware_run.py)
+├── tools/hardware_run.py           # Submit/fetch the hardware run; `rescore` re-scores it offline
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── classifiers/data/               # Dataset cache (git-ignored; cached in CI)
 ```
@@ -283,7 +285,7 @@ The trainer depends on the `DataLoader` abstraction (not concrete dataset librar
 
 ## Adding a New Dataset
 
-To add a third dataset (e.g. Fashion-MNIST), create a subpackage:
+To add another dataset (e.g. Fashion-MNIST), create a subpackage:
 
 ```
 classifiers/datasets/fashion_mnist/
@@ -388,10 +390,10 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `patience` | `int` | — | Early stopping patience (epochs without improvement) |
+| `patience` | `int` | — | Early stopping patience (epochs without improvement). Only applies once the best validation accuracy exceeds 60%, so a model still near chance trains for all its epochs |
 | `val_gap` | `int` | `50` | Batches between validation checks |
 | `teacher` | `string` | — | Name of a trained model to use as distillation teacher |
-| `distill_weight` | `float` | `0.5` | Blend weight: `(1-w)*true_loss + w*distill_loss` |
+| `distill_weight` | `float` | `0.5` | Blend weight: `(1-w)*true_loss + w*distill_loss` (0 ≤ w ≤ 1) |
 | `distill_temperature` | `float` | `4.0` | Softmax temperature for the distillation term: KL divergence between the teacher's and student's softened outputs, scaled by T² |
 
 ---
@@ -438,7 +440,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 python -m pytest tests/ -v
 ```
 
-The test suite (508 test functions) covers:
+The test suite (516 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
@@ -462,11 +464,11 @@ All configuration is via environment variables:
 | Dev server host | `CLASSIFIERS_HOST` | `127.0.0.1` | `classifiers/__main__.py` |
 | Debug mode (dev server) | `CLASSIFIERS_DEBUG` | on for `python -m classifiers`; `0` in the container | `classifiers/__main__.py` |
 | Container port (gunicorn) | `PORT` | `8080` | `Dockerfile` CMD |
-| Allowed CORS origins | `CLASSIFIERS_CORS_ORIGINS` | `http://localhost:*,https://andypeterson.dev` | `classifiers/server.py` |
+| Allowed CORS origins | `CLASSIFIERS_CORS_ORIGINS` | `^https?://localhost(:\d+)?$,https://andypeterson.dev` (comma-separated; anchor any pattern with `^…$`) | `classifiers/server.py` |
 | Max request body size | `CLASSIFIERS_MAX_CONTENT_LENGTH` | 2 MB | `classifiers/server.py` |
 | Gateway origin guard | `ORIGIN_SECRET` | unset (guard inactive) | `classifiers/server.py` |
 | Checkpoint directory | — | `./models/` | `classifiers/server.py` |
-| MNIST data directory | — | `./data/` | `classifiers/datasets/mnist/plugin.py` |
+| MNIST data directory | — | `classifiers/data/` | `classifiers/datasets/mnist/plugin.py` |
 
 ---
 
@@ -491,10 +493,10 @@ All configuration is via environment variables:
 
 ## Tech Stack
 
-**Backend:** Python 3.12, PyTorch 2.2, Flask 3.0, NumPy, Pillow, scikit-learn
+**Backend:** Python 3.12, PyTorch (2.2.2 locally, current in the Docker image), Flask 3.1, NumPy, Pillow, scikit-learn
 **Serving:** gunicorn (single worker, threaded) in Docker; Werkzeug dev server locally
-**Infrastructure:** Docker, GitHub Actions CI (4 jobs: unit tests, live-HTTP contract tests, ruff lint, Docker build)
-**Quantum:** Qiskit (MNIST), PennyLane (Iris) — both optional
+**Infrastructure:** Docker, GitHub Actions CI (4 jobs: unit tests, live-HTTP contract tests, ruff lint, and a Docker job that builds the image and runs the suite inside it with the quantum extra)
+**Quantum:** Qiskit (MNIST), PennyLane (Iris, BB84) — both optional; IBM Quantum hardware via `qiskit-ibm-runtime` for `tools/hardware_run.py`
 
 ---
 

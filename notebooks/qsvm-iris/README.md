@@ -14,9 +14,11 @@ The notebook implements the paper's full pipeline:
 3. **Optimized HHL solver** — the 4-qubit shallow circuit of Fig. 10, reconstructed
    from Section IV-C and verified against the classical LS-SVM solution, with the
    classical amplitude readout of Eqs. 34–35/31.
-4. **Results** — 97% accuracy on Iris (paper: 97% simulated / 98% on IBMQX2)
-   and 91% on MNIST 6-vs-9 with the paper's HR/VR pixel-ratio features (near the
-   92.5% ceiling of an unconstrained linear SVM on the same features), reusing
+4. **Results** — scored, as in the paper, on the same points the map is fit
+   to (the exports report held-out accuracy instead): 97% on Iris (paper: 97%
+   simulated / 98% on IBMQX2) and 91% on MNIST 6-vs-9 with the paper's HR/VR
+   pixel-ratio features (near the 92.5% an unconstrained linear SVM reaches on
+   the same features and points), reusing
    the same quantum solution — only the mapping coefficients change per dataset.
 5. **Noise** — the paper's Jensen–Shannon divergence analysis repeated under a
    depolarizing + readout noise model in place of the retired IBMQX2 device.
@@ -29,8 +31,10 @@ The notebook implements the paper's full pipeline:
    The error-suppressed run (dynamical decoupling + Pauli twirling) scored
    0.0211 — slightly *worse* than raw, because at this depth the coherent
    errors twirling randomizes cost less than the randomization itself. The
-   hardware α readout (+0.5010, −0.4851) reproduces every deployed accuracy
-   within a point and is now the α the browser exports ship.
+   hardware α readout (+0.5010, −0.4851) is the α the browser exports ship;
+   with it the rules score 96.7% (Iris), 89.1% (MNIST) and 90.8% (BB84) on
+   held-out data. The α magnitudes are measured; their (+, −) sign pattern is
+   taken from the ideal solution, since counts cannot carry a sign.
 
 ## Run
 

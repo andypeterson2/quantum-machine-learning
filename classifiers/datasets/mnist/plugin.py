@@ -76,7 +76,8 @@ class MNISTPlugin(DatasetPlugin):
 
     * 10 classes (digits 0–9)
     * 28 × 28 single-channel (grayscale) images
-    * Three model architectures: CNN, Linear, SVM
+    * Model architectures: CNN, Linear, SVM, Quadratic, Polynomial, plus
+      Qiskit-CNN and Qiskit-Linear when Qiskit is installed
     """
 
     name = "mnist"

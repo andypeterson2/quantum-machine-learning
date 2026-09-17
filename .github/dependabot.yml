@@ -5,6 +5,18 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # requirements.txt is the Intel-Mac parity lock: PyTorch's last x86_64-macOS
+    # wheels are torch 2.2.2 / torchvision 0.17.2, and torch 2.2 needs numpy<2
+    # (which in turn caps pennylane below 0.45). Bumps past that ceiling cannot
+    # install on the dev machine, and a lone torch or torchvision bump cannot
+    # resolve at all, so those pins move by hand, together, when dev leaves Intel.
+    ignore:
+      - dependency-name: torch
+      - dependency-name: torchvision
+      - dependency-name: numpy
+        update-types: ["version-update:semver-major"]
+      - dependency-name: pennylane
+        versions: [">=0.45"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
