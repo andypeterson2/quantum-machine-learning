@@ -44,11 +44,14 @@ TARGETS = np.array([[0.987, 0.159], [0.345, 0.935]])
 #: (2026-09-04, job dad49jdnj4cs73adbp90, 8192 raw shots), a real quantum computer.
 ALPHA_SHOTS = np.array([0.50097561, -0.48513046])
 
-#: Hand-picked second-dimension map (c, d): the paper's values for MNIST; Iris and
-#: BB84 are picked so both mapped class means stay in the first quadrant.
+#: Second-dimension map (c, d): the paper's own values (Eq. 15) for its two
+#: datasets, and for BB84 a grid :func:`choose_parameters` picks from.
 IRIS_CD = (0.95, -0.42)
 MNIST_CD = (0.5, -0.3)
-BB84_CD = (2.0, 0.02)
+BB84_CD_GRID = [(2.0, 0.02), (1.0, 0.02), (4.0, 0.02), (2.0, 0.1), (8.0, 0.01)]
+
+#: Fraction of the fit split held back to choose the free parameters on.
+VALIDATION_FRACTION = 0.25
 
 #: Ink threshold for the paper's pixel-ratio features (0-255 grayscale).
 INK_THRESHOLD = 127
@@ -171,13 +174,12 @@ def bb84_features() -> Split:
     Re-generates the exact seeded simulations the plugin serves (self-generated
     data — no cache, so the CI drift check runs this unconditionally).
 
-    The *eavesdropped* class rides the +1 target ray. Which class sits on
-    which of the paper's fixed rays is the modeler's choice (like choosing
-    which digit is +1), and it matters here: the Eq. 24 geometry places the
-    decision boundary ~87% of the way from the +1 class mean toward the −1
-    mean, so putting the wide eavesdropped distribution on +1 lands the
-    boundary in the sparse gap near the clean regime (90%+ accuracy) instead
-    of mid-eavesdropped (77%).
+    Labels arrive with *eavesdropped* on the +1 ray; which class actually ends
+    up there is decided by :func:`choose_parameters` on a validation slice,
+    because it matters — the Eq. 24 geometry places the boundary about 87% of
+    the way from the +1 class mean toward the −1 mean, so the orientation moves
+    the boundary between the sparse gap near the clean regime and the middle of
+    the eavesdropped distribution.
     """
     from classifiers.datasets.bb84.plugin import N_TEST, N_TRAIN, TEST_SEED, TRAIN_SEED
     from classifiers.datasets.bb84.simulate import generate_dataset
@@ -197,7 +199,10 @@ def bb84_features() -> Split:
 QSVM_DATASETS: dict[str, dict] = {
     "iris": {
         "features_fn": iris_features,
-        "cd": IRIS_CD,
+        "cd_candidates": [IRIS_CD],
+        # Paper Sec. V-A2 names setosa the +1 class and Eq. 15 gives (c, d);
+        # nothing here is the modeller's to choose.
+        "free_parameters": False,
         "classes": ["setosa", "versicolor"],
         "features": ["sepal_width", "petal_length"],
         "raw_input": "features",
@@ -206,7 +211,9 @@ QSVM_DATASETS: dict[str, dict] = {
     },
     "mnist": {
         "features_fn": mnist_features,
-        "cd": MNIST_CD,
+        "cd_candidates": [MNIST_CD],
+        # Paper Sec. V-A1: "6" is the +1 class, (c, d) from Eq. 15.
+        "free_parameters": False,
         "classes": ["6", "9"],
         "features": ["horizontal_ink_ratio", "vertical_ink_ratio"],
         "raw_input": "pixels",
@@ -215,7 +222,10 @@ QSVM_DATASETS: dict[str, dict] = {
     },
     "bb84": {
         "features_fn": bb84_features,
-        "cd": BB84_CD,
+        "cd_candidates": BB84_CD_GRID,
+        # The paper has no BB84 experiment, so both the orientation and (c, d)
+        # are this repo's to pick — and so must be picked on validation data.
+        "free_parameters": True,
         "classes": ["eavesdropped", "clean"],
         "features": ["qber", "sifted_key_rate"],
         "raw_input": "features",
@@ -237,34 +247,113 @@ class Fit(NamedTuple):
     split: Split
     accuracy: float
     hits: int
+    choice: Choice
 
 
-def fit_and_score(dataset: str, alpha: np.ndarray) -> Fit:
+class Choice(NamedTuple):
+    """The free parameters, and the validation evidence for them."""
+
+    flip: bool
+    c: float
+    d: float
+    validation_accuracy: float
+    validation_n: int
+    candidates: int
+
+
+def _oriented(labels: np.ndarray, *, flip: bool) -> np.ndarray:
+    """Labels with the classes swapped between the paper's two rays."""
+    return -labels if flip else labels
+
+
+def _solve_on(x: np.ndarray, y: np.ndarray, c: float, d: float) -> dict:
+    """The Eq. 24 map fitted to these points' class means."""
+    a, b = solve_map(x[y == 1].mean(axis=0), x[y == -1].mean(axis=0), c, d)
+    return {"a": a, "b": b, "c": c, "d": d}
+
+
+def choose_parameters(split: Split, spec: dict, w: np.ndarray) -> Choice:
+    """Pick the orientation and (c, d) on a validation slice of the fit split.
+
+    Two parameters here are the modeller's, not the paper's: which class rides
+    the +1 ray (the Eq. 24 geometry puts the boundary about 87% of the way from
+    the +1 mean toward the -1 mean, so the choice matters), and the second
+    dimension's (c, d) where the paper gives no value. They were previously
+    fixed by hand, justified by accuracies that this module only ever computed
+    on the held-out split — which makes the published number optimistic.
+
+    They are now chosen on a slice held back from the fit split, so the held-out
+    split takes no part in the choice. Ties keep the first candidate, so the
+    result is deterministic.
+
+    Where the paper fixes both (Iris and MNIST are its own experiments), there
+    is nothing to choose and its values stand: selecting them here would only
+    add noise — on Iris's 18-sample validation slice it flips the orientation
+    and costs 13 points of held-out accuracy.
+    """
+    from sklearn.model_selection import train_test_split
+
+    if not spec["free_parameters"]:
+        c, d = spec["cd_candidates"][0]
+        return Choice(flip=False, c=c, d=d, validation_accuracy=float("nan"),
+                      validation_n=0, candidates=1)
+
+    fit_x, val_x, fit_y, val_y = train_test_split(
+        split.train_x,
+        split.train_y,
+        test_size=VALIDATION_FRACTION,
+        stratify=split.train_y,
+        random_state=SEED,
+    )
+
+    best: Choice | None = None
+    candidates = 0
+    for flip in (False, True):
+        fit_labels, val_labels = _oriented(fit_y, flip=flip), _oriented(val_y, flip=flip)
+        for c, d in spec["cd_candidates"]:
+            try:
+                mapping = _solve_on(fit_x, fit_labels, c, d)
+            except ValueError:
+                # The mapped second components must stay positive (paper Sec.
+                # IV-A); a candidate that breaks that is simply not available.
+                continue
+            candidates += 1
+            accuracy = float((decide(w, mapping, val_x) == val_labels).mean())
+            if best is None or accuracy > best.validation_accuracy:
+                best = Choice(flip, c, d, accuracy, len(val_labels), candidates)
+    if best is None:
+        raise ValueError("no (c, d) candidate maps this dataset into the first quadrant")
+    return best._replace(candidates=candidates)
+
+
+def fit_and_score(dataset: str, alpha: np.ndarray, choice: Choice | None = None) -> Fit:
     """Fit the Eq. 24 map on the fit split and score the rule on the held-out split.
 
     The one derivation both the exporter and ``tools/hardware_run.py`` use, so a
-    hardware alpha is scored exactly the way the shipped exports are.
+    hardware alpha is scored exactly the way the shipped exports are. The free
+    parameters come from :func:`choose_parameters` unless a *choice* is supplied.
     """
     spec = QSVM_DATASETS[dataset]
     w = weight_vector(alpha)
     split = spec["features_fn"]()
-    c, d = spec["cd"]
-    t1 = split.train_x[split.train_y == 1].mean(axis=0)
-    t2 = split.train_x[split.train_y == -1].mean(axis=0)
-    a, b = solve_map(t1, t2, c, d)
-    mapping = {"a": a, "b": b, "c": c, "d": d}
-    hits = int((decide(w, mapping, split.test_x) == split.test_y).sum())
-    return Fit(w, mapping, split, hits / len(split.test_y), hits)
+    if choice is None:
+        choice = choose_parameters(split, spec, w)
+    train_y = _oriented(split.train_y, flip=choice.flip)
+    test_y = _oriented(split.test_y, flip=choice.flip)
+    mapping = _solve_on(split.train_x, train_y, choice.c, choice.d)
+    hits = int((decide(w, mapping, split.test_x) == test_y).sum())
+    return Fit(w, mapping, split, hits / len(test_y), hits, choice)
 
 
 def build_payload(dataset: str) -> dict:
     """Derive, measure, and assemble one dataset's qsvm export payload."""
     spec = QSVM_DATASETS[dataset]
-    w, mapping, split, acc, hits = fit_and_score(dataset, ALPHA_SHOTS)
+    w, mapping, split, acc, hits, choice = fit_and_score(dataset, ALPHA_SHOTS)
+    classes = list(reversed(spec["classes"])) if choice.flip else list(spec["classes"])
     payload: dict = {
         "kind": "qsvm",
         "dataset": dataset,
-        "classes": spec["classes"],
+        "classes": classes,
         "w": w.tolist(),
         "map": mapping,
         "features": spec["features"],
@@ -274,6 +363,22 @@ def build_payload(dataset: str) -> dict:
         "train_n": len(split.train_y),
         "test_n": len(split.test_y),
         "test_protocol": split.protocol,
+        "selection": {
+            "protocol": (
+                f"orientation and (c, d) chosen on a stratified {VALIDATION_FRACTION:.0%} "
+                "validation slice of the fit split; the held-out split takes no part"
+                if spec["free_parameters"]
+                else "orientation and (c, d) fixed by the paper; nothing selected here"
+            ),
+            "candidates": choice.candidates,
+            "validation_n": choice.validation_n,
+            "validation_accuracy": (
+                round(choice.validation_accuracy, 4) if spec["free_parameters"] else None
+            ),
+            "positive_class": classes[0],
+            "c": choice.c,
+            "d": choice.d,
+        },
         "num_params": 6,
         "display": {"label": "QSVM (Yang et al. 2019)", "subset": spec["subset"]},
         **spec["extra"],
@@ -289,6 +394,10 @@ def build_payload(dataset: str) -> dict:
                 "analytic alpha (0.5, -0.5) are sign-identical"
             ),
             "derivation": "closed-form Eq. 24 map from the training split's class means",
+            "selection": (
+                "free parameters (orientation, and (c, d) where the paper gives none) "
+                "chosen on a validation slice of the fit split, never on the held-out split"
+            ),
         },
         {"numpy": np.__version__, "scikit-learn": importlib.metadata.version("scikit-learn")},
     )
