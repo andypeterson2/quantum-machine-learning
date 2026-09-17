@@ -32,6 +32,7 @@ from typing import NamedTuple
 
 import numpy as np
 
+from classifiers.stats import wilson_interval
 from classifiers.web_export import OUT_DIR, SEED, provenance_base
 
 logger = logging.getLogger(__name__)
@@ -225,12 +226,17 @@ QSVM_DATASETS: dict[str, dict] = {
 
 
 class Fit(NamedTuple):
-    """One dataset's derived rule and its held-out score."""
+    """One dataset's derived rule and its held-out score.
+
+    ``hits`` is kept beside ``accuracy`` so callers can state the uncertainty:
+    29/30 and 290/300 are the same accuracy with very different intervals.
+    """
 
     w: np.ndarray
     mapping: dict
     split: Split
     accuracy: float
+    hits: int
 
 
 def fit_and_score(dataset: str, alpha: np.ndarray) -> Fit:
@@ -247,14 +253,14 @@ def fit_and_score(dataset: str, alpha: np.ndarray) -> Fit:
     t2 = split.train_x[split.train_y == -1].mean(axis=0)
     a, b = solve_map(t1, t2, c, d)
     mapping = {"a": a, "b": b, "c": c, "d": d}
-    acc = float((decide(w, mapping, split.test_x) == split.test_y).mean())
-    return Fit(w, mapping, split, acc)
+    hits = int((decide(w, mapping, split.test_x) == split.test_y).sum())
+    return Fit(w, mapping, split, hits / len(split.test_y), hits)
 
 
 def build_payload(dataset: str) -> dict:
     """Derive, measure, and assemble one dataset's qsvm export payload."""
     spec = QSVM_DATASETS[dataset]
-    w, mapping, split, acc = fit_and_score(dataset, ALPHA_SHOTS)
+    w, mapping, split, acc, hits = fit_and_score(dataset, ALPHA_SHOTS)
     payload: dict = {
         "kind": "qsvm",
         "dataset": dataset,
@@ -264,6 +270,7 @@ def build_payload(dataset: str) -> dict:
         "features": spec["features"],
         "raw_input": spec["raw_input"],
         "test_accuracy": round(acc, 4),
+        "test_accuracy_ci": list(wilson_interval(hits, len(split.test_y))),
         "train_n": len(split.train_y),
         "test_n": len(split.test_y),
         "test_protocol": split.protocol,
