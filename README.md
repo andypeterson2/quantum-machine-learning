@@ -176,6 +176,7 @@ quantum-machine-learning/
 │   ├── trainer.py                  # Training loop (early stopping, distillation, history)
 │   ├── seeding.py                  # One seed for random/numpy/torch (and, through
 │   │                               #   torch, Aer sampling)
+│   ├── stats.py                    # Wilson intervals for every reported accuracy
 │   ├── training_config.py          # TrainingConfig + HistoryEntry dataclasses
 │   ├── evaluator.py                # Evaluation (single, ensemble, ablation)
 │   ├── predictor.py                # Inference pipeline (raw input → probabilities)
@@ -218,7 +219,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (536 test functions)
+├── tests/                          # Pytest suite (549 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -399,6 +400,10 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 | `distill_temperature` | `float` | `4.0` | Softmax temperature for the distillation term: KL divergence between the teacher's and student's softened outputs, scaled by T² |
 | `seed` | `int` | — | Seeds weight initialisation, shuffling and quantum sampling, and is echoed in the result. Omit it and the run is not repeatable |
 
+Evaluation results carry `accuracy_ci` (95% Wilson interval) and `num_samples`
+beside every `accuracy`, so a comparison can say whether the data separates two
+models.
+
 ---
 
 ## Model Architectures
@@ -419,9 +424,14 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 
 ### Iris
 
+Iris is scored on 30 test samples, so one sample is 3.3 points: the interval
+below is wide enough that these three architectures are not separated by the
+data. Measured numbers and their 95% Wilson intervals live in
+`exports/web/*.json`; the unsourced ones are indicative only.
+
 | Architecture | Description | Typical Accuracy |
 |-------------|-------------|-----------------|
-| **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | 90% (measured: exports/web/iris.json) |
+| **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | 90%, 95% CI 74-97% on 30 samples (measured: exports/web/iris.json) |
 | **SVM** (`IrisSVM`) | Linear layer + multi-class hinge loss | ~94-96% |
 | **QVC** (`IrisQVC`) | PennyLane quantum variational classifier (4 qubits, 2 layers) | ~93-96%* |
 
@@ -443,7 +453,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 python -m pytest tests/ -v
 ```
 
-The test suite (536 test functions) covers:
+The test suite (549 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies

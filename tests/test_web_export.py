@@ -104,9 +104,10 @@ class TestIrisExport:
         payload = _load("iris")
         plugin = get_plugin("iris")
         assert plugin is not None
-        acc = evaluate_payload(payload, plugin.get_test_loader(64))
-        assert round(acc, 4) == payload["test_accuracy"]
-        assert acc >= 0.9
+        correct, total = evaluate_payload(payload, plugin.get_test_loader(64))
+        assert round(correct / total, 4) == payload["test_accuracy"]
+        assert total == payload["test_n"]
+        assert correct / total >= 0.9
 
 
 class TestMnistExport:
@@ -141,9 +142,10 @@ class TestMnistExport:
         payload = _load("mnist")
         plugin = get_plugin("mnist")
         assert plugin is not None
-        acc = evaluate_payload(payload, plugin.get_test_loader(512))
-        assert round(acc, 4) == payload["test_accuracy"]
-        assert acc >= 0.85
+        correct, total = evaluate_payload(payload, plugin.get_test_loader(512))
+        assert round(correct / total, 4) == payload["test_accuracy"]
+        assert total == payload["test_n"]
+        assert correct / total >= 0.85
 
 
 class TestBb84Export:
@@ -183,9 +185,43 @@ class TestBb84Export:
         payload = _load("bb84")
         plugin = get_plugin("bb84")
         assert plugin is not None
-        acc = evaluate_payload(payload, plugin.get_test_loader(256))
-        assert round(acc, 4) == payload["test_accuracy"]
-        assert acc >= 0.9
+        correct, total = evaluate_payload(payload, plugin.get_test_loader(256))
+        assert round(correct / total, 4) == payload["test_accuracy"]
+        assert total == payload["test_n"]
+        assert correct / total >= 0.9
+
+
+class TestReportedUncertainty:
+    """Every committed accuracy ships the interval it was measured with."""
+
+    @pytest.mark.parametrize(
+        "name", ["iris", "mnist", "bb84", "qsvm-iris", "qsvm-mnist", "qsvm-bb84"]
+    )
+    def test_interval_brackets_the_claim(self, name: str) -> None:
+        payload = _load(name)
+        low, high = payload["test_accuracy_ci"]
+        assert low <= payload["test_accuracy"] <= high
+        assert 0.0 <= low < high <= 1.0
+
+    @pytest.mark.parametrize(
+        "name", ["iris", "mnist", "bb84", "qsvm-iris", "qsvm-mnist", "qsvm-bb84"]
+    )
+    def test_interval_matches_the_recorded_sample_count(self, name: str) -> None:
+        """The interval must come from this export's own n, not a stale one."""
+        from classifiers.stats import wilson_interval
+
+        payload = _load(name)
+        n = payload["test_n"]
+        hits = round(payload["test_accuracy"] * n)
+        assert payload["test_accuracy_ci"] == pytest.approx(wilson_interval(hits, n), abs=1e-4)
+
+    def test_the_iris_splits_are_too_small_to_separate(self) -> None:
+        """Documents why this exists: on 30 samples the linear baseline and the
+        QSVM rule are not distinguishable, however far apart the point estimates
+        look."""
+        linear, qsvm = _load("iris"), _load("qsvm-iris")
+        assert linear["test_n"] == qsvm["test_n"] == 30
+        assert linear["test_accuracy_ci"][1] > qsvm["test_accuracy_ci"][0]
 
 
 class TestRegeneration:

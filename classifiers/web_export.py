@@ -36,6 +36,7 @@ import torch
 
 from classifiers.plugin_registry import discover_plugins, get_plugin
 from classifiers.seeding import seed_everything
+from classifiers.stats import wilson_interval
 from classifiers.trainer import Trainer
 
 if TYPE_CHECKING:
@@ -58,7 +59,7 @@ OUT_DIR = REPO_ROOT / "exports" / "web"
 CANVAS_SCALE = 255.0
 
 
-def evaluate_payload(payload: dict, test_loader: DataLoader) -> float:
+def evaluate_payload(payload: dict, test_loader: DataLoader) -> tuple[int, int]:
     """Measure a payload's accuracy on a plugin's real test split.
 
     Runs the exported ``weight``/``bias`` (not the in-memory model) over the
@@ -70,7 +71,8 @@ def evaluate_payload(payload: dict, test_loader: DataLoader) -> float:
         test_loader: The plugin's test loader (normalised samples).
 
     Returns:
-        Top-1 accuracy in ``[0, 1]``.
+        ``(correct, total)`` — the counts, so callers can report both the
+        accuracy and its interval.
     """
     weight = torch.tensor(payload["weight"], dtype=torch.float32)
     bias = torch.tensor(payload["bias"], dtype=torch.float32)
@@ -80,7 +82,7 @@ def evaluate_payload(payload: dict, test_loader: DataLoader) -> float:
             logits = xb.flatten(1) @ weight.T + bias
             correct += int((logits.argmax(1) == yb).sum().item())
             total += int(yb.numel())
-    return correct / total
+    return correct, total
 
 
 def _git(*args: str) -> str:
@@ -203,8 +205,10 @@ def _payload(plugin: DatasetPlugin) -> dict:
             "mean": [MNIST_MEAN],
             "std": [MNIST_STD],
         }
-    acc = evaluate_payload(payload, plugin.get_test_loader(512))
-    payload["test_accuracy"] = round(acc, 4)
+    correct, total = evaluate_payload(payload, plugin.get_test_loader(512))
+    payload["test_accuracy"] = round(correct / total, 4)
+    payload["test_n"] = total
+    payload["test_accuracy_ci"] = list(wilson_interval(correct, total))
     payload["provenance"] = _provenance(plugin.name, hp)
     return payload
 
