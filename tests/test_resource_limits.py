@@ -61,6 +61,37 @@ class TestJobSlots:
         )
         assert resp.status_code == 400
 
+    @pytest.mark.parametrize("weight", [-0.1, 1.5, "nan", "heavy"])
+    def test_distill_weight_out_of_range_is_400(self, client, weight):
+        resp = client.post(
+            "/d/mnist/train/sync", json={"model_type": "CNN", "distill_weight": weight}
+        )
+        assert resp.status_code == 400
+        assert "distill_weight" in resp.get_json()["error"]["message"]
+
+    @pytest.mark.parametrize("weight", [0, 0.5, 1])
+    def test_distill_weight_bounds_are_inclusive(self, weight):
+        from classifiers.routes.train_routes import _unit_float
+
+        assert _unit_float({"distill_weight": weight}, "distill_weight", 0.5) == weight
+
+    def test_bad_input_rejected_before_loading_data(self, client, monkeypatch):
+        """Validation must not pay for (or depend on) a dataset download."""
+        from classifiers.datasets.mnist.plugin import MNISTPlugin
+
+        def no_data(*_a, **_kw):
+            raise AssertionError("dataset loaded before input was validated")
+
+        # Patch the class, not the registered instance: undoing an instance patch
+        # leaves a shadowing attribute that defeats later class-level patches.
+        monkeypatch.setattr(MNISTPlugin, "get_train_loader", no_data)
+        monkeypatch.setattr(MNISTPlugin, "get_val_loader", no_data)
+        resp = client.post(
+            "/d/mnist/train/sync",
+            json={"model_type": "CNN", "patience": 2, "distill_temperature": 99},
+        )
+        assert resp.status_code == 400
+
     def test_slot_released_after_rejected_input(self, app, client):
         # A 400 on bad input must give its slot back, or the server bricks.
         slots = app.extensions["job_slots"]

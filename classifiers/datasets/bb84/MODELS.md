@@ -35,7 +35,7 @@ The baseline. Fast, interpretable (two weights per class read directly as "how m
 ## SVM (`BB84SVM`)
 
 **Type:** Linear Support Vector Machine
-**Loss:** Multi-class hinge (Crammer-Singer)
+**Loss:** Multi-class hinge (Weston-Watkins)
 **Typical accuracy:** ~92-94%
 **Trainable parameters:** 6
 

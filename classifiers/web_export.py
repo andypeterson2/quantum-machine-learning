@@ -96,17 +96,21 @@ def _git(*args: str) -> str:
     return result.stdout.strip()
 
 
+#: Generated artifacts, excluded from the provenance dirty check.
+_EXPORT_PATHSPECS = (":(exclude)exports/web", ":(exclude)exports/hardware")
+
+
 def provenance_base(training: dict, versions: dict) -> dict:
     """The provenance block every export carries — one definition, two exporters.
 
     The exports themselves are excluded from the dirty check: a fresh export
-    always rewrites them, and they must not count as dirt in their own
-    provenance.
+    (or a hardware-artifact rescore) always rewrites them, and they must not
+    count as dirt in their own provenance.
     """
     return {
         "source_repo": "quantum-machine-learning",
         "source_sha": _git("rev-parse", "HEAD"),
-        "source_dirty": bool(_git("status", "--porcelain", "--", ".", ":(exclude)exports/web")),
+        "source_dirty": bool(_git("status", "--porcelain", "--", ".", *_EXPORT_PATHSPECS)),
         "exported_at": datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
         "seed": SEED,
         "training": training,

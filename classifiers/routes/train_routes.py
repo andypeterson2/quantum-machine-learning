@@ -55,13 +55,26 @@ def _bounded_int(body, key, default, lo, hi):
 
 def _bounded_float(body, key, default, lo, hi):
     """Read a float hyper-parameter, rejecting values outside ``(lo, hi]``."""
-    try:
-        value = float(body.get(key, default))
-    except (TypeError, ValueError):
-        raise _TrainingInputError(f"'{key}' must be a number") from None
+    value = _float(body, key, default)
     if not lo < value <= hi:
         raise _TrainingInputError(f"'{key}' must be in ({lo}, {hi}] (got {value})")
     return value
+
+
+def _unit_float(body, key, default):
+    """Read a float in ``[0, 1]`` (NaN fails both comparisons and is rejected)."""
+    value = _float(body, key, default)
+    if not 0.0 <= value <= 1.0:
+        raise _TrainingInputError(f"'{key}' must be in [0, 1] (got {value})")
+    return value
+
+
+def _float(body, key, default):
+    try:
+        return float(body.get(key, default))
+    except (TypeError, ValueError):
+        # `from None`: the raw cast error adds nothing to the 400 message.
+        raise _TrainingInputError(f"'{key}' must be a number") from None
 
 
 def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
@@ -81,13 +94,14 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
         raise _TrainingInputError(f"Unknown model type: {model_type_name}")
 
     model_cls = model_types[model_type_name]
-    train_loader = plugin.get_train_loader(batch_size)
 
-    # Advanced training options
+    # Advanced training options — all validated before any dataset is loaded,
+    # so a bad request costs nothing.
     patience = body.get("patience")
     val_gap = _bounded_int(body, "val_gap", 50, 1, _MAX_VAL_GAP)
     teacher_name: str | None = body.get("teacher")
-    distill_weight = float(body.get("distill_weight", 0.5))
+    # A blend weight: outside [0, 1] one loss term is subtracted (gradient ascent).
+    distill_weight = _unit_float(body, "distill_weight", 0.5)
     distill_temperature = _bounded_float(body, "distill_temperature", 4.0, 0.0, _MAX_TEMPERATURE)
 
     config: TrainingConfig | None = None
@@ -113,6 +127,7 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
         )
         val_loader = plugin.get_val_loader(batch_size)
 
+    train_loader = plugin.get_train_loader(batch_size)
     trainer = Trainer(
         model_cls=model_cls,
         train_loader=train_loader,

@@ -22,6 +22,7 @@ Usage::
 
     python tools/hardware_run.py submit [--backend NAME] [--shots 8192]
     python tools/hardware_run.py fetch   # poll the pending jobs, write artifact
+    python tools/hardware_run.py rescore [ARTIFACT]  # offline: re-score qsvm_accuracy
 
 Honest-comparison caveat, recorded in the artifact: the paper's 0.603
 baseline was a *depth-20 unoptimized* HHL this repo does not build; only the
@@ -60,6 +61,18 @@ PAPER_REFERENCE = {
 }
 
 DEFAULT_SHOTS = 8192  # as in the paper and the notebook
+
+#: Counts give only |amplitude|; the sign pattern of alpha comes from the ideal solution.
+ALPHA_SIGN_NOTE = (
+    "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign "
+    "pattern is taken from the ideal solution F^-1 y, not measured"
+)
+
+#: How ``qsvm_accuracy`` is scored, recorded beside it.
+QSVM_ACCURACY_PROTOCOL = (
+    "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its "
+    "held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
+)
 
 
 # ── The circuit (duplicated from notebook cell 10 — the notebook is not an
@@ -148,27 +161,24 @@ def analyse(counts: dict[str, int], shots: int) -> dict:
 
 
 def qsvm_accuracies(alpha: list[float]) -> dict[str, float]:
-    """Re-measure the deployed QSVM rules with a hardware-derived α.
+    """Held-out accuracy of every deployed QSVM rule under a hardware-derived α.
 
-    Uses the exporter's own derivation (weight vector from α, per-dataset
-    Eq. 24 maps re-solved) over every spec-table dataset whose features are
-    available locally (MNIST needs the openml cache and is skipped without it).
+    Scored by the exporter's own :func:`~classifiers.qsvm_export.fit_and_score`
+    (map fit on the fit split, accuracy on the held-out split), so the numbers
+    are comparable with the committed exports' ``test_accuracy``. Only a dataset
+    that cannot be fetched (MNIST needs openml) is skipped; any other failure
+    raises rather than leaving a silently empty result.
     """
     from classifiers import qsvm_export
 
-    w = qsvm_export.weight_vector(np.array(alpha))
     out: dict[str, float] = {}
-    for name, spec in qsvm_export.QSVM_DATASETS.items():
+    for name in qsvm_export.QSVM_DATASETS:
         try:
-            feats, labels = spec["features_fn"]()
-        except Exception as exc:
-            logger.info("skipping %s accuracy (%s)", name, exc)
+            fit = qsvm_export.fit_and_score(name, np.array(alpha))
+        except OSError as exc:
+            logger.warning("skipping %s accuracy — dataset unavailable (%s)", name, exc)
             continue
-        t1 = feats[labels == 1].mean(axis=0)
-        t2 = feats[labels == -1].mean(axis=0)
-        a, b = qsvm_export.solve_map(t1, t2, *spec["cd"])
-        mapping = {"a": a, "b": b, "c": spec["cd"][0], "d": spec["cd"][1]}
-        out[name] = round(float((qsvm_export.decide(w, mapping, feats) == labels).mean()), 4)
+        out[name] = round(fit.accuracy, 4)
     return out
 
 
@@ -288,6 +298,8 @@ def fetch() -> None:
         entry["qsvm_accuracy"] = qsvm_accuracies(entry["alpha"])
         payload["jobs"][label] = entry
 
+    payload["alpha_note"] = ALPHA_SIGN_NOTE
+    payload["qsvm_accuracy_provenance"] = _qsvm_accuracy_provenance()
     payload["ideal_probs"] = {k: round(v, 6) for k, v in ideal_probs().items()}
     runtime_version = importlib.metadata.version("qiskit-ibm-runtime")
     payload["provenance"] = provenance_base(
@@ -318,6 +330,39 @@ def fetch() -> None:
     logger.info("artifact written: %s", out)
 
 
+def _qsvm_accuracy_provenance() -> dict:
+    """Where and how the artifact's ``qsvm_accuracy`` values were scored."""
+    return provenance_base(
+        {"model": "QSVM", "protocol": QSVM_ACCURACY_PROTOCOL},
+        {"numpy": np.__version__, "scikit-learn": importlib.metadata.version("scikit-learn")},
+    )
+
+
+def latest_artifact() -> Path:
+    """The newest committed hardware artifact."""
+    runs = sorted(OUT_DIR.glob("hhl-*.json"))
+    if not runs:
+        raise FileNotFoundError(f"no hhl-*.json artifact under {OUT_DIR}")
+    return runs[-1]
+
+
+def rescore(path: Path) -> None:
+    """Re-score an artifact's ``qsvm_accuracy`` from its recorded alphas.
+
+    Offline: no account, no jobs. The measured counts, D_JS, alpha and the run's
+    own provenance are left as they are; only the derived accuracies and their
+    scoring provenance are rewritten.
+    """
+    payload = json.loads(path.read_text())
+    for label, entry in payload["jobs"].items():
+        entry["qsvm_accuracy"] = qsvm_accuracies(entry["alpha"])
+        logger.info("%s: qsvm=%s", label, entry["qsvm_accuracy"])
+    payload["alpha_note"] = ALPHA_SIGN_NOTE
+    payload["qsvm_accuracy_provenance"] = _qsvm_accuracy_provenance()
+    path.write_text(json.dumps(payload, indent=2) + "\n")
+    logger.info("artifact rescored: %s", path)
+
+
 def main() -> None:
     """CLI entry point."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -327,11 +372,15 @@ def main() -> None:
     p_submit.add_argument("--backend", default=None, help="backend name (default: least busy)")
     p_submit.add_argument("--shots", type=int, default=DEFAULT_SHOTS)
     sub.add_parser("fetch", help="retrieve the pending jobs and write the artifact")
+    p_rescore = sub.add_parser("rescore", help="re-score qsvm_accuracy offline (no jobs)")
+    p_rescore.add_argument("artifact", nargs="?", type=Path, help="default: the newest one")
     args = parser.parse_args()
     if args.command == "submit":
         submit(args.backend, args.shots)
-    else:
+    elif args.command == "fetch":
         fetch()
+    else:
+        rescore(args.artifact or latest_artifact())
 
 
 if __name__ == "__main__":

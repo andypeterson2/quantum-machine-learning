@@ -15,10 +15,12 @@ def multi_class_hinge_loss(
     target: torch.Tensor,
     margin: float = 1.0,
 ) -> torch.Tensor:
-    """Compute the Crammer-Singer multi-class hinge loss.
+    """Compute the Weston-Watkins multi-class hinge loss.
 
     For each sample, every incorrect class whose score lies within *margin*
-    of the correct class score incurs a penalty.  The ground-truth class is
+    of the correct class score incurs a penalty, and the penalties are summed:
+    ``sum_{j != y} max(0, margin + s_j - s_y)``. (Crammer-Singer would instead
+    take only the largest of them.)  The ground-truth class is
     excluded from the sum via a multiplicative mask (no in-place ops, safe
     for autograd).
 

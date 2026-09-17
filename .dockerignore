@@ -9,6 +9,7 @@ tests/
 __pycache__
 *.pyc
 .env
+.certs/
 .pytest_cache/
 models/
 data/

@@ -9,7 +9,7 @@ cd quantum-machine-learning
 
 # Install dependencies
 pip install -r requirements.txt
-pip install pytest ruff
+pip install "pytest>=8.0" "ruff>=0.15.16,<0.17.0"   # the [dev] extra's ranges
 
 # Run the application
 python -m classifiers
