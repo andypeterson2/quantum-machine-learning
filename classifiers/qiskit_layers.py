@@ -79,22 +79,30 @@ class _IndependentInterpret:
 
 
 class _QCSampler(_QCExecutor):
-    """Run a quantum circuit by sampling with the Aer QASM simulator."""
+    """Run a quantum circuit by sampling with the Aer QASM simulator.
 
-    def __init__(self, shots: int = 2**13) -> None:
+    The simulator seed is drawn from torch's generator when the sampler is
+    built, so a run seeded through
+    :func:`~classifiers.seeding.seed_everything` (as
+    :class:`~classifiers.trainer.Trainer` does) repeats exactly, while an
+    unseeded run still samples freshly. Pass *seed* to fix it directly.
+    """
+
+    def __init__(self, shots: int = 2**13, seed: int | None = None) -> None:
         _check_qiskit()
         from qiskit_aer import Aer
 
         self.backend = Aer.get_backend("qasm_simulator")
         self.interpret = _IndependentInterpret()
         self.shots = shots
+        self.seed = int(torch.randint(0, 2**31 - 1, (1,)).item()) if seed is None else seed
 
     def run(self, qc: QuantumCircuit, shots: int | None = None) -> np.ndarray:  # noqa: F821
         from qiskit import transpile
 
         shots = shots or self.shots
         compiled = transpile(qc, self.backend)
-        result = self.backend.run(compiled, shots=shots).result()
+        result = self.backend.run(compiled, shots=shots, seed_simulator=self.seed).result()
         counts = result.get_counts()
         return self.interpret(counts)
 
