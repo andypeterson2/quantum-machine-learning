@@ -22,6 +22,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from .base_model import BaseModel
+from .seeding import seed_everything
 from .training_config import HistoryEntry, TrainingConfig
 from .types import StatusCallback
 
@@ -65,6 +66,8 @@ class TrainResult:
         best_val_accuracy: Best validation accuracy achieved (``None`` if N/A).
         stopped_early:     Whether early stopping triggered.
         num_params:        Trainable parameter count.
+        seed:              Seed the run used (``None`` when unseeded, i.e. not
+                           repeatable).
     """
 
     model: BaseModel
@@ -78,6 +81,7 @@ class TrainResult:
     best_val_accuracy: float | None = None
     stopped_early: bool = False
     num_params: int = 0
+    seed: int | None = None
 
 
 class Trainer:
@@ -91,6 +95,9 @@ class Trainer:
         lr:           Initial learning rate for the Adam optimiser.
         config:       Optional :class:`TrainingConfig` enabling early stopping,
                       validation, distillation, and regularisation.
+        seed:         Seed for weight initialisation, shuffling, and (through
+                      torch's generator) Aer sampling. ``None`` leaves every
+                      RNG alone, so the run is not repeatable.
         val_loader:   Optional validation data loader for intermediate eval.
         early_stop_min_accuracy: Early stopping only fires once the best
                       validation accuracy exceeds this, so a model still near
@@ -110,6 +117,7 @@ class Trainer:
         config: TrainingConfig | None = None,
         val_loader: DataLoader | None = None,
         early_stop_min_accuracy: float = 0.6,
+        seed: int | None = None,
     ) -> None:
         self.model_cls = model_cls
         self.train_loader = train_loader
@@ -119,6 +127,7 @@ class Trainer:
         self.config = config
         self.val_loader = val_loader
         self.early_stop_min_accuracy = early_stop_min_accuracy
+        self.seed = seed
 
     # The epoch/batch loop with status emission, validation, and early-stop in
     # one place — long but linear, so the budget is waived here.
@@ -138,6 +147,11 @@ class Trainer:
                 on_status(msg)
 
         status("Preparing training data…")
+
+        # Before the model exists: weight initialisation is the first draw, and
+        # a quantum layer takes its simulator seed from torch's generator here.
+        if self.seed is not None:
+            seed_everything(self.seed)
 
         model = self.model_cls()
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
@@ -265,6 +279,7 @@ class Trainer:
             best_val_accuracy=best_acc if best_acc > 0 else None,
             stopped_early=stopped_early,
             num_params=num_params,
+            seed=self.seed,
         )
 
     def _validate(self, model: BaseModel) -> float:
