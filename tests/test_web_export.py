@@ -306,19 +306,47 @@ class TestQsvmSchema:
         assert payload["num_params"] == 6
 
 
+class TestQsvmSelection:
+    """Free parameters are chosen on validation data, never on the held-out split."""
+
+    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist", "qsvm-bb84"])
+    def test_selection_is_recorded(self, name: str) -> None:
+        selection = _load(name)["selection"]
+        assert selection["positive_class"] in _load(name)["classes"]
+        assert "held-out" in selection["protocol"] or "fixed by the paper" in selection["protocol"]
+
+    def test_paper_datasets_select_nothing(self) -> None:
+        """Iris and MNIST are the paper's own experiments: it fixes the
+        orientation and (c, d), so there is nothing to choose."""
+        for name in ("qsvm-iris", "qsvm-mnist"):
+            selection = _load(name)["selection"]
+            assert selection["candidates"] == 1
+            assert selection["validation_accuracy"] is None
+            assert selection["validation_n"] == 0
+
+    def test_bb84_chooses_on_a_validation_slice(self) -> None:
+        """BB84 has no paper values, so both parameters are picked here — and
+        the number the site publishes must not have informed that pick."""
+        selection = _load("qsvm-bb84")["selection"]
+        assert selection["candidates"] > 1
+        assert selection["validation_n"] > 0
+        assert 0.0 < selection["validation_accuracy"] <= 1.0
+        assert "validation slice" in selection["protocol"]
+
+
 class TestQsvmIrisDrift:
     """Full re-derivation in CI — Iris ships with scikit-learn, no download."""
 
     def test_map_and_weights_rederive(self) -> None:
+        """Re-run the whole derivation, selection included, and land on the
+        committed rule."""
         payload = _load("qsvm-iris")
-        split = qsvm_export.iris_features()
-        t1 = split.train_x[split.train_y == 1].mean(axis=0)
-        t2 = split.train_x[split.train_y == -1].mean(axis=0)
-        a, b = qsvm_export.solve_map(t1, t2, *qsvm_export.IRIS_CD)
-        assert payload["map"]["a"] == pytest.approx(a, abs=1e-9)
-        assert payload["map"]["b"] == pytest.approx(b, abs=1e-9)
-        w = qsvm_export.weight_vector(qsvm_export.ALPHA_SHOTS)
-        assert payload["w"] == pytest.approx(w.tolist(), abs=1e-9)
+        fit = qsvm_export.fit_and_score("iris", qsvm_export.ALPHA_SHOTS)
+        assert payload["map"]["a"] == pytest.approx(fit.mapping["a"], abs=1e-9)
+        assert payload["map"]["b"] == pytest.approx(fit.mapping["b"], abs=1e-9)
+        assert payload["map"]["c"] == pytest.approx(fit.choice.c)
+        assert payload["map"]["d"] == pytest.approx(fit.choice.d)
+        assert payload["w"] == pytest.approx(fit.w.tolist(), abs=1e-9)
 
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("qsvm-iris")
@@ -354,15 +382,15 @@ class TestQsvmBb84Drift:
     """Full re-derivation in CI — the bb84 sessions are seeded simulation."""
 
     def test_map_and_weights_rederive(self) -> None:
+        """Re-run the whole derivation, selection included, and land on the
+        committed rule."""
         payload = _load("qsvm-bb84")
-        split = qsvm_export.bb84_features()
-        t1 = split.train_x[split.train_y == 1].mean(axis=0)
-        t2 = split.train_x[split.train_y == -1].mean(axis=0)
-        a, b = qsvm_export.solve_map(t1, t2, *qsvm_export.BB84_CD)
-        assert payload["map"]["a"] == pytest.approx(a, abs=1e-9)
-        assert payload["map"]["b"] == pytest.approx(b, abs=1e-9)
-        w = qsvm_export.weight_vector(qsvm_export.ALPHA_SHOTS)
-        assert payload["w"] == pytest.approx(w.tolist(), abs=1e-9)
+        fit = qsvm_export.fit_and_score("bb84", qsvm_export.ALPHA_SHOTS)
+        assert payload["map"]["a"] == pytest.approx(fit.mapping["a"], abs=1e-9)
+        assert payload["map"]["b"] == pytest.approx(fit.mapping["b"], abs=1e-9)
+        assert payload["map"]["c"] == pytest.approx(fit.choice.c)
+        assert payload["map"]["d"] == pytest.approx(fit.choice.d)
+        assert payload["w"] == pytest.approx(fit.w.tolist(), abs=1e-9)
 
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("qsvm-bb84")
