@@ -35,6 +35,24 @@ class TestEvaluator:
         assert result.avg_loss >= 0.0
         assert len(result.per_class_accuracy) == 10
 
+    def test_evaluate_reports_an_interval_and_a_sample_count(self):
+        """Accuracy alone invites comparisons the split cannot support."""
+        loader = make_fake_test_loader(batch_size=10, n_batches=2)
+        result = Evaluator().evaluate(MNISTNet(), loader, NUM_CLASSES, CLASS_LABELS)
+        low, high = result.accuracy_ci
+        assert result.num_samples == 20
+        assert low <= result.accuracy <= high
+        assert 0.0 <= low < high <= 1.0
+
+    def test_ensemble_evaluate_reports_an_interval(self):
+        loader = make_fake_test_loader(batch_size=10, n_batches=2)
+        result = Evaluator().ensemble_evaluate(
+            [MNISTNet(), LinearNet()], loader, NUM_CLASSES, CLASS_LABELS
+        )
+        low, high = result.accuracy_ci
+        assert result.num_samples == 20
+        assert low <= result.accuracy <= high
+
     def test_evaluate_with_linear_model(self):
         loader = make_fake_test_loader(batch_size=10, n_batches=2)
         evaluator = Evaluator()

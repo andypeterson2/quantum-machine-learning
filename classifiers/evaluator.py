@@ -21,6 +21,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from .base_model import BaseModel
+from .stats import wilson_interval
 from .types import StatusCallback
 
 logger = logging.getLogger(__name__)
@@ -36,12 +37,19 @@ class EvalResult:
         per_class_accuracy: Mapping from class label (str) to per-class
                             top-1 accuracy (0.0 – 1.0).
         num_params:         Trainable parameter count (``None`` if not computed).
+        num_samples:        Test samples the accuracy was measured on.
+        accuracy_ci:        95% Wilson interval for :attr:`accuracy`. Small
+                            splits (Iris ships 30 test samples) make this wide,
+                            which is the point: two models inside each other's
+                            interval are not separated by the data.
     """
 
     accuracy: float
     avg_loss: float
     per_class_accuracy: dict[str, float] = field(default_factory=dict)
     num_params: int | None = None
+    num_samples: int = 0
+    accuracy_ci: tuple[float, float] = (0.0, 1.0)
 
 
 class Evaluator:
@@ -135,8 +143,13 @@ class Evaluator:
             avg_loss=total_loss / total if total > 0 else 0.0,
             per_class_accuracy=per_class,
             num_params=num_params,
+            num_samples=total,
+            accuracy_ci=wilson_interval(correct, total),
         )
-        status(f"Evaluation done — accuracy: {result.accuracy:.2%}")
+        status(
+            f"Evaluation done — accuracy: {result.accuracy:.2%} "
+            f"(95% CI {result.accuracy_ci[0]:.2%}–{result.accuracy_ci[1]:.2%}, n={total})"
+        )
         logger.info("Evaluation: accuracy=%.4f avg_loss=%.4f", result.accuracy, result.avg_loss)
         return result
 
@@ -222,6 +235,8 @@ class Evaluator:
             accuracy=correct / total if total > 0 else 0.0,
             avg_loss=total_loss / total if total > 0 else 0.0,
             per_class_accuracy=per_class,
+            num_samples=total,
+            accuracy_ci=wilson_interval(correct, total),
         )
         status(f"Ensemble done — accuracy: {result.accuracy:.2%}")
         return result
