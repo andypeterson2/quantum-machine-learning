@@ -97,8 +97,9 @@ def _git(*args: str) -> str:
     return result.stdout.strip()
 
 
-#: Generated artifacts, excluded from the provenance dirty check.
-_EXPORT_PATHSPECS = (":(exclude)exports/web", ":(exclude)exports/hardware")
+#: Generated artifacts, excluded from the provenance dirty check: a fresh
+#: export rewrites them, and they must not count as dirt in their own stamp.
+_EXPORT_PATHSPECS = (":(exclude)exports",)
 
 
 def provenance_base(training: dict, versions: dict) -> dict:
