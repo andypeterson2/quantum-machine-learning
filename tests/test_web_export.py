@@ -188,6 +188,38 @@ class TestBb84Export:
         assert acc >= 0.9
 
 
+class TestRegeneration:
+    """`make export-web` must still produce what is committed.
+
+    The other checks re-score the committed weights, which catches a plugin
+    change but not a broken exporter: nothing re-ran the training path. These
+    two datasets need no download and train in seconds, so they can.
+
+    Weights are compared loosely on purpose — the run is seeded, so it repeats
+    exactly on one machine, but float arithmetic differs between platforms,
+    which is why the accuracy claim is what CI enforces.
+    """
+
+    @pytest.mark.skipif(
+        not (REPO_ROOT / ".git").exists(),
+        reason="exporting stamps provenance from git; the image ships no checkout",
+    )
+    @pytest.mark.parametrize("name", ["iris", "bb84"])
+    def test_training_path_reproduces_the_committed_export(self, name: str) -> None:
+        from classifiers.web_export import SEED, _payload, seed_everything
+
+        plugin = get_plugin(name)
+        assert plugin is not None
+        seed_everything(SEED)
+        fresh = _payload(plugin)
+        committed = _load(name)
+
+        assert fresh["test_accuracy"] == pytest.approx(committed["test_accuracy"], abs=0.05)
+        assert torch.tensor(fresh["weight"]).shape == torch.tensor(committed["weight"]).shape
+        assert fresh["normalize"] == committed["normalize"]
+        assert fresh["classes"] == committed["classes"]
+
+
 # ── QSVM paper-recreation exports ─────────────────────────────────────────────
 
 from pathlib import Path  # noqa: E402

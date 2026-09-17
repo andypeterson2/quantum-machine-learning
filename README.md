@@ -174,6 +174,8 @@ quantum-machine-learning/
 │   ├── plugin_registry.py          # Plugin discovery + registration
 │   ├── base_model.py               # BaseModel ABC (forward + loss_fn)
 │   ├── trainer.py                  # Training loop (early stopping, distillation, history)
+│   ├── seeding.py                  # One seed for random/numpy/torch (and, through
+│   │                               #   torch, Aer sampling)
 │   ├── training_config.py          # TrainingConfig + HistoryEntry dataclasses
 │   ├── evaluator.py                # Evaluation (single, ensemble, ablation)
 │   ├── predictor.py                # Inference pipeline (raw input → probabilities)
@@ -216,7 +218,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (523 test functions)
+├── tests/                          # Pytest suite (536 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -395,6 +397,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 | `teacher` | `string` | — | Name of a trained model to use as distillation teacher |
 | `distill_weight` | `float` | `0.5` | Blend weight: `(1-w)*true_loss + w*distill_loss` (0 ≤ w ≤ 1) |
 | `distill_temperature` | `float` | `4.0` | Softmax temperature for the distillation term: KL divergence between the teacher's and student's softened outputs, scaled by T² |
+| `seed` | `int` | — | Seeds weight initialisation, shuffling and quantum sampling, and is echoed in the result. Omit it and the run is not repeatable |
 
 ---
 
@@ -440,7 +443,7 @@ The `/train` and `/train/sync` endpoints accept optional fields for advanced tra
 python -m pytest tests/ -v
 ```
 
-The test suite (523 test functions) covers:
+The test suite (536 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies

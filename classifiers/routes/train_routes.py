@@ -39,6 +39,8 @@ _MAX_LR = 1.0
 _MAX_VAL_GAP = 10_000
 _MAX_PATIENCE = 1_000
 _MAX_TEMPERATURE = 20.0
+# numpy's ceiling; classifiers.seeding rejects anything wider.
+_MAX_SEED = 2**32 - 1
 
 
 def _bounded_int(body, key, default, lo, hi):
@@ -88,6 +90,8 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
     batch_size: int = _bounded_int(body, "batch_size", 64, 1, _MAX_BATCH_SIZE)
     lr: float = _bounded_float(body, "lr", 1e-3, 0.0, _MAX_LR)
     name: str = body.get("name") or registry.next_name(plugin.name)
+    # Optional: an unseeded run stays unseeded, so nothing changes by default.
+    seed = _bounded_int(body, "seed", 0, 0, _MAX_SEED) if body.get("seed") is not None else None
 
     model_types = plugin.get_model_types()
     if model_type_name not in model_types:
@@ -136,6 +140,7 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
         lr=lr,
         config=config,
         val_loader=val_loader,
+        seed=seed,
     )
     return trainer, name
 
@@ -171,6 +176,8 @@ def _result_payload(name: str, result) -> dict[str, Any]:
         "num_params": result.num_params,
         "stopped_early": result.stopped_early,
     }
+    if result.seed is not None:
+        payload["seed"] = result.seed
     if result.best_val_accuracy is not None:
         payload["best_val_accuracy"] = result.best_val_accuracy
     if result.history:
