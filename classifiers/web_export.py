@@ -27,16 +27,15 @@ import importlib.metadata
 import json
 import logging
 import platform
-import random
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import numpy as np
 import torch
 
 from classifiers.plugin_registry import discover_plugins, get_plugin
+from classifiers.seeding import seed_everything
 from classifiers.trainer import Trainer
 
 if TYPE_CHECKING:
@@ -215,9 +214,7 @@ def export_dataset(name: str) -> Path:
     plugin = get_plugin(name)
     if plugin is None:
         raise ValueError(f"no dataset plugin named {name!r}")
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
+    seed_everything(SEED)
     payload = _payload(plugin)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out = OUT_DIR / f"{name}.json"
