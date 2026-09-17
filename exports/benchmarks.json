@@ -1,0 +1,209 @@
+{
+  "kind": "benchmarks",
+  "results": [
+    {
+      "dataset": "iris",
+      "model_type": "Linear",
+      "accuracy": 0.9,
+      "accuracy_ci": [
+        0.7438,
+        0.9654
+      ],
+      "n": 30,
+      "num_params": 15,
+      "training": {
+        "seed": 0,
+        "epochs": 50,
+        "batch_size": 16,
+        "lr": 0.01
+      }
+    },
+    {
+      "dataset": "iris",
+      "model_type": "SVM",
+      "accuracy": 0.9667,
+      "accuracy_ci": [
+        0.8333,
+        0.9941
+      ],
+      "n": 30,
+      "num_params": 15,
+      "training": {
+        "seed": 0,
+        "epochs": 50,
+        "batch_size": 16,
+        "lr": 0.01
+      }
+    },
+    {
+      "dataset": "iris",
+      "model_type": "QVC",
+      "accuracy": 0.8333,
+      "accuracy_ci": [
+        0.6644,
+        0.9266
+      ],
+      "n": 30,
+      "num_params": 24,
+      "training": {
+        "seed": 0,
+        "epochs": 50,
+        "batch_size": 16,
+        "lr": 0.01
+      }
+    },
+    {
+      "dataset": "bb84",
+      "model_type": "Linear",
+      "accuracy": 0.954,
+      "accuracy_ci": [
+        0.9319,
+        0.9692
+      ],
+      "n": 500,
+      "num_params": 6,
+      "training": {
+        "seed": 0,
+        "epochs": 30,
+        "batch_size": 32,
+        "lr": 0.01
+      }
+    },
+    {
+      "dataset": "bb84",
+      "model_type": "SVM",
+      "accuracy": 0.954,
+      "accuracy_ci": [
+        0.9319,
+        0.9692
+      ],
+      "n": 500,
+      "num_params": 6,
+      "training": {
+        "seed": 0,
+        "epochs": 30,
+        "batch_size": 32,
+        "lr": 0.01
+      }
+    },
+    {
+      "dataset": "bb84",
+      "model_type": "QVC",
+      "accuracy": 0.9,
+      "accuracy_ci": [
+        0.8706,
+        0.9233
+      ],
+      "n": 500,
+      "num_params": 12,
+      "training": {
+        "seed": 0,
+        "epochs": 30,
+        "batch_size": 32,
+        "lr": 0.01
+      }
+    },
+    {
+      "dataset": "mnist",
+      "model_type": "Linear",
+      "accuracy": 0.9206,
+      "accuracy_ci": [
+        0.9151,
+        0.9257
+      ],
+      "n": 10000,
+      "num_params": 7850,
+      "training": {
+        "seed": 0,
+        "epochs": 3,
+        "batch_size": 64,
+        "lr": 0.001
+      }
+    },
+    {
+      "dataset": "mnist",
+      "model_type": "SVM",
+      "accuracy": 0.9161,
+      "accuracy_ci": [
+        0.9105,
+        0.9214
+      ],
+      "n": 10000,
+      "num_params": 7850,
+      "training": {
+        "seed": 0,
+        "epochs": 3,
+        "batch_size": 64,
+        "lr": 0.001
+      }
+    },
+    {
+      "dataset": "mnist",
+      "model_type": "CNN",
+      "accuracy": 0.9878,
+      "accuracy_ci": [
+        0.9855,
+        0.9898
+      ],
+      "n": 10000,
+      "num_params": 1199882,
+      "training": {
+        "seed": 0,
+        "epochs": 3,
+        "batch_size": 64,
+        "lr": 0.001
+      }
+    },
+    {
+      "dataset": "mnist",
+      "model_type": "Quadratic",
+      "accuracy": 0.9824,
+      "accuracy_ci": [
+        0.9796,
+        0.9848
+      ],
+      "n": 10000,
+      "num_params": 54366,
+      "training": {
+        "seed": 0,
+        "epochs": 3,
+        "batch_size": 64,
+        "lr": 0.001
+      }
+    },
+    {
+      "dataset": "mnist",
+      "model_type": "Polynomial",
+      "accuracy": 0.98,
+      "accuracy_ci": [
+        0.9771,
+        0.9826
+      ],
+      "n": 10000,
+      "num_params": 46994,
+      "training": {
+        "seed": 0,
+        "epochs": 3,
+        "batch_size": 64,
+        "lr": 0.001
+      }
+    }
+  ],
+  "provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "80adfc2e202ccdc044cd668234209a605ff123f6",
+    "source_dirty": true,
+    "exported_at": "2026-09-17",
+    "seed": 0,
+    "training": {
+      "model": "all",
+      "trainer": "classifiers.trainer.Trainer",
+      "protocol": "trained at each plugin's default hyper-parameters with seed 0; accuracy and its 95% Wilson interval measured on the plugin's test split"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "torch": "2.2.2",
+      "scikit-learn": "1.8.0"
+    }
+  }
+}
