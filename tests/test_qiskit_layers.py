@@ -1,6 +1,8 @@
 """Unit tests for classifiers.qiskit_layers (Qiskit quantum circuit layer).
 
 All Qiskit dependencies are mocked so the tests run without Qiskit installed.
+The fakes live in ``sys.modules`` only for the duration of each test here, so
+the rest of the suite still reaches real Qiskit when it is installed.
 """
 
 import sys
@@ -13,13 +15,13 @@ import torch
 from torch import nn
 
 # ---------------------------------------------------------------------------
-# Mock Qiskit modules before importing the module under test
+# Fake Qiskit modules, installed per test by the autouse fixture below
 # ---------------------------------------------------------------------------
 
 # Builds the whole fake qiskit module tree in one place; the branching is the
 # mock surface, not logic.
-def _install_qiskit_mocks():  # noqa: C901
-    """Insert fake qiskit / qiskit_aer modules into sys.modules."""
+def _build_qiskit_mocks():  # noqa: C901
+    """Build fake qiskit / qiskit_aer modules without installing them."""
     qiskit_mod = ModuleType("qiskit")
     qiskit_circuit = ModuleType("qiskit.circuit")
     qiskit_aer = ModuleType("qiskit_aer")
@@ -74,17 +76,26 @@ def _install_qiskit_mocks():  # noqa: C901
 
     qiskit_aer.Aer = FakeAer
 
-    for name, mod in [
-        ("qiskit", qiskit_mod),
-        ("qiskit.circuit", qiskit_circuit),
-        ("qiskit_aer", qiskit_aer),
-    ]:
-        sys.modules[name] = mod
-
-    return FakeParameterVector, FakeQuantumCircuit, FakeBackend
+    modules = {
+        "qiskit": qiskit_mod,
+        "qiskit.circuit": qiskit_circuit,
+        "qiskit_aer": qiskit_aer,
+    }
+    return modules, FakeParameterVector, FakeQuantumCircuit, FakeBackend
 
 
-_FakeParameterVector, _FakeQuantumCircuit, _FakeBackend = _install_qiskit_mocks()
+_FAKE_MODULES, _FakeParameterVector, _FakeQuantumCircuit, _FakeBackend = _build_qiskit_mocks()
+
+
+@pytest.fixture(autouse=True)
+def _fake_qiskit(monkeypatch):
+    """Swap the fakes into sys.modules for one test; monkeypatch restores the
+    real entries (or their absence) afterwards. A module-level install used to
+    leak into later test modules, so their "real Qiskit" tests ran on the fakes.
+    qiskit_layers imports Qiskit lazily, so the swap takes effect at call time."""
+    for name, mod in _FAKE_MODULES.items():
+        monkeypatch.setitem(sys.modules, name, mod)
+
 
 from classifiers.qiskit_layers import (  # noqa: E402
     QiskitQLayer,

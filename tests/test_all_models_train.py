@@ -10,6 +10,8 @@ Run with:
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 import torch
 
@@ -135,13 +137,22 @@ class TestTrainMNISTModels:
         result = self._train(MNISTPolynomialNet)
         self._assert_result(result, MNISTPolynomialNet)
 
+    @staticmethod
+    def _assert_real_qiskit():
+        """These tests exist to exercise real Aer; a stub left in sys.modules by
+        another test module would make them pass without running a circuit."""
+        for name in ("qiskit", "qiskit_aer"):
+            assert getattr(sys.modules[name], "__file__", None), f"{name} is a stub"
+
     @pytest.mark.skipif(not _HAS_QISKIT, reason="qiskit not installed")
     def test_qiskit_cnn(self):
+        self._assert_real_qiskit()
         result = self._train(QiskitCNN)
         self._assert_result(result, QiskitCNN)
 
     @pytest.mark.skipif(not _HAS_QISKIT, reason="qiskit not installed")
     def test_qiskit_linear(self):
+        self._assert_real_qiskit()
         result = self._train(QiskitLinear)
         self._assert_result(result, QiskitLinear)
 
