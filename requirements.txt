@@ -3,7 +3,7 @@ flask-cors==6.0.2
 gunicorn==26.2.0
 numpy==1.26.4
 Pillow==12.1.1
-mistune==3.2.0
+mistune==3.3.4
 scikit-learn==1.8.0
 # LOCAL-PARITY LOCKFILE. torch is pinned at 2.2.2 because PyTorch shipped its
 # LAST x86_64-macOS wheels at 2.2.2 — the primary dev machine is an Intel Mac,
