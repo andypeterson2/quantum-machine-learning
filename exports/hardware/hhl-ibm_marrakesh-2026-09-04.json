@@ -39,9 +39,9 @@
       ],
       "p_q4_success": 0.4987,
       "qsvm_accuracy": {
-        "iris": 0.97,
-        "mnist": 0.915,
-        "bb84": 0.902
+        "iris": 0.9667,
+        "mnist": 0.891,
+        "bb84": 0.908
       }
     },
     "mitigated": {
@@ -68,9 +68,9 @@
       ],
       "p_q4_success": 0.4984,
       "qsvm_accuracy": {
-        "iris": 0.97,
-        "mnist": 0.91,
-        "bb84": 0.906
+        "iris": 0.9667,
+        "mnist": 0.886,
+        "bb84": 0.91
       }
     }
   },
@@ -107,6 +107,23 @@
       "python": "3.12.1",
       "qiskit": "2.3.0",
       "qiskit-ibm-runtime": "0.45.1"
+    }
+  },
+  "alpha_note": "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign pattern is taken from the ideal solution F^-1 y, not measured",
+  "qsvm_accuracy_provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "216490582b842d5f19248496752c5f1ea7a6e00f",
+    "source_dirty": false,
+    "exported_at": "2026-09-17",
+    "seed": 0,
+    "training": {
+      "model": "QSVM",
+      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "numpy": "1.26.4",
+      "scikit-learn": "1.8.0"
     }
   }
 }

@@ -18,9 +18,6 @@ COPY classifiers/ classifiers/
 # /health report the real version via importlib.metadata.
 RUN pip install --no-cache-dir .[quantum]
 
-COPY .cert[s]/ .certs/
-
-ENV DEV_CERT_DIR=/app/.certs
 # Never run the Werkzeug debugger/reloader in the image (interactive-debugger RCE).
 ENV CLASSIFIERS_DEBUG=0
 
