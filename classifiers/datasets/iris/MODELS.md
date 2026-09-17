@@ -10,7 +10,7 @@ Every model extends `BaseModel` and can be trained, evaluated, and compared inte
 
 **Type:** Multinomial Logistic Regression
 **Loss:** Cross-entropy (default)
-**Typical accuracy:** ~95-97%
+**Measured accuracy:** 90.0% (95% CI 74.4-96.5%, n=30)
 **Trainable parameters:** 15
 
 ### Architecture
@@ -39,7 +39,7 @@ The 15 trainable parameters consist of a 4x3 weight matrix (12 parameters) and a
 
 **Type:** Linear Support Vector Machine
 **Loss:** Weston-Watkins multi-class hinge loss
-**Typical accuracy:** ~94-96%
+**Measured accuracy:** 96.7% (95% CI 83.3-99.4%, n=30)
 **Trainable parameters:** 15
 
 ### Architecture
@@ -78,7 +78,7 @@ On Iris, the accuracy is typically slightly lower than cross-entropy because hin
 
 **Type:** Quantum Variational Classifier (PennyLane)
 **Loss:** Cross-entropy (default)
-**Typical accuracy:** ~85-95% (depends on random initialisation)
+**Measured accuracy:** 83.3% (95% CI 66.4-92.7%, n=30)
 **Trainable parameters:** 24 (quantum rotation angles)
 **Requires:** `pip install pennylane`
 
