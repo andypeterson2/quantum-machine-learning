@@ -112,9 +112,9 @@
   "alpha_note": "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign pattern is taken from the ideal solution F^-1 y, not measured",
   "qsvm_accuracy_provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "726de3c13bc0289debfcce32586fa930b60fb5f4",
-    "source_dirty": true,
-    "exported_at": "2026-09-16",
+    "source_sha": "216490582b842d5f19248496752c5f1ea7a6e00f",
+    "source_dirty": false,
+    "exported_at": "2026-09-17",
     "seed": 0,
     "training": {
       "model": "QSVM",
