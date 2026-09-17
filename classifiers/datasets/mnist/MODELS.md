@@ -199,8 +199,8 @@ The `QiskitQLayer` (from `classifiers.qiskit_layers`) implements a 3-qubit param
 
 1. **Encoding:** Input features are encoded as RX rotation angles on 3 qubits
 2. **Entanglement:** Trainable RXX and RZZ gates create entanglement between adjacent qubits
-3. **Measurement:** 8192-shot sampling produces per-qubit expectation values
-4. **Gradients:** Finite-difference estimation (shift +/- delta, measure, compute slope)
+3. **Measurement:** 8192-shot sampling gives each qubit's probability of measuring 1
+4. **Gradients:** Parameter-shift rule (evaluate at theta +/- pi/2, halve the difference) for both the weights and the inputs -- exact for these rotation gates, up to shot noise
 
 The sigmoid squashing before the quantum layer ensures inputs stay in a range where rotation angles are meaningful. The classical bottleneck (10 -> 3) reduces the problem to a dimensionality the quantum circuit can handle.
 
