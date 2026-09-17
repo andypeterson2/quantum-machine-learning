@@ -219,7 +219,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (549 test functions)
+├── tests/                          # Pytest suite (555 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -230,6 +230,8 @@ quantum-machine-learning/
 ├── exports/hardware/               # Cached IBM Quantum run of the paper's HHL circuit
 │                                   #   (tools/hardware_run.py; drift-checked by tests/test_hardware_run.py)
 ├── tools/hardware_run.py           # Submit/fetch the hardware run; `rescore` re-scores it offline
+├── tools/benchmark.py              # Measure every model's accuracy + interval (make benchmark)
+├── exports/benchmarks.json         # Those measurements — what MODELS.md is allowed to claim
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── classifiers/data/               # Dataset cache (git-ignored; cached in CI)
 ```
@@ -410,30 +412,34 @@ models.
 
 ### MNIST
 
-| Architecture | Description | Typical Accuracy |
-|-------------|-------------|-----------------|
-| **CNN** (`MNISTNet`) | 2-layer ConvNet: Conv→ReLU→Conv→ReLU→Pool→FC→FC | ~99% |
-| **Linear** (`LinearNet`) | Logistic regression: Flatten→Linear(784→10) | ~92% |
-| **SVM** (`SVMNet`) | Linear layer + multi-class hinge loss | ~91-92% |
-| **Quadratic** (`MNISTQuadraticNet`) | CNN backbone + quadratic expansion layer | ~98-99% |
-| **Polynomial** (`MNISTPolynomialNet`) | CNN backbone + polynomial (log-linear-exp) layers | ~98-99% |
-| **Qiskit-CNN** (`QiskitCNN`) | CNN backbone + Qiskit quantum circuit layer | varies* |
-| **Qiskit-Linear** (`QiskitLinear`) | Linear backbone + Qiskit quantum circuit layer | varies* |
+Accuracies are measured, not estimated: each is one seeded run at the plugin's
+default hyper-parameters, scored on the full test split with a 95% Wilson
+interval, recorded in `exports/benchmarks.json` (`make benchmark`) and held
+there by `tests/test_model_docs.py`.
 
-\* Qiskit models require `qiskit` and `qiskit-aer` to be installed. They only appear in the dataset's `model_types` when these packages are available. Training is significantly slower due to quantum circuit simulation.
+| Architecture | Description | Measured accuracy (95% CI, n) |
+|-------------|-------------|-----------------|
+| **CNN** (`MNISTNet`) | 2-layer ConvNet: Conv→ReLU→Conv→ReLU→Pool→FC→FC | 98.8% (98.6-99.0%, n=10,000) |
+| **Linear** (`LinearNet`) | Logistic regression: Flatten→Linear(784→10) | 92.1% (91.5-92.6%, n=10,000) |
+| **SVM** (`SVMNet`) | Linear layer + multi-class hinge loss | 91.6% (91.0-92.1%, n=10,000) |
+| **Quadratic** (`MNISTQuadraticNet`) | CNN backbone + quadratic expansion layer | 98.2% (98.0-98.5%, n=10,000) |
+| **Polynomial** (`MNISTPolynomialNet`) | CNN backbone + polynomial (log-linear-exp) layers | 98.0% (97.7-98.3%, n=10,000) |
+| **Qiskit-CNN** (`QiskitCNN`) | CNN backbone + Qiskit quantum circuit layer | not measured* |
+| **Qiskit-Linear** (`QiskitLinear`) | Linear backbone + Qiskit quantum circuit layer | not measured* |
+
+\* Qiskit models require `qiskit` and `qiskit-aer`, and only appear in the dataset's `model_types` when those are installed. They sample a circuit per prediction, so scoring one on the 10,000-sample test split takes hours — hence unmeasured here rather than quoted from memory.
 
 ### Iris
 
-Iris is scored on 30 test samples, so one sample is 3.3 points: the interval
-below is wide enough that these three architectures are not separated by the
-data. Measured numbers and their 95% Wilson intervals live in
-`exports/web/*.json`; the unsourced ones are indicative only.
+Iris is scored on 30 test samples, so one sample is 3.3 points and the three
+intervals below overlap almost entirely: this split does not separate these
+architectures, whatever the point estimates suggest.
 
-| Architecture | Description | Typical Accuracy |
+| Architecture | Description | Measured accuracy (95% CI, n) |
 |-------------|-------------|-----------------|
-| **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | 90%, 95% CI 74-97% on 30 samples (measured: exports/web/iris.json) |
-| **SVM** (`IrisSVM`) | Linear layer + multi-class hinge loss | ~94-96% |
-| **QVC** (`IrisQVC`) | PennyLane quantum variational classifier (4 qubits, 2 layers) | ~93-96%* |
+| **Linear** (`IrisLinear`) | Single linear layer: Linear(4→3) | 90.0% (74.4-96.5%, n=30) |
+| **SVM** (`IrisSVM`) | Linear layer + multi-class hinge loss | 96.7% (83.3-99.4%, n=30) |
+| **QVC** (`IrisQVC`) | PennyLane quantum variational classifier (4 qubits, 2 layers) | 83.3% (66.4-92.7%, n=30)* |
 
 \* QVC requires `pennylane` to be installed. It only appears in the dataset's `model_types` when PennyLane is available.
 
@@ -453,7 +459,7 @@ data. Measured numbers and their 95% Wilson intervals live in
 python -m pytest tests/ -v
 ```
 
-The test suite (549 test functions) covers:
+The test suite (555 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
