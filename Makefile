@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm benchmark
+.PHONY: run test lint clean docker export-web sync-web export-qsvm benchmark distillation
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 WEB ?= ../website
@@ -25,6 +25,10 @@ export-qsvm:
 # Add SLOW=--slow for the MNIST CNN-backbone models (minutes each).
 benchmark:
 	python tools/benchmark.py $(SLOW)
+
+# Re-measure whether distillation helps the student (a few minutes per seed).
+distillation:
+	python tools/distillation_experiment.py
 
 test:
 	python -m pytest tests/ -v

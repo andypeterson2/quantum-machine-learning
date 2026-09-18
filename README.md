@@ -44,7 +44,7 @@ graph LR
 ### Advanced Training
 - **Early stopping** — halt training when validation accuracy stops improving (configurable patience)
 - **Validation monitoring** — periodic validation accuracy checks during training (configurable frequency)
-- **Knowledge distillation** — train a student model using a previously trained teacher's soft outputs
+- **Knowledge distillation** — train a student model using a previously trained teacher's soft outputs. Measured on MNIST (CNN teacher, linear student, 3 seeds, `make distillation`): at the default blend it *costs* the student about one point of accuracy — 92.05% alone against 91.04% distilled, negative on every seed. The per-seed numbers and their intervals are in `exports/distillation.json`
 - **Custom regularization** — pluggable regularization functions via `TrainingConfig`
 
 ### Advanced Evaluation
@@ -227,7 +227,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (567 test functions)
+├── tests/                          # Pytest suite (573 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -467,7 +467,7 @@ architectures, whatever the point estimates suggest.
 python -m pytest tests/ -v
 ```
 
-The test suite (567 test functions) covers:
+The test suite (573 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
