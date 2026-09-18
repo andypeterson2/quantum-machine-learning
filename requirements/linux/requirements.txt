@@ -12,7 +12,7 @@
 # Regenerate: docker build -t qml-lock . && docker run --rm qml-lock pip freeze
 appdirs==1.4.4
 autograd==1.8.0
-autoray==0.8.4
+autoray==0.11.0
 blinker==1.9.0
 cachetools==7.2.0
 certifi==2026.7.22
