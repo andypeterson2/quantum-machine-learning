@@ -1,166 +1,108 @@
-"""Documentation completeness and honesty gates.
+"""Documentation gates: the README's claims have to match the code.
 
-Verify README has working setup instructions, architecture matches code,
-all configuration options are documented, and common issues are covered.
+This file used to hold about forty assertions of the form "CNN" in readme —
+true of any document that mentions the word once, and unable to notice a model
+nobody documented or a setting nobody wrote down. Ten environment variables had
+in fact gone undocumented while every one of those tests passed.
+
+The gates here compare the README against what the code actually exposes:
+every environment variable it reads, every dataset plugin, every model type,
+and every make target. Plus the honesty checks the 2026-08 audit added.
 """
 
+import re
 from pathlib import Path
 
 import pytest
 
+from classifiers.plugin_registry import discover_plugins, list_plugins
+
 ROOT = Path(__file__).resolve().parents[1]
+README = ROOT / "README.md"
+
+#: Werkzeug sets this itself; it is not ours to document.
+INTERNAL_ENV = {"WERKZEUG_RUN_MAIN"}
+
+#: Make targets whose audience is this file's own author, not a reader.
+UNDOCUMENTED_TARGETS = {"clean", "lint", "test", "run"}
 
 
-class TestReadmeExists:
-    """Basic documentation files must be present."""
-
-    def test_readme_exists(self):
-        assert (ROOT / "README.md").is_file()
-
-    def test_readme_has_substantial_content(self):
-        content = (ROOT / "README.md").read_text()
-        assert len(content) > 1000, "README too short"
+@pytest.fixture(scope="module", autouse=True)
+def _plugins() -> None:
+    discover_plugins()
 
 
-    def test_contributing_exists(self):
-        assert (ROOT / "CONTRIBUTING.md").is_file()
-
-    def test_license_exists(self):
-        assert (ROOT / "LICENSE").is_file()
-
-
-class TestReadmeSetupInstructions:
-    """Setup instructions should cover essential steps."""
-
-    @pytest.fixture
-    def readme(self):
-        return (ROOT / "README.md").read_text()
-
-    def test_mentions_python_version(self, readme):
-        assert "3.12" in readme or "3.11" in readme or "3.10" in readme
-
-    def test_mentions_pip_install(self, readme):
-        assert "pip install" in readme or "requirements.txt" in readme
-
-    def test_mentions_docker(self, readme):
-        assert "docker" in readme.lower() or "Docker" in readme
-
-    def test_mentions_running_the_app(self, readme):
-        assert "python -m" in readme or "flask" in readme.lower()
-
-    def test_mentions_testing(self, readme):
-        assert "pytest" in readme
+@pytest.fixture(scope="module")
+def readme() -> str:
+    assert README.is_file(), "README.md is missing"
+    return README.read_text()
 
 
-class TestArchitectureDocumentation:
-    """Architecture docs should match actual code structure."""
-
-    @pytest.fixture
-    def readme(self):
-        return (ROOT / "README.md").read_text()
-
-    def test_documents_flask_server(self, readme):
-        assert "Flask" in readme
-
-    def test_documents_trainer(self, readme):
-        assert "Trainer" in readme
-
-    def test_documents_evaluator(self, readme):
-        assert "Evaluator" in readme
-
-    def test_documents_predictor(self, readme):
-        assert "Predictor" in readme
-
-    def test_server_module_exists(self):
-        assert (ROOT / "classifiers" / "server.py").is_file()
-
-    def test_trainer_module_exists(self):
-        assert (ROOT / "classifiers" / "trainer.py").is_file()
-
-    def test_evaluator_module_exists(self):
-        assert (ROOT / "classifiers" / "evaluator.py").is_file()
-
-    def test_predictor_module_exists(self):
-        assert (ROOT / "classifiers" / "predictor.py").is_file()
+def _env_vars_in_code() -> set[str]:
+    found: set[str] = set()
+    for path in ROOT.joinpath("classifiers").rglob("*.py"):
+        found |= set(re.findall(r'environ(?:\.get)?[\(\[]\s*"([A-Z_]+)"', path.read_text()))
+    return found - INTERNAL_ENV
 
 
-class TestModelDocumentation:
-    """All model architectures should be documented."""
+class TestTheReadmeCoversWhatTheCodeExposes:
+    def test_every_environment_variable_is_documented(self, readme) -> None:
+        """Ten of these were missing when this was a substring check."""
+        missing = sorted(var for var in _env_vars_in_code() if f"`{var}`" not in readme)
+        assert not missing, f"environment variables read but never documented: {missing}"
 
-    @pytest.fixture
-    def readme(self):
-        return (ROOT / "README.md").read_text()
+    def test_every_dataset_is_documented(self, readme) -> None:
+        missing = [
+            plugin.display_name
+            for plugin in list_plugins().values()
+            if plugin.display_name.split()[0] not in readme
+        ]
+        assert not missing, f"datasets the platform serves but the README omits: {missing}"
 
-    def test_documents_cnn(self, readme):
-        assert "CNN" in readme
+    def test_every_model_type_is_documented(self, readme) -> None:
+        """A model the API offers and the README never mentions is invisible."""
+        missing = sorted(
+            {
+                model_type
+                for plugin in list_plugins().values()
+                for model_type in plugin.get_model_types()
+                if model_type not in readme
+            }
+        )
+        assert not missing, f"model types offered but undocumented: {missing}"
 
-    def test_documents_linear(self, readme):
-        assert "Linear" in readme
-
-    def test_documents_svm(self, readme):
-        assert "SVM" in readme
-
-    def test_documents_quadratic(self, readme):
-        assert "Quadratic" in readme or "quadratic" in readme
-
-    def test_documents_polynomial(self, readme):
-        assert "Polynomial" in readme or "polynomial" in readme
-
-    def test_documents_qiskit(self, readme):
-        assert "Qiskit" in readme or "qiskit" in readme
-
-    def test_documents_iris_dataset(self, readme):
-        assert "Iris" in readme or "iris" in readme
-
-    def test_documents_mnist_dataset(self, readme):
-        assert "MNIST" in readme or "mnist" in readme
-
-
-class TestConfigurationDocumentation:
-    """Training parameters and configuration options should be documented."""
-
-    @pytest.fixture
-    def readme(self):
-        return (ROOT / "README.md").read_text()
-
-    def test_documents_epochs(self, readme):
-        assert "epoch" in readme.lower()
-
-    def test_documents_learning_rate(self, readme):
-        assert "learning_rate" in readme or "lr" in readme.lower()
-
-    def test_documents_batch_size(self, readme):
-        assert "batch" in readme.lower()
-
-    def test_documents_accuracy_metrics(self, readme):
-        assert "accuracy" in readme.lower() or "Accuracy" in readme
+    def test_every_make_target_is_documented(self, readme) -> None:
+        makefile = (ROOT / "Makefile").read_text()
+        targets = set(re.findall(r"^([a-z][a-z-]*):", makefile, re.MULTILINE))
+        missing = sorted(t for t in targets - UNDOCUMENTED_TARGETS if f"make {t}" not in readme)
+        assert not missing, f"make targets a reader cannot discover: {missing}"
 
 
-class TestDockerDocumentation:
-    """Docker-related files should be present and documented."""
+class TestSetupInstructionsStayRunnable:
+    """One test per thing a new reader has to be able to do."""
 
-    def test_dockerfile_exists(self):
-        assert (ROOT / "Dockerfile").is_file()
+    def test_install_step_names_the_file_it_installs(self, readme) -> None:
+        assert "pip install -r requirements.txt" in readme
 
-    def test_docker_compose_exists(self):
+    def test_run_step_matches_the_module_entry_point(self, readme) -> None:
+        assert "python -m classifiers" in readme
+        assert (ROOT / "classifiers" / "__main__.py").is_file()
+
+    def test_test_step_matches_the_suite(self, readme) -> None:
+        assert "python -m pytest tests/" in readme
+
+    def test_docker_steps_match_the_files_they_use(self, readme) -> None:
+        assert "docker compose up" in readme
         assert (ROOT / "docker-compose.yml").is_file()
-
-    def test_requirements_txt_exists(self):
-        assert (ROOT / "requirements.txt").is_file()
-
-    def test_makefile_exists(self):
-        assert (ROOT / "Makefile").is_file()
+        assert (ROOT / "Dockerfile").is_file()
 
 
 class TestReadmeHonesty:
     """The README's checkable claims must actually check out — the gates that
     would have caught the drift a 2026-08 audit found by hand."""
 
-    def test_readme_test_count_matches_reality(self):
+    def test_readme_test_count_matches_reality(self, readme):
         """The stated test-function count is asserted, not decorative."""
-        import re
-
-        readme = (ROOT / "README.md").read_text()
         stated = {int(n) for n in re.findall(r"\((\d+) test functions\)", readme)}
         assert stated, "README no longer states a test-function count"
         actual = sum(
@@ -190,3 +132,7 @@ class TestReadmeHonesty:
 
         pyproject = (ROOT / "pyproject.toml").read_text()
         assert f'version = "{classifiers.__version__}"' in pyproject
+
+    def test_contributing_and_license_are_present(self):
+        assert (ROOT / "CONTRIBUTING.md").is_file()
+        assert (ROOT / "LICENSE").is_file()
