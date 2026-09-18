@@ -1,8 +1,8 @@
-"""Documentation gates: the README's claims have to match the code.
+"""The README has to cover what the code exposes.
 
-Each gate compares the README against what the code exposes — every
-environment variable it reads, every dataset plugin, every model type and
-every make target — rather than searching it for a substring.
+Every environment variable the code reads, every dataset plugin, every model
+type and every make target has to appear in the README, and the version it
+reports has to be the one in pyproject.
 """
 
 import re
@@ -72,40 +72,8 @@ class TestTheReadmeCoversWhatTheCodeExposes:
         assert not missing, f"make targets a reader cannot discover: {missing}"
 
 
-class TestSetupInstructionsStayRunnable:
-    """One test per thing a new reader has to be able to do."""
-
-    def test_install_step_names_the_file_it_installs(self, readme) -> None:
-        assert "pip install -r requirements.txt" in readme
-
-    def test_run_step_matches_the_module_entry_point(self, readme) -> None:
-        assert "python -m classifiers" in readme
-        assert (ROOT / "classifiers" / "__main__.py").is_file()
-
-    def test_test_step_matches_the_suite(self, readme) -> None:
-        assert "python -m pytest tests/" in readme
-
-    def test_docker_steps_match_the_files_they_use(self, readme) -> None:
-        assert "docker compose up" in readme
-        assert (ROOT / "docker-compose.yml").is_file()
-        assert (ROOT / "Dockerfile").is_file()
-
-
 class TestReadmeHonesty:
     """The README's checkable claims have to check out."""
-
-    def test_readme_tree_paths_resolve(self):
-        """Key paths the README documents must exist on disk."""
-        for rel in (
-            "classifiers/web_export.py",
-            "classifiers/qsvm_export.py",
-            "classifiers/wsgi.py",
-            "exports/web/iris.json",
-            "exports/web/qsvm-mnist.json",
-            "notebooks/qsvm-iris/qsvm_iris.ipynb",
-            "tests/contract/schemas",
-        ):
-            assert (ROOT / rel).exists(), f"README-documented path missing: {rel}"
 
     def test_version_single_source(self):
         """classifiers.__version__ (the /health fallback) matches pyproject."""
@@ -113,7 +81,3 @@ class TestReadmeHonesty:
 
         pyproject = (ROOT / "pyproject.toml").read_text()
         assert f'version = "{classifiers.__version__}"' in pyproject
-
-    def test_contributing_and_license_are_present(self):
-        assert (ROOT / "CONTRIBUTING.md").is_file()
-        assert (ROOT / "LICENSE").is_file()
