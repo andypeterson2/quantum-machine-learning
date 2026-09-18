@@ -50,7 +50,7 @@ rustworkx==0.18.1
 scikit-learn==1.9.1
 scipy==1.18.1
 scipy-openblas32==0.3.34.237.0
-setuptools==78.1.0
+setuptools==84.0.0
 six==1.17.0
 stevedore==5.9.1
 sympy==1.14.0
