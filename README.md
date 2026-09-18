@@ -114,6 +114,12 @@ curl http://localhost:5001/api        # discovery index of every endpoint
 
 MNIST data is downloaded automatically to `classifiers/data/` on first run (~11 MB).
 Iris data is loaded from scikit-learn (bundled, no download needed).
+BB84 sessions are simulated from fixed seeds, so that dataset needs nothing on disk.
+
+MNIST arrives twice, from two sources: `torchvision` serves the platform's own
+28x28 tensors, and the QSVM paper recreation needs the flat `mnist_784` vectors
+sklearn fetches from openml. CI caches each separately and populates them before
+the tests run, so no test downloads anything.
 
 #### 3. Train a model
 

@@ -20,7 +20,11 @@ demo tier — same conventions as :mod:`classifiers.web_export`.
 Run via ``make export-qsvm``; ship with ``make sync-web``.
 ``tests/test_web_export.py`` drift-checks the committed exports in CI
 (the Iris derivation fully; the MNIST parts only when the openml
-``mnist_784`` cache is present — CI never downloads datasets).
+``mnist_784`` cache is present — the tests themselves never download).
+
+MNIST reaches this repo twice over: ``torchvision`` serves the platform's
+own 28x28 tensors, while the paper recreation needs the flat ``mnist_784``
+vectors that sklearn fetches from openml. Both are cached separately in CI.
 """
 
 from __future__ import annotations
