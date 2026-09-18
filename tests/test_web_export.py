@@ -9,8 +9,9 @@ drifting from the backend.
 
 The accuracy checks deliberately re-evaluate the committed weights (pure
 inference — deterministic across platforms) rather than retraining, and the
-MNIST accuracy check only runs when the dataset is already cached locally —
-CI never downloads datasets.
+MNIST accuracy check only runs when the dataset is already cached locally.
+The test run itself never downloads: CI populates its caches in a separate
+step, once per cache key, before pytest starts.
 """
 
 from __future__ import annotations
@@ -136,7 +137,7 @@ class TestMnistExport:
         assert bias.shape == (10,)
 
     @pytest.mark.skipif(
-        not MNIST_CACHE.is_file(), reason="MNIST not cached locally; CI never downloads"
+        not MNIST_CACHE.is_file(), reason="MNIST not cached here; tests never download"
     )
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("mnist")
@@ -361,10 +362,10 @@ class TestQsvmIrisDrift:
 
 
 class TestQsvmMnistDrift:
-    """Re-derivation only when the openml mnist_784 cache exists (CI never downloads)."""
+    """Re-derivation only when the openml mnist_784 cache exists (tests never download)."""
 
     @pytest.mark.skipif(
-        not MNIST_OPENML_CACHE, reason="openml mnist_784 not cached locally; CI never downloads"
+        not MNIST_OPENML_CACHE, reason="openml mnist_784 not cached here; tests never download"
     )
     def test_accuracy_claim_reproduces(self) -> None:
         payload = _load("qsvm-mnist")
