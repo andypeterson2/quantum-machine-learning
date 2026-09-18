@@ -26,7 +26,7 @@ from classifiers.datasets.mnist.plugin import MNIST_MEAN, MNIST_STD
 from classifiers.plugin_registry import discover_plugins, get_plugin
 from classifiers.web_export import OUT_DIR, REPO_ROOT, evaluate_payload
 
-# The actual test-set file, not just the directory — an empty MNIST/ dir exists
+# The test-set file itself: an empty MNIST/ dir exists
 # in fresh checkouts and must still skip.
 MNIST_CACHE = REPO_ROOT / "classifiers" / "data" / "MNIST" / "raw" / "t10k-images-idx3-ubyte"
 
@@ -257,7 +257,7 @@ class TestRegeneration:
         assert fresh["classes"] == committed["classes"]
 
 
-# ── QSVM paper-recreation exports ─────────────────────────────────────────────
+# QSVM paper-recreation exports
 
 from pathlib import Path  # noqa: E402
 

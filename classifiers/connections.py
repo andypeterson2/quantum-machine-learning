@@ -21,7 +21,7 @@ class ConnectionTracker:
         self._lock = threading.Lock()
         self._clients: dict[str, float] = {}  # client_id → last-seen ts
 
-    # ── public API ────────────────────────────────────────────────
+    # public API
 
     def register(self) -> str:
         """Create and register a new client, returning its unique id."""

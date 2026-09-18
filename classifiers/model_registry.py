@@ -77,7 +77,7 @@ class ModelRegistry:
             os.environ.get("CLASSIFIERS_MAX_MODELS", "20")
         )
 
-    # ── Name generation ────────────────────────────────────────────────────────
+    # Name generation
 
     def next_name(self, dataset: str) -> str:
         """Return the next auto-generated model name for *dataset*.
@@ -96,7 +96,7 @@ class ModelRegistry:
             self._counters[dataset] += 1
             return f"Model {self._counters[dataset]}"
 
-    # ── Write operations ───────────────────────────────────────────────────────
+    # Write operations
 
     # One parameter per stored metadata field; a config object would only rename them.
     def add(  # noqa: PLR0913
@@ -209,7 +209,7 @@ class ModelRegistry:
             if num_params is not None:
                 entry.num_params = num_params
 
-    # ── Read operations ────────────────────────────────────────────────────────
+    # Read operations
 
     def get(self, dataset: str, name: str) -> ModelEntry | None:
         """Return the :class:`ModelEntry` for *name* in *dataset*, or ``None``.
