@@ -31,7 +31,7 @@ from .errors import error_response
 bp = Blueprint("dataset", __name__, url_prefix="/d/<dataset>")
 
 
-# ── Hook: resolve plugin once per request ────────────────────────────────────
+# Hook: resolve plugin once per request
 
 
 @bp.url_value_preprocessor
@@ -62,7 +62,7 @@ def reject_unknown_dataset() -> tuple[Response, int] | None:
     return None
 
 
-# ── Register endpoint sub-modules ───────────────────────────────────────────
+# Register endpoint sub-modules
 
 train_routes.register(bp)
 eval_routes.register(bp)

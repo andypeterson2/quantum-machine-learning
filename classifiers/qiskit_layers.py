@@ -29,7 +29,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Function
 
-# ── Dependency check ────────────────────────────────────────────────────────
+# Dependency check
 
 def _check_qiskit() -> None:
     """Raise a clear ``ImportError`` if Qiskit is not installed."""
@@ -43,7 +43,7 @@ def _check_qiskit() -> None:
         ) from err
 
 
-# ── Executor (circuit runner) ───────────────────────────────────────────────
+# Executor (circuit runner)
 
 class _QCExecutor(ABC):
     """Abstract base for quantum circuit execution strategies."""
@@ -107,7 +107,7 @@ class _QCSampler(_QCExecutor):
         return self.interpret(counts)
 
 
-# ── Parametric circuit ──────────────────────────────────────────────────────
+# Parametric circuit
 
 class _ParametricCircuit:
     """A quantum circuit with reassignable parameter values."""
@@ -169,7 +169,7 @@ class _ExampleCircuit(_ParametricCircuit):
         return qc
 
 
-# ── Autograd bridge ─────────────────────────────────────────────────────────
+# Autograd bridge
 
 class _RunCircuit(Function):
     """Custom autograd Function: forward runs the circuit, backward computes
@@ -242,7 +242,7 @@ class _RunCircuit(Function):
         return None, batch_df_dw, batch_df_dx
 
 
-# ── Public layer ────────────────────────────────────────────────────────────
+# Public layer
 
 class _Head(nn.Module):
     """Single-headed trainable parametric circuit."""

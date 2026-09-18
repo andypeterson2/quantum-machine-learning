@@ -12,7 +12,7 @@ from classifiers.evaluator import EvalResult, Evaluator
 from classifiers.predictor import Predictor
 from classifiers.trainer import Trainer, TrainResult
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# Fixtures
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def bb84_features():
     return {"qber": 0.02, "sifted_key_rate": 0.10}
 
 
-# ── Simulator tests ───────────────────────────────────────────────────────────
+# Simulator tests
 
 
 class TestBb84Simulator:
@@ -74,7 +74,7 @@ class TestBb84Simulator:
         assert eve_qber.mean() > clean_qber.mean() + 0.05
 
 
-# ── Plugin tests ──────────────────────────────────────────────────────────────
+# Plugin tests
 
 
 class TestBb84Plugin:
@@ -135,7 +135,7 @@ class TestBb84Plugin:
         assert config["feature_names"] == bb84_plugin.feature_names
 
 
-# ── Model tests ───────────────────────────────────────────────────────────────
+# Model tests
 
 
 class TestBb84Models:
@@ -163,7 +163,7 @@ class TestBb84Models:
         assert abs(svm_loss.item() - linear_loss.item()) > 1e-3
 
 
-# ── Integration: train + predict ──────────────────────────────────────────────
+# Integration: train + predict
 
 
 class TestBb84TrainPredict:
