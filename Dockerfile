@@ -2,21 +2,22 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# CPU-only torch first — its own layer, the biggest download. The linux image
-# is free of the Intel-macOS ceiling that pins local dev to torch 2.2 (PyTorch
-# shipped its last x86_64-macOS wheels at 2.2.2), so production runs the
-# current stack: latest torch, numpy 2, current pennylane/qiskit.
-RUN pip install --no-cache-dir torch torchvision \
-    --index-url https://download.pytorch.org/whl/cpu
+# CPU-only torch first — its own layer, the biggest download. The linux image is
+# free of the Intel-macOS ceiling that pins local dev to torch 2.2 (PyTorch
+# shipped its last x86_64-macOS wheels at 2.2.2), so production runs the current
+# stack: torch 2.14, numpy 2, current pennylane/qiskit. Both files are locks, so
+# two builds of the same commit install the same versions.
+COPY requirements/linux/ requirements/linux/
+RUN pip install --no-cache-dir -r requirements/linux/torch.txt
 
 COPY pyproject.toml README.md ./
 COPY classifiers/ classifiers/
 
-# The package plus the quantum extra, resolved from pyproject's ranges — the
-# environment markers keep the numpy<2 / pennylane<0.45 pins Intel-Mac-only,
-# so this resolves the modern stack here. Installing the package also lets
-# /health report the real version via importlib.metadata.
-RUN pip install --no-cache-dir .[quantum]
+# The rest of the stack from the lock, then the package itself with --no-deps so
+# the lock stays authoritative over pyproject's ranges. Installing the package is
+# what lets /health report the real version via importlib.metadata.
+RUN pip install --no-cache-dir -r requirements/linux/requirements.txt
+RUN pip install --no-cache-dir --no-deps .
 
 # Never run the Werkzeug debugger/reloader in the image (interactive-debugger RCE).
 ENV CLASSIFIERS_DEBUG=0
