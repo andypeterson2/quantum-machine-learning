@@ -76,6 +76,8 @@ Or with Docker Compose (`CLASSIFIERS_PORT` selects the host port, default 8080; 
 CLASSIFIERS_PORT=8080 docker compose up --build
 ```
 
+(`make docker` is the same thing with the default port.)
+
 Verify it's up:
 
 ```bash
@@ -190,7 +192,8 @@ quantum-machine-learning/
 │   ├── predictor.py                # Inference pipeline (raw input → probabilities)
 │   ├── model_registry.py           # In-memory model store, namespaced by dataset
 │   ├── persistence.py              # Disk I/O for .pt checkpoint files
-│   ├── web_export.py               # Browser weight exporter (make export-web) — trains the
+│   ├── web_export.py               # Browser weight exporter (make export-web; `make sync-web`
+│   │                               #   copies the result into the website checkout) — trains the
 │   │                               #   Linear models via the real plugins/Trainer, stamps provenance
 │   ├── qsvm_export.py              # QSVM paper-recreation weights (make export-qsvm) —
 │   │                               #   closed-form derivation from notebooks/qsvm-iris/
@@ -227,7 +230,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (589 test functions)
+├── tests/                          # Pytest suite (565 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -469,7 +472,7 @@ architectures, whatever the point estimates suggest.
 python -m pytest tests/ -v
 ```
 
-The test suite (589 test functions) covers:
+The test suite (565 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
@@ -496,6 +499,16 @@ All configuration is via environment variables:
 | Allowed CORS origins | `CLASSIFIERS_CORS_ORIGINS` | `^https?://localhost(:\d+)?$,https://andypeterson.dev` (comma-separated; anchor any pattern with `^…$`) | `classifiers/server.py` |
 | Max request body size | `CLASSIFIERS_MAX_CONTENT_LENGTH` | 2 MB | `classifiers/server.py` |
 | Gateway origin guard | `ORIGIN_SECRET` | unset (guard inactive) | `classifiers/server.py` |
+| Flask secret key | `CLASSIFIERS_SECRET_KEY` | random per process | `classifiers/server.py` |
+| Concurrent heavy jobs | `CLASSIFIERS_MAX_JOBS` | `2` | `classifiers/server.py` |
+| Models kept per dataset | `CLASSIFIERS_MAX_MODELS` | `20` | `classifiers/model_registry.py` |
+| Saved checkpoints kept | `CLASSIFIERS_MAX_CHECKPOINTS` | `50` | `classifiers/routes/model_routes.py` |
+| Max predict image side | `CLASSIFIERS_MAX_IMAGE_DIM` | `4096` px | `classifiers/routes/model_routes.py` |
+| Concurrent SSE clients | `CLASSIFIERS_MAX_CLIENTS` | `8` | `classifiers/routes/connection_routes.py` |
+| Heartbeat stream lifetime | `CLASSIFIERS_CONNECT_LIFETIME` | `1800` s | `classifiers/routes/connection_routes.py` |
+| Job stream lifetime | `CLASSIFIERS_SSE_LIFETIME` | `3600` s | `classifiers/routes/sse.py` |
+| Stream keepalive interval | `CLASSIFIERS_SSE_GET_TIMEOUT` | `30` s | `classifiers/routes/sse.py` |
+| Dev TLS certificate dir | `DEV_CERT_DIR` | unset (plain HTTP) | `classifiers/__main__.py` |
 | Checkpoint directory | — | `./models/` | `classifiers/server.py` |
 | MNIST data directory | — | `classifiers/data/` | `classifiers/datasets/mnist/plugin.py` |
 
