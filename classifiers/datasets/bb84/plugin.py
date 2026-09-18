@@ -11,17 +11,17 @@ including CI.
 Quantum machine learning guarding quantum cryptography: the same platform
 that trains the QVC/QSVM classifiers watches the protocol that distributes
 quantum keys.
+
+Standardisation, splitting and inference are the tabular pipeline in
+:class:`~classifiers.datasets.tabular.TabularPlugin`.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-import torch
-from torch.utils.data import DataLoader, TensorDataset
+import numpy as np
 
 from classifiers.base_model import BaseModel
-from classifiers.dataset_plugin import DatasetPlugin
+from classifiers.datasets.tabular import TabularPlugin
 
 from .simulate import generate_dataset
 
@@ -33,7 +33,7 @@ TRAIN_SEED = 42
 TEST_SEED = 43
 
 
-class BB84Plugin(DatasetPlugin):
+class BB84Plugin(TabularPlugin):
     """Plugin for BB84 eavesdropper detection.
 
     * 2 classes: clean, eavesdropped
@@ -43,105 +43,15 @@ class BB84Plugin(DatasetPlugin):
 
     name = "bb84"
     display_name = "BB84 Eavesdropper Detection"
-    input_type = "tabular"
     num_classes = 2
     class_labels = ["clean", "eavesdropped"]
-    image_size = None
-    image_channels = None
     feature_names = ["qber", "sifted_key_rate"]
 
-    def __init__(self) -> None:
-        super().__init__()
-        self._train_X: torch.Tensor | None = None
-        self._train_y: torch.Tensor | None = None
-        self._test_X: torch.Tensor | None = None
-        self._test_y: torch.Tensor | None = None
-        self._mean: torch.Tensor | None = None
-        self._std: torch.Tensor | None = None
-
-    # ── Data loading ──────────────────────────────────────────────────────────
-
-    def _ensure_loaded(self) -> None:
-        """Simulate and standardise the dataset on first access."""
-        if self._train_X is not None:
-            return
-
+    def load_raw(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Simulate both splits from their fixed seeds."""
         train_X, train_y = generate_dataset(N_TRAIN, TRAIN_SEED)
         test_X, test_y = generate_dataset(N_TEST, TEST_SEED)
-
-        train_t = torch.from_numpy(train_X)
-        self._mean = train_t.mean(dim=0)
-        self._std = train_t.std(dim=0).clamp(min=1e-8)
-
-        self._train_X = (train_t - self._mean) / self._std
-        self._train_y = torch.from_numpy(train_y)
-        self._test_X = (torch.from_numpy(test_X) - self._mean) / self._std
-        self._test_y = torch.from_numpy(test_y)
-
-    def get_train_loader(self, batch_size: int) -> DataLoader:
-        """Return a :class:`DataLoader` over the standardised training set.
-
-        Args:
-            batch_size: Number of samples per mini-batch.
-        """
-        self._ensure_loaded()
-        assert self._train_X is not None and self._train_y is not None
-        split = int(len(self._train_X) * 0.8)
-        ds = TensorDataset(self._train_X[:split], self._train_y[:split])
-        return DataLoader(ds, batch_size=batch_size, shuffle=True)
-
-    def get_test_loader(self, batch_size: int) -> DataLoader:
-        """Return a :class:`DataLoader` over the standardised test set.
-
-        Args:
-            batch_size: Number of samples per mini-batch.
-        """
-        self._ensure_loaded()
-        assert self._test_X is not None and self._test_y is not None
-        ds = TensorDataset(self._test_X, self._test_y)
-        return DataLoader(ds, batch_size=batch_size, shuffle=False)
-
-    def get_val_loader(self, batch_size: int) -> DataLoader:
-        """Hold out the last 20% of the training set for validation.
-
-        Args:
-            batch_size: Number of samples per mini-batch.
-        """
-        self._ensure_loaded()
-        assert self._train_X is not None and self._train_y is not None
-        split = int(len(self._train_X) * 0.8)
-        ds = TensorDataset(self._train_X[split:], self._train_y[split:])
-        return DataLoader(ds, batch_size=batch_size, shuffle=False)
-
-    def normalization(self) -> tuple[list[float], list[float]]:
-        """Return the (mean, std) standardisation constants as plain lists.
-
-        Computed from the training split; the exact constants any external
-        consumer (e.g. the browser demo fed by :mod:`classifiers.web_export`)
-        must reproduce.
-        """
-        self._ensure_loaded()
-        assert self._mean is not None and self._std is not None
-        return self._mean.tolist(), self._std.tolist()
-
-    # ── Preprocessing ─────────────────────────────────────────────────────────
-
-    def preprocess(self, raw_input: Any) -> torch.Tensor:
-        """Convert a dict of feature values to a standardised tensor.
-
-        Args:
-            raw_input: A ``dict[str, float]`` with ``qber`` and
-                ``sifted_key_rate``.
-
-        Returns:
-            Float tensor of shape ``(1, 2)``.
-        """
-        self._ensure_loaded()
-        assert self._mean is not None and self._std is not None
-        assert self.feature_names is not None
-        values = [float(raw_input[f]) for f in self.feature_names]
-        tensor = torch.tensor([values], dtype=torch.float32)
-        return (tensor - self._mean) / self._std
+        return train_X, train_y, test_X, test_y
 
     # ── Model types ───────────────────────────────────────────────────────────
 
