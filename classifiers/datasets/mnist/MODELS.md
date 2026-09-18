@@ -59,7 +59,9 @@ The simplest possible classifier -- a single linear transformation from pixel sp
 
 - Minimal baseline to compare against more complex architectures
 - Fast training (seconds, not minutes)
-- Good student model for distillation (can a linear model absorb a CNN's knowledge?)
+- The distillation student in `exports/distillation.json`. The answer there, at
+  the default blend, is no: distilling the 98.8% CNN into this model costs it
+  about a point (92.05% alone vs 91.04% distilled, negative on all three seeds)
 - Useful for demonstrating that spatial features matter (7% accuracy gap vs CNN)
 
 ---
