@@ -1,13 +1,16 @@
-"""Structural trainability checks on synthetic data.
+"""Each architecture can learn, on synthetic data, through its own objective.
 
-Verify that training each model architecture for a short run produces
-accuracy within a plausible range of the documented claims. We use very
-short training (a few epochs) and check that accuracy is non-trivially
-above random chance and that the model converges in the expected direction.
+This file was called test_accuracy_claims.py, which overstated it twice over:
+it trains on synthetic tensors rather than the real datasets, and it trained
+every model — SVMs included — with cross-entropy, so the hinge-loss path it
+appeared to cover was never executed. Models are now trained through their own
+``loss_fn``, which is what the platform does.
 
-Full convergence to documented accuracy requires longer training, so we
-validate the *structure* of the claim — i.e. that the architecture can
-learn the task — rather than exact numbers.
+The real accuracy claims are measured in exports/benchmarks.json
+(tools/benchmark.py) and enforced by tests/test_model_docs.py. What is checked
+here is narrower and still worth checking: each architecture learns something
+above chance, and its outputs have the shape and range the rest of the
+platform assumes.
 """
 
 import pytest
@@ -19,16 +22,20 @@ from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 # --- Helpers ---
 
 def train_and_eval(model, train_loader, test_loader, epochs=3, lr=0.01):
-    """Train a model briefly and return test accuracy."""
+    """Train a model briefly through its own loss and return test accuracy.
+
+    ``type(model).loss_fn`` is the platform's own dispatch: cross-entropy by
+    default, multi-class hinge for the SVMs. Using a fixed criterion here meant
+    the SVM tests silently exercised cross-entropy.
+    """
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = torch.nn.CrossEntropyLoss()
 
     model.train()
     for _ in range(epochs):
         for data, target in train_loader:
             optimizer.zero_grad()
             output = model(data)
-            loss = criterion(output, target)
+            loss = type(model).loss_fn(output, target)
             loss.backward()
             optimizer.step()
 
@@ -91,11 +98,11 @@ def iris_loaders():
     return train_loader, test_loader
 
 
-class TestMNISTAccuracyClaims:
+class TestMNISTTrainability:
     """MNIST architectures learn above chance on synthetic data.
 
-    The real accuracy gate is tests/test_web_export.py, which re-scores the
-    committed browser weights on the actual test splits."""
+    The real accuracy gate is exports/benchmarks.json, enforced by
+    tests/test_model_docs.py."""
 
     def test_cnn_learns_above_chance(self, mnist_loaders):
         """CNN should learn well above 10% random chance."""
@@ -134,11 +141,11 @@ class TestMNISTAccuracyClaims:
             assert torch.allclose(sums, torch.ones_like(sums), atol=1e-5)
 
 
-class TestIrisAccuracyClaims:
+class TestIrisTrainability:
     """Iris architectures learn above chance on synthetic data.
 
-    The real accuracy gate is tests/test_web_export.py (measured: 90%
-    at default hyper-parameters, committed in exports/web/iris.json)."""
+    The real accuracy gate is exports/benchmarks.json: Iris Linear measures
+    90.0% (95% CI 74.4-96.5%, n=30) at the plugin's default hyper-parameters."""
 
     def test_linear_learns_above_chance(self, iris_loaders):
         """Iris Linear should learn above 33% chance."""
@@ -177,3 +184,42 @@ class TestModelOutputShape:
     def test_iris_svm_output_3(self):
         x = torch.randn(1, 4)
         assert IrisSVM()(x).shape == (1, 3)
+
+
+class TestModelsTrainThroughTheirOwnObjective:
+    """The dispatch this file used to bypass."""
+
+    def test_svm_models_do_not_use_the_default_loss(self):
+        from classifiers.base_model import BaseModel
+        from classifiers.datasets.bb84.models import BB84SVM
+
+        for svm in (SVMNet, IrisSVM, BB84SVM):
+            assert svm.loss_fn is not BaseModel.loss_fn, f"{svm.__name__} lost its hinge loss"
+
+    def test_hinge_and_cross_entropy_disagree(self):
+        """So training through the wrong one is a real difference, not a
+        stylistic one."""
+        torch.manual_seed(0)
+        output, target = torch.randn(8, 3), torch.randint(0, 3, (8,))
+        hinge = IrisSVM.loss_fn(output, target)
+        cross_entropy = torch.nn.functional.cross_entropy(output, target)
+        assert not torch.isclose(hinge, cross_entropy)
+
+
+class TestQvcConfidenceCeiling:
+    """The QVC's documented limit: Pauli-Z expectations are bounded, and the
+    models use them directly as logits."""
+
+    def test_softmax_over_bounded_logits_cannot_reach_certainty(self):
+        """The 0.79 the model docs quote, derived rather than remembered."""
+        best_case = torch.tensor([1.0, -1.0, -1.0])
+        assert torch.softmax(best_case, dim=0)[0].item() == pytest.approx(0.787, abs=5e-4)
+
+    def test_qvc_outputs_stay_inside_the_bound(self):
+        pytest.importorskip("pennylane", reason="pennylane not installed")
+        from classifiers.datasets.iris.models import IrisQVC
+
+        torch.manual_seed(0)
+        out = IrisQVC()(torch.randn(6, 4))
+        assert out.shape == (6, 3)
+        assert out.abs().max().item() <= 1.0 + 1e-6

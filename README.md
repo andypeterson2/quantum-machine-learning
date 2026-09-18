@@ -230,7 +230,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (565 test functions)
+├── tests/                          # Pytest suite (569 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -472,7 +472,7 @@ architectures, whatever the point estimates suggest.
 python -m pytest tests/ -v
 ```
 
-The test suite (565 test functions) covers:
+The test suite (569 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
