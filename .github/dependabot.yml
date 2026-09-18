@@ -17,6 +17,19 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: pennylane
         versions: [">=0.45"]
+  # The linux/production lock, which the image installs from. Separate from the
+  # Intel-Mac parity file above so production can move while dev stays capped.
+  - package-ecosystem: pip
+    directory: /requirements/linux
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      # torch.txt carries these, from PyTorch's CPU index, and they move as a
+      # pair by hand — a lone bump of either cannot resolve.
+      - dependency-name: torch
+      - dependency-name: torchvision
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

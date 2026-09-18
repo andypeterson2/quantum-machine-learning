@@ -1,0 +1,12 @@
+# torch and torchvision for the linux image, from PyTorch's CPU index.
+#
+# Kept out of requirements.txt (and out of Dependabot's hands) for two reasons:
+# the +cpu local version needs this index, which Dependabot's pip updater handles
+# poorly, and the two must move together — a lone bump of either cannot resolve,
+# which is what made PRs #15, #18, #23 and #26 unmergeable.
+#
+# Bump by hand, both lines at once, then rebuild and re-freeze requirements.txt
+# beside this file.
+--index-url https://download.pytorch.org/whl/cpu
+torch==2.14.0+cpu
+torchvision==0.29.0+cpu
