@@ -186,29 +186,43 @@ class TestTrainingDataPipeline:
         path = ROOT / "classifiers" / "datasets" / "mnist" / "plugin.py"
         assert path.is_file()
 
-    def test_iris_train_loader(self):
-        src = _read("classifiers/datasets/iris/plugin.py")
-        assert "def get_train_loader" in src
+    # Behaviour, not source text: a grep for "def get_train_loader" only asks
+    # where the code sits, which is not what these tests are for.
 
-    def test_iris_test_loader(self):
-        src = _read("classifiers/datasets/iris/plugin.py")
-        assert "def get_test_loader" in src
+    def test_iris_serves_three_disjoint_splits(self):
+        from classifiers.datasets.iris.plugin import IrisPlugin
 
-    def test_iris_val_loader(self):
-        src = _read("classifiers/datasets/iris/plugin.py")
-        assert "def get_val_loader" in src
+        plugin = IrisPlugin()
+        sizes = [
+            sum(len(y) for _, y in plugin.get_train_loader(16)),
+            sum(len(y) for _, y in plugin.get_val_loader(16)),
+            sum(len(y) for _, y in plugin.get_test_loader(16)),
+        ]
+        assert sizes == [96, 24, 30], f"iris splits changed: {sizes}"
 
-    def test_iris_standardisation(self):
-        src = _read("classifiers/datasets/iris/plugin.py")
-        assert "_mean" in src and "_std" in src, "Feature standardisation not found"
+    def test_iris_standardises_on_its_training_rows(self):
+        from classifiers.datasets.iris.plugin import IrisPlugin
+
+        mean, std = IrisPlugin().normalization()
+        assert len(mean) == len(std) == 4
+        assert all(s > 0 for s in std)
 
     def test_iris_stratified_split(self):
         src = _read("classifiers/datasets/iris/plugin.py")
         assert "stratify" in src, "Stratified train/test split not found"
 
-    def test_iris_preprocess(self):
-        src = _read("classifiers/datasets/iris/plugin.py")
-        assert "def preprocess" in src
+    def test_iris_preprocess_matches_the_training_transformation(self):
+        import torch
+
+        from classifiers.datasets.iris.plugin import IrisPlugin
+
+        plugin = IrisPlugin()
+        mean, std = plugin.normalization()
+        sample = dict(zip(plugin.feature_names, [5.1, 3.5, 1.4, 0.2], strict=True))
+        got = plugin.preprocess(sample)
+        expected = (torch.tensor([[5.1, 3.5, 1.4, 0.2]]) - torch.tensor(mean)) / torch.tensor(std)
+        assert got.shape == (1, 4)
+        assert torch.allclose(got, expected, atol=1e-6)
 
     def test_trainer_uses_dataloader(self):
         src = _read("classifiers/trainer.py")
