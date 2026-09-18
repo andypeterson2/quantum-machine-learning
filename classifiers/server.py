@@ -28,6 +28,7 @@ import hmac
 import os
 import threading
 import time
+import weakref
 from pathlib import Path
 
 from flask import Flask, jsonify, request
@@ -98,11 +99,21 @@ def create_app(models_dir: Path | None = None) -> Flask:
     tracker = ConnectionTracker()
     app.extensions["connections"] = tracker
 
-    # Background thread sweeps stale clients every 30 s.
+    tracker_ref = weakref.ref(tracker)
+
     def _sweep_loop() -> None:
+        """Drop stale clients every 30 s, and stop once the app is gone.
+
+        The weak reference is what allows that: capturing the tracker directly
+        pinned the whole app to a sleeping thread, and the suite builds hundreds
+        of apps.
+        """
         while True:
             time.sleep(30)
-            tracker.sweep(timeout=90)
+            live_tracker = tracker_ref()
+            if live_tracker is None:
+                return
+            live_tracker.sweep(timeout=90)
 
     sweep_thread = threading.Thread(target=_sweep_loop, daemon=True)
     sweep_thread.start()
