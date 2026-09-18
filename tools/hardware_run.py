@@ -18,6 +18,9 @@ section renders the comparison from the cache and stays green without it.
 Credentials: the saved qiskit account (``~/.qiskit/qiskit-ibm.json``) or the
 ``IBM_QUANTUM_TOKEN`` env var. This tool never prints or stores the token.
 
+The circuit and the readout live in :mod:`classifiers.hhl`, which the notebook
+imports too, so there is one definition rather than three.
+
 Usage::
 
     python tools/hardware_run.py submit [--backend NAME] [--shots 8192]
@@ -43,6 +46,8 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from classifiers import hhl  # noqa: E402
+from classifiers.hhl import analyse, build_hhl, ideal_probs, paper_key  # noqa: E402
 from classifiers.web_export import provenance_base  # noqa: E402
 
 logger = logging.getLogger("hardware_run")
@@ -50,114 +55,17 @@ logger = logging.getLogger("hardware_run")
 OUT_DIR = REPO_ROOT / "exports" / "hardware"
 PENDING = OUT_DIR / "pending.json"
 
-#: The paper's published IBMQX2 numbers (its own yardstick).
-PAPER_REFERENCE = {
-    "ibmqx2_optimized_depth7_djs": 0.130,
-    "ibmqx2_baseline_depth20_djs": 0.603,
-    "note": (
-        "the 0.603 baseline is a depth-20 unoptimized circuit this repo does "
-        "not build; only the optimized circuit is compared like-for-like"
-    ),
-}
-
-DEFAULT_SHOTS = 8192  # as in the paper and the notebook
-
-#: Counts give only |amplitude|; the sign pattern of alpha comes from the ideal solution.
-ALPHA_SIGN_NOTE = (
-    "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign "
-    "pattern is taken from the ideal solution F^-1 y, not measured"
-)
+#: The paper's numbers and the circuit itself now live in classifiers.hhl, which
+#: the notebook imports too — this file used to carry its own copy.
+PAPER_REFERENCE = hhl.PAPER_REFERENCE
+DEFAULT_SHOTS = hhl.DEFAULT_SHOTS
+ALPHA_SIGN_NOTE = hhl.ALPHA_SIGN_NOTE
 
 #: How ``qsvm_accuracy`` is scored, recorded beside it.
 QSVM_ACCURACY_PROTOCOL = (
     "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its "
     "held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
 )
-
-
-# ── The circuit (duplicated from notebook cell 10 — the notebook is not an
-#    importable module; any change there must be mirrored here) ───────────────
-
-
-def _h_theta(theta: float):
-    """Paper's H(θ) gate: [[cos2θ, sin2θ], [sin2θ, −cos2θ]]."""
-    from qiskit.circuit.library import UnitaryGate
-
-    m = np.array(
-        [
-            [np.cos(2 * theta), np.sin(2 * theta)],
-            [np.sin(2 * theta), -np.cos(2 * theta)],
-        ]
-    )
-    return UnitaryGate(m, label=f"H(pi/{round(np.pi / theta)})")
-
-
-def build_hhl(*, measure: bool = False):
-    """Optimized HHL for F=[[1,0.5],[0.5,1]], y=(1,−1)/√2 (paper Fig. 10)."""
-    from qiskit import QuantumCircuit
-
-    qc = QuantumCircuit(4, 4 if measure else 0)
-    qc.x(2)
-    qc.x(1)
-    qc.cx(2, 0)
-    qc.x(0)
-    qc.append(_h_theta(np.pi / 8).control(1, ctrl_state=0), [0, 3])
-    qc.append(_h_theta(np.pi / 10).control(1, ctrl_state=1), [0, 3])
-    qc.x(0)
-    qc.cx(2, 0)
-    qc.x(1)
-    qc.h(2)
-    if measure:
-        qc.measure(range(4), range(4))
-    return qc
-
-
-# ── Analysis helpers (mirroring notebook cell 19) ─────────────────────────────
-
-
-def paper_key(qiskit_key: str) -> str:
-    """Qiskit's little-endian ``c3c2c1c0`` bitstring → the paper's |q1q2q3q4⟩."""
-    return qiskit_key[::-1]
-
-
-def ideal_probs() -> dict[str, float]:
-    """Exact |amplitude|² of the unmeasured circuit, paper-keyed."""
-    from qiskit.quantum_info import Statevector
-
-    sv = Statevector.from_instruction(build_hhl())
-    return {format(i, "04b")[::-1]: float(p) for i, p in enumerate(np.abs(sv.data) ** 2)}
-
-
-def js_divergence(p: np.ndarray, q: np.ndarray) -> float:
-    """Jensen–Shannon divergence, base 2 (paper Eqs. 32–33)."""
-
-    def kl(x: np.ndarray, y: np.ndarray) -> float:
-        return float(
-            np.sum(np.where(x > 0, x * np.log2(np.maximum(x, 1e-12) / np.maximum(y, 1e-12)), 0))
-        )
-
-    p, q = np.asarray(p, float), np.asarray(q, float)
-    m = (p + q) / 2
-    return 0.5 * kl(p, m) + 0.5 * kl(q, m)
-
-
-def alpha_from_counts(probs: dict[str, float]) -> list[float]:
-    """The paper's shot readout: α = (√P(0001), −√P(0011)), paper-keyed."""
-    return [float(np.sqrt(probs.get("0001", 0.0))), float(-np.sqrt(probs.get("0011", 0.0)))]
-
-
-def analyse(counts: dict[str, int], shots: int) -> dict:
-    """D_JS against the ideal distribution + the α readout, for one job."""
-    probs = {paper_key(k): v / shots for k, v in counts.items()}
-    ideal = ideal_probs()
-    states = sorted(ideal)
-    p_ideal = np.array([ideal.get(s, 0.0) for s in states])
-    p_meas = np.array([probs.get(s, 0.0) for s in states])
-    return {
-        "js_divergence_vs_ideal": round(js_divergence(p_ideal, p_meas), 4),
-        "alpha": [round(a, 8) for a in alpha_from_counts(probs)],
-        "p_q4_success": round(sum(p for s, p in probs.items() if s.endswith("1")), 4),
-    }
 
 
 def qsvm_accuracies(alpha: list[float]) -> dict[str, float]:

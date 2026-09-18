@@ -177,6 +177,8 @@ quantum-machine-learning/
 │   ├── seeding.py                  # One seed for random/numpy/torch (and, through
 │   │                               #   torch, Aer sampling)
 │   ├── stats.py                    # Wilson intervals for every reported accuracy
+│   ├── hhl.py                      # The paper's HHL circuit + readout — one definition,
+│   │                               #   shared by the notebook, the hardware tool and the exporter
 │   ├── training_config.py          # TrainingConfig + HistoryEntry dataclasses
 │   ├── evaluator.py                # Evaluation (single, ensemble, ablation)
 │   ├── predictor.py                # Inference pipeline (raw input → probabilities)
@@ -219,7 +221,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (558 test functions)
+├── tests/                          # Pytest suite (567 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -459,7 +461,7 @@ architectures, whatever the point estimates suggest.
 python -m pytest tests/ -v
 ```
 
-The test suite (558 test functions) covers:
+The test suite (567 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
