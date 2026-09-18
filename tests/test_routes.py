@@ -17,13 +17,13 @@ from tests.conftest import (
     parse_sse as _parse_sse,
 )
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
+# Helpers
 
 
 DS = "mnist"
 
 
-# ── Fixtures ─────────────────────────────────────────────────────────────────
+# Fixtures
 
 
 @pytest.fixture()
@@ -45,7 +45,7 @@ def registry(app):
     return app.extensions["registry"]
 
 
-# ── GET /d/mnist/ ────────────────────────────────────────────────────────────
+# GET /d/mnist/
 
 
 class TestAPIDatasets:
@@ -78,7 +78,7 @@ class TestAPIDatasets:
         assert res.status_code == 404
 
 
-# ── GET /d/mnist/models ──────────────────────────────────────────────────────
+# GET /d/mnist/models
 
 
 class TestModelsRoute:
@@ -105,7 +105,7 @@ class TestModelsRoute:
         assert set(entry.keys()) >= {"model_type", "epochs", "batch_size", "lr", "eval_result"}
 
 
-# ── DELETE /d/mnist/models/<name> ────────────────────────────────────────────
+# DELETE /d/mnist/models/<name>
 
 
 class TestDeleteModel:
@@ -132,7 +132,7 @@ class TestDeleteModel:
         assert res.status_code == 200
 
 
-# ── POST /d/mnist/predict ────────────────────────────────────────────────────
+# POST /d/mnist/predict
 
 
 class TestPredictRoute:
@@ -182,7 +182,7 @@ class TestPredictRoute:
         assert set(results.keys()) == {"cnn", "lin"}
 
 
-# ── POST /d/mnist/train ──────────────────────────────────────────────────────
+# POST /d/mnist/train
 
 
 class TestTrainRoute:
@@ -217,7 +217,7 @@ class TestTrainRoute:
         assert "error" in res.get_json()
 
 
-# ── POST /d/mnist/evaluate ───────────────────────────────────────────────────
+# POST /d/mnist/evaluate
 
 
 class TestEvaluateRoute:
@@ -257,7 +257,7 @@ class TestEvaluateRoute:
         assert "ev2" in done["results"]
 
 
-# ── POST /d/mnist/ensemble ───────────────────────────────────────────────────
+# POST /d/mnist/ensemble
 
 
 class TestEnsembleRoute:
@@ -285,7 +285,7 @@ class TestEnsembleRoute:
         assert 0.0 <= data["accuracy"] <= 1.0
 
 
-# ── Unknown dataset returns 404 ─────────────────────────────────────────────
+# Unknown dataset returns 404
 
 
 class TestUnknownDataset:
@@ -294,7 +294,7 @@ class TestUnknownDataset:
         assert res.status_code == 404
 
 
-# ── Request caps (DoS guards) ───────────────────────────────────────────────
+# Request caps (DoS guards)
 
 
 class TestRequestCaps:

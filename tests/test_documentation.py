@@ -18,7 +18,7 @@ README = ROOT / "README.md"
 #: Werkzeug sets this itself; it is not ours to document.
 INTERNAL_ENV = {"WERKZEUG_RUN_MAIN"}
 
-#: Make targets whose audience is this file's own author, not a reader.
+#: Make targets for this file's own author.
 UNDOCUMENTED_TARGETS = {"clean", "lint", "test", "run"}
 
 

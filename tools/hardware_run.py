@@ -90,7 +90,7 @@ def qsvm_accuracies(alpha: list[float]) -> dict[str, float]:
     return out
 
 
-# ── Submission ────────────────────────────────────────────────────────────────
+# Submission
 
 
 def _sampler(backend, *, shots: int, mitigated: bool):
@@ -158,7 +158,7 @@ def submit(backend_name: str | None, shots: int) -> None:
     logger.info("pending run recorded in %s — run `fetch` once the queue clears", PENDING)
 
 
-# ── Retrieval ─────────────────────────────────────────────────────────────────
+# Retrieval
 
 
 def _counts(result, creg_names: list[str]) -> dict[str, int]:

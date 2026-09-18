@@ -51,7 +51,7 @@ class TabularPlugin(DatasetPlugin):
         self._mean: torch.Tensor | None = None
         self._std: torch.Tensor | None = None
 
-    # ── What a subclass supplies ──────────────────────────────────────────────
+    # What a subclass supplies
 
     @abstractmethod
     def load_raw(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -62,7 +62,7 @@ class TabularPlugin(DatasetPlugin):
         """
         ...
 
-    # ── The pipeline every tabular dataset shares ─────────────────────────────
+    # The pipeline every tabular dataset shares
 
     def _ensure_loaded(self) -> None:
         """Load, standardise and cache the dataset on first access.

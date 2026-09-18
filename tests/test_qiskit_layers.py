@@ -14,12 +14,10 @@ import pytest
 import torch
 from torch import nn
 
-# ---------------------------------------------------------------------------
 # Fake Qiskit modules, installed per test by the autouse fixture below
-# ---------------------------------------------------------------------------
 
-# Builds the whole fake qiskit module tree in one place; the branching is the
-# mock surface, not logic.
+# Builds the whole fake qiskit module tree in one place; the branching only
+# shapes the mocks.
 def _build_qiskit_mocks():  # noqa: C901
     """Build fake qiskit / qiskit_aer modules without installing them."""
     qiskit_mod = ModuleType("qiskit")
@@ -107,9 +105,7 @@ from classifiers.qiskit_layers import (  # noqa: E402
     _RunCircuit,
 )
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 class _StubExecutor(_QCExecutor):
     """Deterministic executor that returns a fixed array instead of running
@@ -135,9 +131,7 @@ class _CountingExecutor(_QCExecutor):
         return rng.random(self.output_dim).astype(np.float32)
 
 
-# ---------------------------------------------------------------------------
 # Tests: _IndependentInterpret
-# ---------------------------------------------------------------------------
 
 class TestIndependentInterpret:
     """Counts -> per-qubit P(1), read right-to-left (Qiskit prints qubit 0 last)
@@ -173,9 +167,7 @@ class TestIndependentInterpret:
         assert result[1] == pytest.approx(0.3)
 
 
-# ---------------------------------------------------------------------------
 # Tests: _ParametricCircuit.run (mock-based)
-# ---------------------------------------------------------------------------
 
 class TestParametricCircuit:
     def _make_pc(self, input_dim=3, num_params=6):
@@ -218,9 +210,7 @@ class TestParametricCircuit:
         assert pc.inputs in mapping
 
 
-# ---------------------------------------------------------------------------
 # Tests: _ExampleCircuit
-# ---------------------------------------------------------------------------
 
 class TestExampleCircuit:
     def test_construction(self):
@@ -236,9 +226,7 @@ class TestExampleCircuit:
         assert result.shape == (3,)
 
 
-# ---------------------------------------------------------------------------
 # Tests: _RunCircuit forward
-# ---------------------------------------------------------------------------
 
 class TestRunCircuitForward:
     def _make_pc(self, input_dim=3):
@@ -273,9 +261,7 @@ class TestRunCircuitForward:
         assert result.shape == (1, 3)
 
 
-# ---------------------------------------------------------------------------
 # Tests: _RunCircuit backward (finite-difference gradient)
-# ---------------------------------------------------------------------------
 
 class TestRunCircuitBackward:
     def test_gradient_shapes(self):
@@ -325,9 +311,7 @@ class TestRunCircuitBackward:
         assert w.grad.abs().sum() > 0 or x.grad.abs().sum() > 0
 
 
-# ---------------------------------------------------------------------------
 # Tests: _Head
-# ---------------------------------------------------------------------------
 
 class TestHead:
     def _make_head(self, input_dim=3):
@@ -359,9 +343,7 @@ class TestHead:
         assert "w" in param_names
 
 
-# ---------------------------------------------------------------------------
 # Tests: QiskitQLayer
-# ---------------------------------------------------------------------------
 
 class TestQiskitQLayer:
     def _make_layer(self, input_dim=3, num_heads=1):

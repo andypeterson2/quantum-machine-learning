@@ -11,7 +11,7 @@ from classifiers.base_model import BaseModel
 from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
 from classifiers.losses import multi_class_hinge_loss
 
-# ── Fixtures ─────────────────────────────────────────────────────────────────
+# Fixtures
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def svm():
     return SVMNet()
 
 
-# ── Architecture ──────────────────────────────────────────────────────────────
+# Architecture
 
 
 class TestSVMNetArchitecture:
@@ -78,7 +78,7 @@ class TestSVMNetArchitecture:
             assert p.grad is not None
 
 
-# ── Hinge loss function ───────────────────────────────────────────────────────
+# Hinge loss function
 
 
 class TestMultiClassHingeLoss:
@@ -134,7 +134,7 @@ class TestMultiClassHingeLoss:
         assert out.grad is not None
 
 
-# ── loss_fn class method ─────────────────────────────────────────────────────
+# loss_fn class method
 
 
 class TestSVMLossFn:

@@ -53,7 +53,7 @@ class BB84Plugin(TabularPlugin):
         test_X, test_y = generate_dataset(N_TEST, TEST_SEED)
         return train_X, train_y, test_X, test_y
 
-    # ── Model types ───────────────────────────────────────────────────────────
+    # Model types
 
     def get_model_types(self) -> dict[str, type[BaseModel]]:
         """Return compatible architectures for BB84.

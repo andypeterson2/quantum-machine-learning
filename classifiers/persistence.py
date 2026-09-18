@@ -52,7 +52,7 @@ class ModelPersistence:
     def __init__(self, models_dir: Path) -> None:
         self._dir = models_dir
 
-    # ── Public API ─────────────────────────────────────────────────────────────
+    # Public API
 
     def save(self, name: str, entry: ModelEntry) -> str:
         """Serialise *entry* to a ``.pt`` checkpoint file named after *name*.
@@ -171,7 +171,7 @@ class ModelPersistence:
             "num_params": data.get("num_params"),
         }
 
-    # ── Helpers ────────────────────────────────────────────────────────────────
+    # Helpers
 
     @staticmethod
     def _safe_filename(name: str) -> str:

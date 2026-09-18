@@ -14,7 +14,7 @@ from classifiers.base_model import BaseModel
 from classifiers.layers import Polynomial, Quadratic
 from classifiers.losses import multi_class_hinge_loss
 
-# ── CNN ───────────────────────────────────────────────────────────────────────
+# CNN
 
 
 class MNISTNet(BaseModel):
@@ -48,7 +48,7 @@ class MNISTNet(BaseModel):
         return self.fc2(x)
 
 
-# ── Linear (logistic regression) ─────────────────────────────────────────────
+# Linear (logistic regression)
 
 
 class LinearNet(BaseModel):
@@ -71,7 +71,7 @@ class LinearNet(BaseModel):
         return self.fc(torch.flatten(x, 1))
 
 
-# ── SVM (hinge loss) ─────────────────────────────────────────────────────────
+# SVM (hinge loss)
 
 
 class SVMNet(BaseModel):
@@ -99,7 +99,7 @@ class SVMNet(BaseModel):
         return multi_class_hinge_loss(output, target)
 
 
-# ── Quadratic ────────────────────────────────────────────────────────────────
+# Quadratic
 
 
 class MNISTQuadraticNet(BaseModel):
@@ -138,7 +138,7 @@ class MNISTQuadraticNet(BaseModel):
         return self.fc3(x)
 
 
-# ── Polynomial ───────────────────────────────────────────────────────────────
+# Polynomial
 
 
 class MNISTPolynomialNet(BaseModel):
@@ -180,7 +180,7 @@ class MNISTPolynomialNet(BaseModel):
         return self.fc3(x)
 
 
-# ── Qiskit quantum models ───────────────────────────────────────────────────
+# Qiskit quantum models
 
 
 class QiskitCNN(BaseModel):

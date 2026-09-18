@@ -18,7 +18,7 @@ from torch import nn
 from classifiers.base_model import BaseModel
 from classifiers.losses import multi_class_hinge_loss
 
-# ── Quantum circuit constants ─────────────────────────────────────────────────
+# Quantum circuit constants
 
 #: Number of qubits — one per session feature (qber, sifted_key_rate).
 _N_QUBITS: int = 2
@@ -72,7 +72,7 @@ def _build_qvc_layer():
     return qml.qnn.TorchLayer(circuit, weight_shapes)
 
 
-# ── Classical models ──────────────────────────────────────────────────────────
+# Classical models
 
 class BB84Linear(BaseModel):
     """Logistic regression for BB84 — 2 input features, 2 output classes.
@@ -119,7 +119,7 @@ class BB84SVM(BaseModel):
         return multi_class_hinge_loss(output, target)
 
 
-# ── Quantum model ─────────────────────────────────────────────────────────────
+# Quantum model
 
 class BB84QVC(BaseModel):
     """Quantum Variational Classifier for BB84 using PennyLane.

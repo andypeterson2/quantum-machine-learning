@@ -42,7 +42,7 @@ class IrisPlugin(TabularPlugin):
         )
         return X_train, y_train, X_test, y_test
 
-    # ── Model types ───────────────────────────────────────────────────────────
+    # Model types
 
     def get_model_types(self) -> dict[str, type[BaseModel]]:
         """Return compatible architectures for Iris.

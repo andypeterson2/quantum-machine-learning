@@ -10,7 +10,7 @@ from classifiers.evaluator import EvalResult, Evaluator
 from classifiers.predictor import Predictor
 from classifiers.trainer import Trainer, TrainResult
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# Fixtures
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def iris_features():
     }
 
 
-# ── Plugin tests ──────────────────────────────────────────────────────────────
+# Plugin tests
 
 
 class TestIrisPlugin:
@@ -102,7 +102,7 @@ class TestIrisPlugin:
         assert torch.allclose(got, expected, atol=1e-6)
 
 
-# ── Model tests ───────────────────────────────────────────────────────────────
+# Model tests
 
 
 class TestIrisModels:
@@ -130,7 +130,7 @@ class TestIrisModels:
         assert abs(svm_loss.item() - linear_loss.item()) > 1e-3
 
 
-# ── Integration: train + predict ──────────────────────────────────────────────
+# Integration: train + predict
 
 
 class TestIrisTrainPredict:
