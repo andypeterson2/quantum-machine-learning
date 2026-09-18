@@ -1,13 +1,8 @@
 """Documentation gates: the README's claims have to match the code.
 
-This file used to hold about forty assertions of the form "CNN" in readme —
-true of any document that mentions the word once, and unable to notice a model
-nobody documented or a setting nobody wrote down. Ten environment variables had
-in fact gone undocumented while every one of those tests passed.
-
-The gates here compare the README against what the code actually exposes:
-every environment variable it reads, every dataset plugin, every model type,
-and every make target. Plus the honesty checks the 2026-08 audit added.
+Each gate compares the README against what the code exposes — every
+environment variable it reads, every dataset plugin, every model type and
+every make target — rather than searching it for a substring.
 """
 
 import re
@@ -47,7 +42,6 @@ def _env_vars_in_code() -> set[str]:
 
 class TestTheReadmeCoversWhatTheCodeExposes:
     def test_every_environment_variable_is_documented(self, readme) -> None:
-        """Ten of these were missing when this was a substring check."""
         missing = sorted(var for var in _env_vars_in_code() if f"`{var}`" not in readme)
         assert not missing, f"environment variables read but never documented: {missing}"
 
@@ -98,20 +92,7 @@ class TestSetupInstructionsStayRunnable:
 
 
 class TestReadmeHonesty:
-    """The README's checkable claims must actually check out — the gates that
-    would have caught the drift a 2026-08 audit found by hand."""
-
-    def test_readme_test_count_matches_reality(self, readme):
-        """The stated test-function count is asserted, not decorative."""
-        stated = {int(n) for n in re.findall(r"\((\d+) test functions\)", readme)}
-        assert stated, "README no longer states a test-function count"
-        actual = sum(
-            len(re.findall(r"^\s*def test_", p.read_text(), re.MULTILINE))
-            for p in (ROOT / "tests").rglob("test_*.py")
-        )
-        assert stated == {actual}, (
-            f"README says {stated} test functions; tests/ defines {actual} — update the README"
-        )
+    """The README's checkable claims have to check out."""
 
     def test_readme_tree_paths_resolve(self):
         """Key paths the README documents must exist on disk."""

@@ -80,6 +80,27 @@ class TestIrisPlugin:
         assert config["input_type"] == "tabular"
         assert config["feature_names"] == iris_plugin.feature_names
 
+    def test_serves_three_disjoint_splits(self, iris_plugin):
+        sizes = [
+            sum(len(y) for _, y in iris_plugin.get_train_loader(16)),
+            sum(len(y) for _, y in iris_plugin.get_val_loader(16)),
+            sum(len(y) for _, y in iris_plugin.get_test_loader(16)),
+        ]
+        assert sizes == [96, 24, 30], f"iris splits changed: {sizes}"
+
+    def test_standardises_on_its_training_rows(self, iris_plugin):
+        mean, std = iris_plugin.normalization()
+        assert len(mean) == len(std) == 4
+        assert all(s > 0 for s in std)
+
+    def test_preprocess_matches_the_training_transformation(self, iris_plugin):
+        mean, std = iris_plugin.normalization()
+        sample = dict(zip(iris_plugin.feature_names, [5.1, 3.5, 1.4, 0.2], strict=True))
+        got = iris_plugin.preprocess(sample)
+        expected = (torch.tensor([[5.1, 3.5, 1.4, 0.2]]) - torch.tensor(mean)) / torch.tensor(std)
+        assert got.shape == (1, 4)
+        assert torch.allclose(got, expected, atol=1e-6)
+
 
 # ── Model tests ───────────────────────────────────────────────────────────────
 
@@ -116,8 +137,11 @@ class TestIrisTrainPredict:
     def test_train_and_predict_linear(self, iris_plugin, iris_features):
         loader = iris_plugin.get_train_loader(batch_size=16)
         trainer = Trainer(
-            model_cls=IrisLinear, train_loader=loader,
-            dataset="iris", epochs=2, lr=0.01,
+            model_cls=IrisLinear,
+            train_loader=loader,
+            dataset="iris",
+            epochs=2,
+            lr=0.01,
         )
         result = trainer.train()
         assert isinstance(result, TrainResult)
@@ -133,14 +157,20 @@ class TestIrisTrainPredict:
         test_loader = iris_plugin.get_test_loader(batch_size=100)
 
         trainer = Trainer(
-            model_cls=IrisSVM, train_loader=train_loader,
-            dataset="iris", epochs=2, lr=0.01,
+            model_cls=IrisSVM,
+            train_loader=train_loader,
+            dataset="iris",
+            epochs=2,
+            lr=0.01,
         )
         result = trainer.train()
 
         evaluator = Evaluator()
         eval_result = evaluator.evaluate(
-            result.model, test_loader, 3, iris_plugin.class_labels,
+            result.model,
+            test_loader,
+            3,
+            iris_plugin.class_labels,
         )
         assert isinstance(eval_result, EvalResult)
         assert 0.0 <= eval_result.accuracy <= 1.0
