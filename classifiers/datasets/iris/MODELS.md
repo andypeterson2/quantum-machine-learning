@@ -109,6 +109,15 @@ The QVC is a pure quantum model -- no classical neural network layers. The full 
 
 Uses PennyLane's `default.qubit` statevector simulator with `diff_method="backprop"`. Gradients propagate through the full quantum simulation via PyTorch autograd -- no parameter-shift rule or finite differences needed. This makes training efficient for small circuits.
 
+**Output range.** The Pauli-Z expectations are bounded to [-1, 1], and they are
+used directly as logits. Cross-entropy over a range that narrow caps how
+confident this model can ever be — with three classes the highest reachable
+softmax probability is about 0.79 — so its probabilities are not comparable
+with a classical model's, and it makes a poor distillation teacher at any
+temperature (the softened targets are nearly uniform). Accuracy is unaffected:
+argmax does not care about the scale.
+
+
 ### Training tips
 
 - Converges well with the Iris plugin defaults: **50 epochs, lr=0.01, batch_size=16**

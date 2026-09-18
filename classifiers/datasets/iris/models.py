@@ -169,7 +169,11 @@ class IrisQVC(BaseModel):
             x: Standardised Iris features, shape ``(N, 4)``.
 
         Returns:
-            Class score tensor of shape ``(N, 3)`` with values in
-            ``[−1, 1]`` (usable as logits).
+            Class score tensor of shape ``(N, 3)`` with values in ``[−1, 1]``,
+            used directly as logits. That bound caps the model's confidence —
+            over three classes the largest reachable softmax probability is
+            about 0.79 — so its probabilities do not compare with a classical
+            model's, and it is a poor distillation teacher. Accuracy is
+            unaffected, since argmax ignores the scale.
         """
         return self.qlayer(x)
