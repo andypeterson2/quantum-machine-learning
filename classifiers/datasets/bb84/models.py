@@ -147,7 +147,8 @@ class BB84QVC(BaseModel):
             x: Standardised session features, shape ``(N, 2)``.
 
         Returns:
-            Class score tensor of shape ``(N, 2)`` with values in ``[−1, 1]``
-            (usable as logits).
+            Class score tensor of shape ``(N, 2)`` with values in ``[−1, 1]``,
+            used directly as logits — see :class:`~classifiers.datasets.iris.
+            models.IrisQVC` on what that bound costs in confidence.
         """
         return self.qlayer(x)
