@@ -93,6 +93,12 @@ class TestDependabotLeavesTheImmovablePinsAlone:
                 return set(re.findall(r"dependency-name:\s*([A-Za-z0-9_.\-]+)", block))
         raise AssertionError(f"no pip entry for {directory}")
 
+    def test_ruff_minors_are_held(self) -> None:
+        """The lint job and the [dev] extra must name one minor between them;
+        a widened range silently re-splits them (PR #29 proposed exactly that,
+        and passed CI because the lint job pins separately)."""
+        assert "ruff" in self._ignored("/")
+
     def test_the_parity_file_holds_its_whole_chain(self) -> None:
         """torch caps numpy, and numpy caps pennylane; a bump to any of them
         breaks the dev machine, so all three are ignored together."""
