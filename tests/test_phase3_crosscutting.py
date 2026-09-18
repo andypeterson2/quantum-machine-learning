@@ -280,9 +280,15 @@ class TestDockerDeployment:
         pass
 
     def test_dockerfile_installs_cpu_torch(self):
-        """Docker build should use CPU-only PyTorch for smaller image."""
-        src = _read("Dockerfile")
-        assert "cpu" in src, "Docker should install CPU-only torch"
+        """Docker build should use CPU-only PyTorch for smaller image.
+
+        The index moved into the lock the Dockerfile installs from, so follow
+        it there rather than grepping the Dockerfile for "cpu".
+        """
+        assert "-r requirements/linux/torch.txt" in _read("Dockerfile")
+        torch_lock = _read("requirements/linux/torch.txt")
+        assert "download.pytorch.org/whl/cpu" in torch_lock, "should install CPU-only torch"
+        assert "+cpu" in torch_lock
 
     def test_dockerfile_no_cache_pip(self):
         src = _read("Dockerfile")
