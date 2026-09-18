@@ -34,7 +34,7 @@ from tests.conftest import (
     parse_sse as _parse_sse,
 )
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
+# Helpers
 
 
 class _FakeLoader(list):
@@ -62,7 +62,7 @@ def _make_iris_test_loader(batch_size=20, n_samples=20):
     return _make_iris_loader(n_samples=n_samples, batch_size=batch_size)
 
 
-# ── Check optional dependencies ─────────────────────────────────────────────
+# Check optional dependencies
 
 _HAS_QISKIT = False
 try:
@@ -84,9 +84,7 @@ except ImportError:
     pass
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Direct Trainer Tests — MNIST models
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestTrainMNISTModels:
@@ -157,9 +155,7 @@ class TestTrainMNISTModels:
         self._assert_result(result, QiskitLinear)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Direct Trainer Tests — Iris models
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestTrainIrisModels:
@@ -203,9 +199,7 @@ class TestTrainIrisModels:
         self._assert_result(result, IrisQVC)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Status callback — all models emit proper progress
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestTrainStatusCallbacks:
@@ -240,9 +234,7 @@ class TestTrainStatusCallbacks:
         assert any("complete" in s.lower() for s in str_msgs)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Forward pass — all models produce valid output shapes
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestModelForwardPass:
@@ -279,9 +271,7 @@ class TestModelForwardPass:
         assert out.shape == (2, 3)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Evaluation after training — all models can be evaluated
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestEvaluateAfterTraining:
@@ -326,9 +316,7 @@ class TestEvaluateAfterTraining:
         assert len(ev.per_class_accuracy) == 3
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # HTTP Route Tests — SSE training for every model type
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestTrainRouteAllMNISTModels:
@@ -445,9 +433,7 @@ class TestTrainRouteAllIrisModels:
         assert done["name"] == "test-QVC"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # SSE event structure — verify all expected fields
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestSSEEventStructure:
@@ -519,9 +505,7 @@ class TestSSEEventStructure:
         assert done["stopped_early"] is False
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # Model registered in registry after route training
-# ═══════════════════════════════════════════════════════════════════════════════
 
 
 class TestModelRegisteredAfterTrainRoute:

@@ -51,7 +51,7 @@ class DatasetPlugin(ABC):
     image_channels: int | None = None
     feature_names: list[str] | None = None
 
-    # ── Data loading ──────────────────────────────────────────────────────────
+    # Data loading
 
     @abstractmethod
     def get_train_loader(self, batch_size: int) -> DataLoader:
@@ -71,7 +71,7 @@ class DatasetPlugin(ABC):
         """
         ...
 
-    # ── Inference preprocessing ───────────────────────────────────────────────
+    # Inference preprocessing
 
     @abstractmethod
     def preprocess(self, raw_input: Any) -> torch.Tensor:
@@ -90,7 +90,7 @@ class DatasetPlugin(ABC):
         """
         ...
 
-    # ── Model types scoped to this dataset ────────────────────────────────────
+    # Model types scoped to this dataset
 
     @abstractmethod
     def get_model_types(self) -> dict[str, type[BaseModel]]:
@@ -102,7 +102,7 @@ class DatasetPlugin(ABC):
         """
         ...
 
-    # ── Validation data ──────────────────────────────────────────────────────
+    # Validation data
 
     def get_val_loader(self, batch_size: int) -> DataLoader | None:  # noqa: ARG002 — interface signature; the base default has no val split
         """Return a :class:`~torch.utils.data.DataLoader` over a validation set.
@@ -115,7 +115,7 @@ class DatasetPlugin(ABC):
         """
         return None
 
-    # ── Defaults ──────────────────────────────────────────────────────────────
+    # Defaults
 
     def get_default_hyperparams(self) -> dict:
         """Return sensible default training hyper-parameters.
@@ -128,7 +128,7 @@ class DatasetPlugin(ABC):
         """
         return {"epochs": 3, "batch_size": 64, "lr": 1e-3}
 
-    # ── UI configuration ──────────────────────────────────────────────────────
+    # UI configuration
 
     def get_ui_config(self) -> dict:
         """Return a JSON-serialisable dict passed to the frontend as ``UI_CONFIG``.

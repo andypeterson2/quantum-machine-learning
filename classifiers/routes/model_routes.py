@@ -73,7 +73,7 @@ def _read_model_section(plugin, model_type: str) -> str | None:
 def register(bp) -> None:  # noqa: C901, PLR0915
     """Attach model management routes to *bp*."""
 
-    # ── Predict ──────────────────────────────────────────────────────────────
+    # Predict
 
     @bp.post("/predict")
     def predict() -> tuple[Response, int] | Response:
@@ -107,7 +107,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
 
         return jsonify({"results": results})
 
-    # ── List models ──────────────────────────────────────────────────────────
+    # List models
 
     @bp.get("/models")
     def list_models() -> Response:
@@ -135,7 +135,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             }
         return jsonify(result)
 
-    # ── Model info (a rendered section of the plugin's model docs) ─────────
+    # Model info (a rendered section of the plugin's model docs)
 
     @bp.get("/model-info/<model_type>")
     def model_info(model_type: str) -> Response | tuple[Response, int]:
@@ -145,7 +145,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             return error_response(f"No info for model type '{model_type}'", 404)
         return jsonify({"html": html})
 
-    # ── Delete model ─────────────────────────────────────────────────────────
+    # Delete model
 
     @bp.delete("/models/<name>")
     def delete_model(name: str) -> Response:
@@ -155,7 +155,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         registry.remove(plugin.name, name)
         return jsonify({"ok": True})
 
-    # ── Export model ─────────────────────────────────────────────────────────
+    # Export model
 
     @bp.post("/models/<name>/export")
     def export_model(name: str) -> Response | tuple[Response, int]:
@@ -184,7 +184,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         filename = persistence.save(name, entry)
         return jsonify({"ok": True, "filename": filename})
 
-    # ── List disk models ─────────────────────────────────────────────────────
+    # List disk models
 
     @bp.get("/models/disk")
     def list_disk_models() -> Response:
@@ -197,7 +197,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         ]
         return jsonify(dataset_files)
 
-    # ── Load disk model ──────────────────────────────────────────────────────
+    # Load disk model
 
     @bp.post("/models/disk/<filename>/load")
     def load_disk_model(filename: str) -> Response | tuple[Response, int]:

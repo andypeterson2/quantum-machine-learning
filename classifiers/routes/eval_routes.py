@@ -53,12 +53,12 @@ def _evaluate_all(plugin, registry, on_status=None) -> dict:
     return results
 
 
-# One registrar per blueprint: it enumerates every evaluation endpoint in one
-# place, so the length is the route table, not tangled logic.
+# One registrar per blueprint, listing every evaluation endpoint in one
+# place, so its length is the size of the route table.
 def register(bp) -> None:  # noqa: C901, PLR0915
     """Attach evaluation routes to *bp*."""
 
-    # ── Evaluate ─────────────────────────────────────────────────────────────
+    # Evaluate
 
     @bp.post("/evaluate")
     def evaluate() -> Response | tuple[Response, int]:
@@ -109,7 +109,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         finally:
             slots.release()
 
-    # ── Ensemble ─────────────────────────────────────────────────────────────
+    # Ensemble
 
     @bp.post("/ensemble")
     def ensemble() -> Response | tuple[Response, int]:
@@ -148,7 +148,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         finally:
             slots.release()
 
-    # ── Ablation ─────────────────────────────────────────────────────────────
+    # Ablation
 
     @bp.post("/ablation")
     def ablation() -> Response | tuple[Response, int]:

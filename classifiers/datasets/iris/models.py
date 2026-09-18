@@ -18,7 +18,7 @@ from torch import nn
 from classifiers.base_model import BaseModel
 from classifiers.losses import multi_class_hinge_loss
 
-# ── Quantum circuit constants ─────────────────────────────────────────────────
+# Quantum circuit constants
 
 #: Number of qubits — one per Iris feature (sepal/petal length/width).
 _N_QUBITS: int = 4
@@ -80,7 +80,7 @@ def _build_qvc_layer():
     return qml.qnn.TorchLayer(circuit, weight_shapes)
 
 
-# ── Classical models ──────────────────────────────────────────────────────────
+# Classical models
 
 class IrisLinear(BaseModel):
     """Logistic regression for Iris — 4 input features, 3 output classes.
@@ -127,7 +127,7 @@ class IrisSVM(BaseModel):
         return multi_class_hinge_loss(output, target)
 
 
-# ── Quantum model ─────────────────────────────────────────────────────────────
+# Quantum model
 
 class IrisQVC(BaseModel):
     """Quantum Variational Classifier for Iris using PennyLane.

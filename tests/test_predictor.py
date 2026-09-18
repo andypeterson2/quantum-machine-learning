@@ -101,7 +101,7 @@ class TestCenterDigit:
         out = center_digit(Image.fromarray(arr))
         ys, xs = np.nonzero(out > 64)
         assert ys.max() - ys.min() + 1 in (19, 20, 21)
-        assert xs.max() - xs.min() + 1 <= 7  # stays a thin stroke, not the whole grid
+        assert xs.max() - xs.min() + 1 <= 7  # stays a thin stroke
 
     def test_blank_image_is_just_resized(self):
         from classifiers.datasets.mnist.plugin import center_digit

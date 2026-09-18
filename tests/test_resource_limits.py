@@ -82,7 +82,7 @@ class TestJobSlots:
         def no_data(*_a, **_kw):
             raise AssertionError("dataset loaded before input was validated")
 
-        # Patch the class, not the registered instance: undoing an instance patch
+        # Patch the class rather than the registered instance: undoing an instance patch
         # leaves a shadowing attribute that defeats later class-level patches.
         monkeypatch.setattr(MNISTPlugin, "get_train_loader", no_data)
         monkeypatch.setattr(MNISTPlugin, "get_val_loader", no_data)
@@ -151,7 +151,7 @@ class TestBoundedSSE:
         with app.test_request_context():
             resp = sse_response(q)
             gen = iter(resp.response)
-            first = next(gen)  # queue quiet -> keepalive comment, not a block
+            first = next(gen)  # queue quiet, so a keepalive comment arrives
             assert str(first).lstrip("b'").startswith(":")
             threading.Thread(target=finish_soon).start()
             rest = list(gen)
@@ -199,7 +199,7 @@ class TestRegistryEviction:
         reg = ModelRegistry(max_per_dataset=2)
         for name in ["a", "b"]:
             self._add(reg, name)
-        self._add(reg, "b")  # replacement, not growth
+        self._add(reg, "b")  # replaces the entry in place
         assert reg.names("ds") == ["a", "b"]
 
 
@@ -240,7 +240,7 @@ class TestPredictImageGuards:
         from classifiers.routes.model_routes import _decode_image
 
         assert _decode_image("not-base64!!") is None
-        assert _decode_image("aGVsbG8=") is None  # valid b64, not an image
+        assert _decode_image("aGVsbG8=") is None  # valid b64 that decodes to no image
 
 
 class TestModelInfoEscaping:

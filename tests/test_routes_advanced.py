@@ -37,7 +37,7 @@ def registry(app):
     return app.extensions["registry"]
 
 
-# ── Export and disk operations ────────────────────────────────────────────────
+# Export and disk operations
 
 
 class TestExportAndLoad:
@@ -86,7 +86,7 @@ class TestExportAndLoad:
         assert data["model_type"] == "CNN"
 
 
-# ── Ablation route ────────────────────────────────────────────────────────────
+# Ablation route
 
 
 class TestAblationRoute:
@@ -110,7 +110,7 @@ class TestAblationRoute:
         assert "done" in types
 
 
-# ── Iris routes ───────────────────────────────────────────────────────────────
+# Iris routes
 
 
 class TestIrisRoutes:
@@ -146,7 +146,7 @@ class TestIrisRoutes:
         assert registry.get("iris", "gone") is None
 
 
-# ── Predict edge cases ────────────────────────────────────────────────────────
+# Predict edge cases
 
 
 class TestPredictEdgeCases:
