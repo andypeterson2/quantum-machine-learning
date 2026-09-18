@@ -227,7 +227,7 @@ quantum-machine-learning/
 │           ├── plugin.py           # BB84Plugin (self-generated data, standardisation)
 │           ├── models.py           # BB84Linear, BB84SVM, BB84QVC
 │           └── MODELS.md           # Per-model docs served by /model-info
-├── tests/                          # Pytest suite (573 test functions)
+├── tests/                          # Pytest suite (582 test functions)
 │   └── contract/                   # Live-HTTP contract tests + JSON schemas
 ├── exports/web/                    # Browser-served model weights for the portfolio site —
 │                                   #   linear baselines + the kind:"qsvm" paper-recreation
@@ -239,6 +239,8 @@ quantum-machine-learning/
 │                                   #   (tools/hardware_run.py; drift-checked by tests/test_hardware_run.py)
 ├── tools/hardware_run.py           # Submit/fetch the hardware run; `rescore` re-scores it offline
 ├── tools/benchmark.py              # Measure every model's accuracy + interval (make benchmark)
+├── requirements/linux/             # The production lock the image installs from
+│                                   #   (torch.txt from the CPU index, the rest pinned)
 ├── exports/benchmarks.json         # Those measurements — what MODELS.md is allowed to claim
 ├── models/                         # Saved .pt checkpoints (git-ignored)
 └── classifiers/data/               # Dataset cache (git-ignored; cached in CI)
@@ -467,7 +469,7 @@ architectures, whatever the point estimates suggest.
 python -m pytest tests/ -v
 ```
 
-The test suite (573 test functions) covers:
+The test suite (582 test functions) covers:
 - Model construction and forward pass for all architectures
 - Training loop with status callbacks, early stopping, and history tracking
 - Single-model evaluation, ensemble evaluation, and ablation studies
@@ -515,6 +517,33 @@ All configuration is via environment variables:
 | `qiskit` | *(optional)* Quantum circuit definition for Qiskit models |
 | `qiskit-aer` | *(optional)* Quantum circuit simulation backend |
 | `pennylane` | *(optional)* Quantum variational classifier for Iris |
+
+### Two pinned environments, on purpose
+
+The development machine is an Intel Mac, where PyTorch's last wheel is **2.2.2**.
+That is a hardware ceiling, not a preference, and it chains: torch 2.2 needs
+numpy below 2, and numpy 1 caps pennylane below 0.45. Production has none of
+those limits.
+
+| | File | Stack |
+|---|---|---|
+| Local dev | `requirements.txt` | torch 2.2.2, numpy 1.26, pennylane 0.44 |
+| Linux image | `requirements/linux/{torch,requirements}.txt` | torch 2.14, numpy 2.5, pennylane 0.45 |
+
+Both are exact pins, so a rebuild of one commit installs the same versions
+twice. The image installs from the linux lock and then the package itself with
+`--no-deps`, so the lock — not `pyproject.toml`'s ranges — decides what is
+installed. Regenerate it with:
+
+```bash
+docker build -t qml-lock . && docker run --rm qml-lock pip freeze
+```
+
+Dependabot updates the linux lock but is told to leave torch and torchvision
+alone in both files: they install from PyTorch's CPU index and must move as a
+pair, which is why four earlier bump PRs could not resolve. `numpy` and
+`pennylane` are held back in the dev file only, where the ceiling applies.
+`tests/test_dependency_policy.py` enforces all of this.
 
 ---
 

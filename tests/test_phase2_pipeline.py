@@ -239,12 +239,14 @@ class TestDockerfileBuild:
         src = _read("Dockerfile")
         assert "WORKDIR" in src
 
-    def test_dockerfile_installs_from_pyproject(self):
-        """The image installs the package + quantum extra from pyproject's
-        ranges (requirements.txt is the local Intel-Mac parity lockfile)."""
+    def test_dockerfile_installs_from_the_linux_lock(self):
+        """The image installs the pinned linux stack, then the package itself
+        with --no-deps so the lock outranks pyproject's ranges. See
+        tests/test_dependency_policy.py for the rest of the arrangement."""
         src = _read("Dockerfile")
         assert "COPY pyproject.toml" in src
-        assert ".[quantum]" in src
+        assert "-r requirements/linux/requirements.txt" in src
+        assert "--no-deps ." in src
 
     def test_dockerfile_pip_install(self):
         src = _read("Dockerfile")
