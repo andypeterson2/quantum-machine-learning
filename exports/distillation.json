@@ -1,0 +1,124 @@
+{
+  "kind": "distillation-experiment",
+  "dataset": "mnist",
+  "teacher": "CNN",
+  "student": "Linear",
+  "distill_weight": 0.5,
+  "distill_temperature": 4.0,
+  "runs": [
+    {
+      "seed": 0,
+      "teacher": {
+        "accuracy": 0.9878,
+        "accuracy_ci": [
+          0.9855,
+          0.9898
+        ],
+        "n": 10000
+      },
+      "student_alone": {
+        "accuracy": 0.9206,
+        "accuracy_ci": [
+          0.9151,
+          0.9257
+        ],
+        "n": 10000
+      },
+      "student_distilled": {
+        "accuracy": 0.9134,
+        "accuracy_ci": [
+          0.9077,
+          0.9188
+        ],
+        "n": 10000
+      },
+      "delta": -0.0072
+    },
+    {
+      "seed": 1,
+      "teacher": {
+        "accuracy": 0.9884,
+        "accuracy_ci": [
+          0.9861,
+          0.9903
+        ],
+        "n": 10000
+      },
+      "student_alone": {
+        "accuracy": 0.9192,
+        "accuracy_ci": [
+          0.9137,
+          0.9244
+        ],
+        "n": 10000
+      },
+      "student_distilled": {
+        "accuracy": 0.9103,
+        "accuracy_ci": [
+          0.9045,
+          0.9157
+        ],
+        "n": 10000
+      },
+      "delta": -0.0089
+    },
+    {
+      "seed": 2,
+      "teacher": {
+        "accuracy": 0.987,
+        "accuracy_ci": [
+          0.9846,
+          0.989
+        ],
+        "n": 10000
+      },
+      "student_alone": {
+        "accuracy": 0.9217,
+        "accuracy_ci": [
+          0.9163,
+          0.9268
+        ],
+        "n": 10000
+      },
+      "student_distilled": {
+        "accuracy": 0.9076,
+        "accuracy_ci": [
+          0.9018,
+          0.9131
+        ],
+        "n": 10000
+      },
+      "delta": -0.0141
+    }
+  ],
+  "summary": {
+    "seeds": 3,
+    "student_alone_mean": 0.9205,
+    "student_distilled_mean": 0.9104,
+    "delta_mean": -0.0101,
+    "delta_stdev": 0.0036,
+    "delta_range": [
+      -0.0141,
+      -0.0072
+    ],
+    "helps": false
+  },
+  "provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "0f36c0d22fc230679dde6c57f67c6eb8ee7109b9",
+    "source_dirty": true,
+    "exported_at": "2026-09-18",
+    "seed": 0,
+    "training": {
+      "model": "Linear distilled from CNN",
+      "trainer": "classifiers.trainer.Trainer",
+      "protocol": "per seed: train the teacher, then the student alone and distilled from it, all at the plugin's default hyper-parameters; accuracy and its 95% Wilson interval measured on the test split",
+      "loss": "KL(teacher || student) on outputs softened at T, scaled by T^2"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "torch": "2.2.2",
+      "scikit-learn": "1.8.0"
+    }
+  }
+}
