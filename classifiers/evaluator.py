@@ -163,8 +163,14 @@ class Evaluator:
     ) -> EvalResult:
         """Majority-vote ensemble evaluation across multiple models.
 
-        Each model votes for its argmax prediction. Ties are broken by the
-        sum of logits across models.
+        Each model votes for its argmax prediction. Ties are broken by the mean
+        of the models' softmax distributions, not by summed raw scores: the
+        models here are trained to different objectives, and a hinge-trained SVM
+        emits scores several times larger than a cross-entropy model's, while a
+        QVC is bounded to [-1, 1]. Summing those let the loudest model settle
+        every tie and made the reported loss a function of the ensemble's
+        composition. Softmax puts each model on the same scale first, so every
+        member gets one vote and one say in the tie-break.
 
         Args:
             models:       List of trained models.
@@ -194,25 +200,29 @@ class Evaluator:
 
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(test_loader):
-                # Collect votes and sum logits
+                # Collect votes, and each model's distribution on a common scale
                 votes = torch.zeros(data.size(0), num_classes, dtype=torch.long)
-                logit_sum = torch.zeros(data.size(0), num_classes)
+                prob_sum = torch.zeros(data.size(0), num_classes)
                 for m in models:
                     output = m(data)
-                    logit_sum += output
+                    prob_sum += F.softmax(output, dim=1)
                     preds = output.argmax(dim=1)
                     for i, p in enumerate(preds):
                         votes[i, p.item()] += 1
+                mean_probs = prob_sum / len(models)
 
-                # Break ties with summed logits
+                # Break ties on the mean distribution
                 max_votes = votes.max(dim=1, keepdim=True).values
                 tied = votes == max_votes
-                # Zero out non-tied logits, then argmax
-                masked_logits = logit_sum.clone()
-                masked_logits[~tied] = float("-inf")
-                ensemble_pred = masked_logits.argmax(dim=1)
+                masked = mean_probs.clone()
+                masked[~tied] = -1.0
+                ensemble_pred = masked.argmax(dim=1)
 
-                total_loss += F.cross_entropy(logit_sum, target, reduction="sum").item()
+                # Negative log likelihood of the ensemble's own distribution, so
+                # the number means the same thing however many models there are.
+                total_loss += F.nll_loss(
+                    torch.log(mean_probs.clamp_min(1e-12)), target, reduction="sum"
+                ).item()
                 correct += ensemble_pred.eq(target).sum().item()
                 total += len(target)
 

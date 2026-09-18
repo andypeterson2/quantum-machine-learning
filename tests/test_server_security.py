@@ -63,3 +63,26 @@ class TestOriginGuard:
             "/api/datasets", headers={"X-Origin-Secret": "s3cret-value"}
         )
         assert res.status_code == 200
+
+
+class TestSweeperDoesNotPinTheApp:
+    """The stale-client sweeper must not keep its app alive.
+
+    One thread is started per create_app, and the suite builds hundreds of
+    apps. When the loop captured the tracker directly, every one of those apps
+    stayed reachable from a sleeping thread for the life of the process.
+    """
+
+    def test_tracker_is_collected_once_the_app_goes(self, tmp_path):
+        import gc
+        import weakref
+
+        from classifiers.server import create_app
+
+        def build():
+            app = create_app(models_dir=tmp_path)
+            return weakref.ref(app.extensions["connections"])
+
+        ref = build()
+        gc.collect()
+        assert ref() is None, "the sweeper thread is still holding the app's tracker"
