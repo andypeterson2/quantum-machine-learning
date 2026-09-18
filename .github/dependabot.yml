@@ -17,6 +17,15 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: pennylane
         versions: [">=0.45"]
+      # ruff's enforced rule set moves with its minors: 0.16 stabilises
+      # PLR0917, which three deliberate call sites would have to waive, and
+      # those waivers are RUF100 errors under 0.15 — so no tree is clean under
+      # both. Patch bumps are fine; a minor is a deliberate, paired change to
+      # this range and the lint job's.
+      - dependency-name: ruff
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
   # The linux/production lock, which the image installs from. Separate from the
   # Intel-Mac parity file above so production can move while dev stays capped.
   - package-ecosystem: pip
