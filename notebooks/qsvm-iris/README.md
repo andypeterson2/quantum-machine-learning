@@ -25,9 +25,11 @@ The notebook implements the paper's full pipeline:
 6. **The real-hardware epilogue** — the same optimized circuit executed on a
    current IBM backend (`tools/hardware_run.py`, cached under
    `exports/hardware/`): on **ibm_marrakesh** (2026-09-04, 8192 raw shots,
-   transpiled depth 18 / 4 two-qubit gates), **D_JS = 0.0127** against the
-   ideal distribution vs. the paper's **0.130** on IBMQX2 — a **10×
-   improvement in seven years, measured with the paper's own yardstick**.
+   transpiled depth 18 / 4 two-qubit gates), **D_JS = 0.0127 bits** against the
+   ideal distribution, where the paper reports **0.130 nats** on IBMQX2. The
+   paper's Eq. 33 uses a natural log and `classifiers/hhl.py` uses base 2, so
+   those two numbers are not on the same scale as printed; converted to one
+   base the run sits about **15x closer to ideal**, seven years on.
    The error-suppressed run (dynamical decoupling + Pauli twirling) scored
    0.0211 — slightly *worse* than raw, because at this depth the coherent
    errors twirling randomizes cost less than the randomization itself. The
@@ -39,8 +41,8 @@ The notebook implements the paper's full pipeline:
 ## Run
 
 ```
-make -C notebooks/qsvm-iris venv      # one-time: own venv (qiskit 2.x / numpy 2 —
-                                      # deliberately separate from the service venv)
+make -C notebooks/qsvm-iris venv      # one-time: own venv, so a Jupyter and
+                                      # matplotlib stack stays out of the service's
 make -C notebooks/qsvm-iris execute   # re-execute in place (fixed seeds)
 ```
 
@@ -55,7 +57,14 @@ site, and its *deployable result* — the paper's solved 2-D decision rule —
 ships as in-browser QSVM classifiers on the site's train/test/try demo page.
 The weights are derived closed-form by `classifiers/qsvm_export.py`
 (`make export-qsvm` at the repo root, then `make sync-web`), provenance-stamped
-and drift-checked in CI like every other browser export. This executed
-notebook is the source of truth for the derivation — and since 2026-09-04 the
-α inside those weights is the **real-hardware readout** from the epilogue's
-ibm_marrakesh run, not a simulator number.
+and checked in CI against what the code produces, like every other browser
+export. Since 2026-09-04 the α inside those weights is the **real-hardware
+readout** from the epilogue's ibm_marrakesh run rather than a simulator number.
+
+The notebook derives the decision rule; the exporter fits the same rule for
+deployment, and their mapping coefficients differ because they fit on different
+points. The notebook follows the paper and places its two training points at the
+class means of all 100 samples, which gives `a = 7.1067`. The exporter takes the
+class means of a train split only, holding the rest back to score on, which
+gives the `a = 7.6689` in `exports/web/qsvm-iris.json`. The notebook's 97% is
+therefore in-sample, as the paper's is, and the exports' 96.7% is held-out.
