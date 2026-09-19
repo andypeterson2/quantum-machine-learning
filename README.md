@@ -57,6 +57,8 @@ Distilling the MNIST CNN into the linear student costs accuracy at the default b
 
 The paper's own optimized depth-7 circuit on `ibmqx2` reports 0.13, but Eq. 33 computes that in nats while `classifiers/hhl.py` uses base 2, so the two are not comparable as printed. Converted to the same base, this run is about 15× closer to ideal than the paper's — hardware five years newer, on a shallower transpilation.
 
+The quantum packages are optional and their versions differ by where the code runs, so each artifact records the stack that produced it under `provenance.versions`. That run was qiskit 2.3.0 with qiskit-ibm-runtime 0.45.1 on Python 3.12.1; the notebook pins qiskit 2.5.2 in `notebooks/qsvm-iris/requirements.txt`, and the image installs 2.5.2 from `requirements/linux/requirements.txt`. Install the recorded versions before re-running a submission, or the comparison moves under you.
+
 ## Quick start
 
 ### Docker
