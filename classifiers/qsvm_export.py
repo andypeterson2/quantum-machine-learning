@@ -66,6 +66,13 @@ VALIDATION_FRACTION = 0.25
 #: Held-out MNIST digits per class, drawn from outside the 100-per-class fit sample.
 MNIST_TEST_PER_CLASS = 500
 
+#: The notebook's own seed (its ``rng_seed``), so the exporter fits on the same
+#: 100 digits per class the notebook draws.
+MNIST_FIT_SEED = 42
+#: The held-out sample's seed. This module's own choice, and distinct from the
+#: fit seed so the two samples cannot overlap by construction.
+MNIST_HELD_OUT_SEED = 43
+
 
 class Split(NamedTuple):
     """Raw (N, 2) features and +1/-1 labels, fit and held-out."""
@@ -105,11 +112,11 @@ def mnist_features() -> Split:
     X, y = fetch_openml(  # noqa: N806 — sklearn's feature-matrix convention
         "mnist_784", version=1, return_X_y=True, as_frame=False, parser="liac-arff"
     )
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(MNIST_FIT_SEED)
     pool6, pool9 = np.where(y == "6")[0], np.where(y == "9")[0]
     idx6 = rng.choice(pool6, 100, replace=False)
     idx9 = rng.choice(pool9, 100, replace=False)
-    held = np.random.default_rng(43)
+    held = np.random.default_rng(MNIST_HELD_OUT_SEED)
     test6 = held.choice(np.setdiff1d(pool6, idx6), MNIST_TEST_PER_CLASS, replace=False)
     test9 = held.choice(np.setdiff1d(pool9, idx9), MNIST_TEST_PER_CLASS, replace=False)
 
@@ -152,7 +159,8 @@ def bb84_features() -> Split:
 
 
 #: Per-dataset export specs — adding a dataset is adding one entry here (plus
-#: its features function above); build_payload has no dataset branches.
+#: its features function above); build_payload has no dataset branches. ``seeds``
+#: names whatever draws that dataset's samples, so the provenance records it.
 QSVM_DATASETS: dict[str, dict] = {
     "iris": {
         "features_fn": iris_features,
@@ -164,6 +172,7 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["sepal_width", "petal_length"],
         "raw_input": "features",
         "subset": "setosa vs versicolor",
+        "seeds": {},
         "extra": {},
     },
     "mnist": {
@@ -175,6 +184,7 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["horizontal_ink_ratio", "vertical_ink_ratio"],
         "raw_input": "pixels",
         "subset": "6 vs 9",
+        "seeds": {"fit_sample": MNIST_FIT_SEED, "held_out_sample": MNIST_HELD_OUT_SEED},
         "extra": {"ink_threshold": INK_THRESHOLD},
     },
     "bb84": {
@@ -187,6 +197,8 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["qber", "sifted_key_rate"],
         "raw_input": "features",
         "subset": "eavesdropped vs clean",
+        # The bb84 splits come from the plugin's own fixed seeds, recorded there.
+        "seeds": {},
         "extra": {},
     },
 }
@@ -350,6 +362,8 @@ def build_payload(dataset: str) -> dict:
                 "analytic alpha (0.5, -0.5) are sign-identical"
             ),
             "derivation": "closed-form Eq. 24 map from the training split's class means",
+            "split_seed": SEED,
+            "sampling_seeds": spec["seeds"],
             "selection": (
                 "free parameters (orientation, and (c, d) where the paper gives none) "
                 "chosen on a validation slice of the fit split, never on the held-out split"
