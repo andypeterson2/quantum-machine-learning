@@ -20,9 +20,8 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from .base_model import BaseModel
+from .base_model import BaseModel, StatusCallback
 from .stats import wilson_interval
-from .types import StatusCallback
 
 logger = logging.getLogger(__name__)
 

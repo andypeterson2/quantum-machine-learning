@@ -61,7 +61,6 @@ def create_app(models_dir: Path | None = None) -> Flask:
     # API-only service: the frontend is owned by the portal, so no static/template
     # serving (static_folder=None disables the default /static/<path> route too).
     app = Flask(__name__, static_folder=None)
-    app.config["SECRET_KEY"] = os.environ.get("CLASSIFIERS_SECRET_KEY") or os.urandom(32).hex()
     # NOTE the anchored regex: flask-cors treats any entry containing "*" as an
     # UNANCHORED-at-the-end regex, so the old "http://localhost:*" allowed the
     # registrable origin http://localhostevil.com. The ^...$ form does not.
