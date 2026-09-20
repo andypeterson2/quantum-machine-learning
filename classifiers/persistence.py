@@ -37,6 +37,12 @@ class ModelPersistence:
     containing the model's ``state_dict``, its training hyper-parameters, and
     the dataset slug it was trained on.
 
+    The directory is trusted input. Loads pass ``weights_only=True``, which
+    restricts unpickling to tensor data, but that restricts what a file can do
+    rather than proving it safe — the restriction has known escapes on torch
+    below 2.6. Nothing reachable over HTTP writes arbitrary bytes here: the only
+    writer is :meth:`save`, which serialises a model already in the registry.
+
     Args:
         models_dir: Absolute path to the folder where checkpoints are stored.
             The directory is created on first save if it does not exist.
@@ -153,11 +159,14 @@ class ModelPersistence:
         if not path.exists():
             raise FileNotFoundError(f"Checkpoint not found: {filename!r}")
 
+        # weights_only restricts unpickling to tensor data rather than proving the
+        # file harmless, and the restriction has been escaped on older torch, so the
+        # checkpoint directory is trusted input.
         try:
             data = torch.load(path, map_location="cpu", weights_only=True)
         except Exception as err:
             raise RuntimeError(
-                f"Cannot safely load {filename!r} with weights_only=True"
+                f"Cannot load {filename!r} as a weights-only checkpoint"
             ) from err
         dataset: str = data.get("dataset", "mnist")
         model_type: str = data["model_type"]
