@@ -147,7 +147,7 @@ Machine-readable schemas are in `tests/contract/schemas/`, and `GET /api` return
 
 | Method | Path | Body | Response |
 |--------|------|------|----------|
-| `GET` | `/health` | — | `{status, service, version, uptime_s, uptime, clients, timestamp}` |
+| `GET` | `/health` | — | `{status, service, version, uptime_s, clients, timestamp}` |
 | `GET` | `/api` | — | Discovery index: `{service, version, endpoints, streaming}` |
 | `GET` | `/api/datasets` | — | `[{name, display_name, input_type}, ...]` |
 | `GET` | `/api/datasets/<name>/config` | — | `{ui_config, model_types}` |
@@ -162,7 +162,7 @@ Dataset-scoped routes live under `/d/<dataset>/`:
 | `POST` | `/d/<dataset>/train` | `{model_type, epochs, batch_size, lr, name, patience?, val_gap?, teacher?, distill_weight?, distill_temperature?}` | SSE stream |
 | `POST` | `/d/<dataset>/train/sync` | same as `/train` | JSON: final training result |
 | `POST` | `/d/<dataset>/evaluate` | `{}` | SSE stream |
-| `POST` | `/d/<dataset>/evaluate/sync` | `{}` | `{results: {name: {accuracy, avg_loss, per_class_accuracy, num_params}}}` |
+| `POST` | `/d/<dataset>/evaluate/sync` | `{}` | `{results: {name: {accuracy, accuracy_ci, num_samples, avg_loss, per_class_accuracy, num_params}}}` |
 | `POST` | `/d/<dataset>/ensemble` | `{model_names: ["Model 1", "Model 2", ...]}` | JSON result |
 | `POST` | `/d/<dataset>/ablation` | `{model_name: "Model 1"}` | SSE stream |
 | `POST` | `/d/<dataset>/predict` | `{image: "<b64>"}` or `{features: {...}}` | `{results: {name: {prediction, confidence, probs}}}` |
@@ -178,7 +178,7 @@ Training, evaluation and ablation stream newline-delimited JSON:
 ```
 data: {"type": "status", "msg": "Epoch 1/3 - loss: 0.312"}\n\n
 data: {"type": "history", "epoch": 1, "batch": 50, "train_loss": 0.312, "val_accuracy": 0.95}\n\n
-data: {"type": "ablation_result", "layer": "conv1", "accuracy": 0.11, "drop": 0.87}\n\n
+data: {"type": "ablation_result", "layer": "conv1", "accuracy": 0.11, "accuracy_ci": [0.10, 0.12], "num_samples": 10000, "drop": 0.87}\n\n
 data: {"type": "done", "name": "CNN", "model_type": "CNN", "history": [...], ...}\n\n
 data: {"type": "error", "msg": "..."}\n\n
 ```
