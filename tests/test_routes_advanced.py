@@ -164,3 +164,46 @@ class TestPredictEdgeCases:
         res = client.post(f"/d/{DS}/predict",
                           json={"image": _blank_png_b64(14, 14)})
         assert res.status_code == 200
+
+
+class TestCorruptCheckpoint:
+    """A file the loader cannot read is the request's problem, not the server's."""
+
+    def test_unreadable_file_is_a_400(self, client, tmp_path):
+        bad = tmp_path / "models" / "mnist__broken.pt"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_bytes(b"not a torch checkpoint")
+
+        res = client.post(f"/d/{DS}/models/disk/mnist__broken.pt/load")
+        assert res.status_code == 400
+        assert res.get_json()["error"]["code"] == "corrupt_checkpoint"
+
+    def test_unknown_architecture_is_a_400(self, client, tmp_path):
+        import torch
+
+        path = tmp_path / "models" / "mnist__alien.pt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(
+            {
+                "name": "alien",
+                "dataset": "mnist",
+                "model_type": "NoSuchNet",
+                "state_dict": {},
+                "epochs": 1,
+                "batch_size": 32,
+                "lr": 0.01,
+            },
+            path,
+        )
+
+        res = client.post(f"/d/{DS}/models/disk/mnist__alien.pt/load")
+        assert res.status_code == 400
+        assert res.get_json()["error"]["code"] == "corrupt_checkpoint"
+
+    def test_an_unreadable_file_belongs_to_no_dataset(self, client, tmp_path):
+        bad = tmp_path / "models" / "mnist__broken.pt"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_bytes(b"not a torch checkpoint")
+
+        listed = client.get(f"/d/{DS}/models/disk").get_json()
+        assert all(f["filename"] != "mnist__broken.pt" for f in listed)
