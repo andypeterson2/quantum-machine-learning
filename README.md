@@ -189,7 +189,7 @@ Evaluation results carry `accuracy_ci` and `num_samples` beside every `accuracy`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `patience` | `int` | — | Early-stopping patience in epochs. Applies only once the best validation accuracy passes 60%, so a model near chance trains for all its epochs |
+| `patience` | `int` | — | Early-stopping patience, counted in validation checks (see `val_gap`). Applies only once the best validation accuracy passes 60%, so a model near chance trains for all its epochs |
 | `val_gap` | `int` | `50` | Batches between validation checks |
 | `teacher` | `string` | — | Name of a trained model to distil from |
 | `distill_weight` | `float` | `0.5` | Blend weight: `(1-w)*true_loss + w*distill_loss` |
@@ -227,7 +227,6 @@ python -m pytest tests/ -v
 | Allowed CORS origins | `CLASSIFIERS_CORS_ORIGINS` | `^https?://localhost(:\d+)?$,https://andypeterson.dev` (comma-separated; anchor any pattern with `^…$`) | `classifiers/server.py` |
 | Max request body size | `CLASSIFIERS_MAX_CONTENT_LENGTH` | 2 MB | `classifiers/server.py` |
 | Gateway origin guard | `ORIGIN_SECRET` | unset (guard inactive) | `classifiers/server.py` |
-| Flask secret key | `CLASSIFIERS_SECRET_KEY` | random per process | `classifiers/server.py` |
 | Concurrent heavy jobs | `CLASSIFIERS_MAX_JOBS` | `2` | `classifiers/server.py` |
 | Models kept per dataset | `CLASSIFIERS_MAX_MODELS` | `20` | `classifiers/model_registry.py` |
 | Saved checkpoints kept | `CLASSIFIERS_MAX_CHECKPOINTS` | `50` | `classifiers/routes/model_routes.py` |

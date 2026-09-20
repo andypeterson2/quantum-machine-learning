@@ -34,7 +34,6 @@ class TestTrainingConfig:
         config = TrainingConfig()
         assert config.patience is None
         assert config.val_gap == 50
-        assert config.regularization_fn is None
         assert config.teacher_model is None
         assert config.distill_weight == 0.5
         assert config.distill_temperature == 4.0
@@ -60,20 +59,6 @@ class TestTrainerWithConfig:
         result = trainer.train()
         assert isinstance(result, TrainResult)
         assert len(result.history) > 0
-
-    def test_train_with_regularization(self):
-        loader = make_fake_train_loader(n_batches=3)
-
-        def l2_reg(model):
-            return 0.01 * sum(p.pow(2).sum() for p in model.parameters())
-
-        config = TrainingConfig(regularization_fn=l2_reg)
-        trainer = Trainer(
-            model_cls=LinearNet, train_loader=loader,
-            dataset="mnist", epochs=1, config=config,
-        )
-        result = trainer.train()
-        assert isinstance(result, TrainResult)
 
     def test_train_with_distillation(self):
         loader = make_fake_train_loader(n_batches=3)
@@ -117,3 +102,55 @@ class TestDistillationLoss:
         t = torch.tensor([[0.0, 2.0, 0.0]])
         shifted = distillation_loss(s + 5.0, t - 3.0, 4.0).item()
         assert shifted == pytest.approx(distillation_loss(s, t, 4.0).item(), rel=1e-5)
+
+
+class TestEarlyStoppingCountsValidationChecks:
+    """Patience is measured in the unit it is counted in.
+
+    Validation runs every ``val_gap`` batches, so an epoch holds many checks.
+    Counting patience in epochs meant the rule could not fire until a whole
+    epoch of checks had passed, and then only one epoch later still.
+    """
+
+    @staticmethod
+    def _trainer(monkeypatch, accuracies, *, patience, val_gap=1, epochs=3):
+        """A trainer whose validation returns *accuracies* in order."""
+        scripted = iter(accuracies)
+        monkeypatch.setattr(
+            Trainer, "_validate", lambda self, model: next(scripted, accuracies[-1])
+        )
+        return Trainer(
+            model_cls=LinearNet,
+            train_loader=make_fake_train_loader(batch_size=8, n_batches=5),
+            dataset="mnist",
+            epochs=epochs,
+            config=TrainingConfig(patience=patience, val_gap=val_gap),
+            val_loader=make_fake_train_loader(batch_size=8, n_batches=1),
+        )
+
+    def test_stops_inside_the_first_epoch(self, monkeypatch):
+        """One good check then two flat ones, with five batches in the epoch."""
+        trainer = self._trainer(monkeypatch, [0.9, 0.9, 0.9, 0.9, 0.9], patience=2)
+        result = trainer.train()
+        assert result.stopped_early
+        assert result.epochs_completed == 1
+
+    def test_improvement_resets_the_count(self, monkeypatch):
+        trainer = self._trainer(
+            monkeypatch, [0.7, 0.7, 0.8, 0.8, 0.9, 0.9, 0.9], patience=2, epochs=2
+        )
+        result = trainer.train()
+        assert result.best_val_accuracy == pytest.approx(0.9)
+
+    def test_a_model_below_the_floor_is_never_stopped(self, monkeypatch):
+        """The floor is what keeps a run still near chance training."""
+        trainer = self._trainer(monkeypatch, [0.5] * 20, patience=1)
+        result = trainer.train()
+        assert not result.stopped_early
+        assert result.epochs_completed == 3
+
+    def test_the_message_names_the_unit(self, monkeypatch):
+        trainer = self._trainer(monkeypatch, [0.9] * 10, patience=2)
+        messages: list[str] = []
+        trainer.train(on_status=lambda m: messages.append(m) if isinstance(m, str) else None)
+        assert any("validation checks" in m for m in messages)
