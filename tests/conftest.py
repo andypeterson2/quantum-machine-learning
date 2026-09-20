@@ -6,12 +6,11 @@ import contextlib
 import io
 import json
 
-import numpy as np
 import pytest
 import torch
 from PIL import Image
 
-from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.datasets.mnist.plugin import MNISTPlugin
 
 
@@ -34,12 +33,6 @@ def untrained_linear():
 
 
 @pytest.fixture
-def untrained_svm():
-    """A freshly initialized SVMNet."""
-    return SVMNet()
-
-
-@pytest.fixture
 def blank_image():
     """A blank 280x280 grayscale image (black canvas)."""
     return Image.new("L", (280, 280), 0)
@@ -54,16 +47,6 @@ def drawn_image():
     draw = ImageDraw.Draw(img)
     draw.ellipse([100, 100, 180, 180], fill=255)
     return img
-
-
-@pytest.fixture
-def sample_probs():
-    """A realistic 10-element probability array (sums to 1)."""
-    raw = np.array(
-        [0.01, 0.01, 0.02, 0.85, 0.03, 0.02, 0.01, 0.02, 0.02, 0.01],
-        dtype=np.float32,
-    )
-    return raw / raw.sum()
 
 
 @pytest.fixture

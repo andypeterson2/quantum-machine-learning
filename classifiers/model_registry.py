@@ -278,18 +278,6 @@ class ModelRegistry:
         with self._lock:
             return self._models.get(dataset, {}).get(name)
 
-    def names(self, dataset: str) -> list[str]:
-        """Return a snapshot of current model names for *dataset* in insertion order.
-
-        Args:
-            dataset: Dataset slug.
-
-        Returns:
-            A new list of name strings.
-        """
-        with self._lock:
-            return list(self._models.get(dataset, {}).keys())
-
     def items(self, dataset: str) -> list[tuple[str, ModelEntry]]:
         """Return a snapshot of ``(name, entry)`` pairs for *dataset*.
 
