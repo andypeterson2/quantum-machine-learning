@@ -60,6 +60,9 @@ class ModelPersistence:
         The checkpoint dict includes the ``"dataset"`` key so the model can
         be reloaded with the correct architecture.
 
+        The filename carries the dataset slug, so two datasets may hold a model
+        of the same name without one overwriting the other.
+
         Args:
             name:  Human-readable model name used to derive the filename.
             entry: Registry entry containing the model and its hyper-parameters.
@@ -68,7 +71,7 @@ class ModelPersistence:
             The bare filename (not the full path) that was written.
         """
         self._dir.mkdir(parents=True, exist_ok=True)
-        filename = self._safe_filename(name)
+        filename = self._safe_filename(name, entry.dataset)
         checkpoint: dict[str, Any] = {
             "name": name,
             "dataset": entry.dataset,
@@ -88,8 +91,11 @@ class ModelPersistence:
     def list_files(self) -> list[dict[str, Any]]:
         """Return metadata for every ``.pt`` file in the models directory.
 
-        Files that cannot be parsed are still included with
-        ``model_type="?"`` so the UI can show them without crashing.
+        Files that cannot be parsed are still included, with ``model_type="?"``
+        and ``dataset=None``, so the UI can show them without crashing. A
+        ``None`` dataset belongs to no plugin, so such a file is absent from
+        every dataset-scoped listing and counts against no checkpoint cap —
+        which beats attributing it to whichever dataset sorts first.
 
         Returns:
             A list of dicts with keys: ``filename``, ``name``, ``dataset``,
@@ -116,7 +122,7 @@ class ModelPersistence:
                 )
             except Exception:
                 results.append(
-                    {"filename": p.name, "name": p.stem, "model_type": "?"}
+                    {"filename": p.name, "name": p.stem, "dataset": None, "model_type": "?"}
                 )
         return results
 
@@ -174,20 +180,26 @@ class ModelPersistence:
     # Helpers
 
     @staticmethod
-    def _safe_filename(name: str) -> str:
-        """Convert an arbitrary model name into a safe ``.pt`` filename.
+    def _safe_filename(name: str, dataset: str) -> str:
+        """Convert a model name and its dataset into a safe ``.pt`` filename.
 
         Non-word characters (anything outside ``[a-zA-Z0-9_-]``) are replaced
         with underscores so the result is safe on all major operating systems.
+        The dataset slug leads, separated by a double underscore, so one
+        dataset's checkpoints cannot land on another's.
 
         Args:
-            name: Human-readable model name.
+            name:    Human-readable model name.
+            dataset: Dataset slug the model belongs to.
 
         Returns:
             A filename ending in ``.pt`` containing only word characters and
             hyphens.
         """
-        return re.sub(r"[^\w\-]", "_", name) + ".pt"
+        def safe(part: str) -> str:
+            return re.sub(r"[^\w\-]", "_", part)
+
+        return f"{safe(dataset)}__{safe(name)}.pt"
 
     @staticmethod
     def _validate_filename(filename: str) -> None:
