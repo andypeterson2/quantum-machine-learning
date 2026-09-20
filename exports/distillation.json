@@ -25,14 +25,14 @@
         "n": 10000
       },
       "student_distilled": {
-        "accuracy": 0.9134,
+        "accuracy": 0.9136,
         "accuracy_ci": [
-          0.9077,
-          0.9188
+          0.9079,
+          0.9189
         ],
         "n": 10000
       },
-      "delta": -0.0072
+      "delta": -0.007
     },
     {
       "seed": 1,
@@ -53,14 +53,14 @@
         "n": 10000
       },
       "student_distilled": {
-        "accuracy": 0.9103,
+        "accuracy": 0.9104,
         "accuracy_ci": [
-          0.9045,
-          0.9157
+          0.9046,
+          0.9158
         ],
         "n": 10000
       },
-      "delta": -0.0089
+      "delta": -0.0088
     },
     {
       "seed": 2,
@@ -81,38 +81,38 @@
         "n": 10000
       },
       "student_distilled": {
-        "accuracy": 0.9076,
+        "accuracy": 0.9086,
         "accuracy_ci": [
-          0.9018,
-          0.9131
+          0.9028,
+          0.9141
         ],
         "n": 10000
       },
-      "delta": -0.0141
+      "delta": -0.0131
     }
   ],
   "summary": {
     "seeds": 3,
     "student_alone_mean": 0.9205,
-    "student_distilled_mean": 0.9104,
-    "delta_mean": -0.0101,
-    "delta_stdev": 0.0036,
+    "student_distilled_mean": 0.9109,
+    "delta_mean": -0.0096,
+    "delta_stdev": 0.0031,
     "delta_range": [
-      -0.0141,
-      -0.0072
+      -0.0131,
+      -0.007
     ],
     "helps": false
   },
   "provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "1bab65a9f728e545fc730716eeba568656285740",
-    "source_dirty": false,
-    "exported_at": "2026-09-18",
+    "source_sha": "4d751bb72f80f1d37051031902c0a1be54f40aad",
+    "source_dirty": true,
+    "exported_at": "2026-09-20",
     "seed": 0,
     "training": {
       "model": "Linear distilled from CNN",
       "trainer": "classifiers.trainer.Trainer",
-      "protocol": "per seed: train the teacher, then the student alone and distilled from it, all at the plugin's default hyper-parameters; accuracy and its 95% Wilson interval measured on the test split",
+      "protocol": "per seed: train the teacher, then the student alone and distilled from it, all at the plugin's default hyper-parameters and all returning their final weights; accuracy and its 95% Wilson interval measured on the test split",
       "loss": "KL(teacher || student) on outputs softened at T, scaled by T^2"
     },
     "versions": {
