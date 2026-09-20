@@ -44,10 +44,13 @@ The Iris test split is 30 samples, so one sample is 3.3 points and these three i
 |-------------|-------------|-----------------|
 | Linear (`BB84Linear`) | Single linear layer over the session features | 95.4% (93.2-96.9%, n=500) |
 | SVM (`BB84SVM`) | Linear layer + multi-class hinge loss | 95.4% (93.2-96.9%, n=500) |
+| QVC (`BB84QVC`) | PennyLane variational classifier, 2 qubits, 2 layers | 90.0% (87.1-92.3%, n=500)\* |
+
+\* QVC needs `pennylane` installed, and only appears in the dataset's model types when it is.
 
 ### Knowledge distillation
 
-Distilling the MNIST CNN into the linear student costs accuracy at the default blend: 92.05% for the student alone against 91.04% distilled, over 3 seeds, lower on every seed. Per-seed numbers and intervals are in `exports/distillation.json` (`make distillation`).
+Distilling the MNIST CNN into the linear student costs accuracy at the default blend: 92.05% for the student alone against 91.09% distilled, over 3 seeds, lower on every seed. Both arms return their final weights, so the comparison is the loss and nothing else. Per-seed numbers and intervals are in `exports/distillation.json` (`make distillation`).
 
 ## Paper recreations
 
@@ -55,7 +58,7 @@ Distilling the MNIST CNN into the linear student costs accuracy at the default b
 
 `exports/hardware/` holds an IBM Quantum run of the optimized 4-qubit HHL circuit from arXiv:1909.11988 (Fig. 10), submitted and fetched by `tools/hardware_run.py`, with `tests/test_hardware_run.py` holding the stored result to what the scorer computes. On `ibm_marrakesh`, 8192 shots, transpiled to depth 18 with 4 two-qubit gates at optimization level 3, the measured distribution sat 0.0127 from ideal by Jensen-Shannon divergence in bits, and the success state came out at 49.87%. Error mitigation did not help (0.0211).
 
-The paper's own optimized depth-7 circuit on `ibmqx2` reports 0.13, but Eq. 33 computes that in nats while `classifiers/hhl.py` uses base 2, so the two are not comparable as printed. Converted to the same base, this run is about 15× closer to ideal than the paper's — hardware five years newer, on a shallower transpilation.
+The paper's own optimized depth-7 circuit on `ibmqx2` reports 0.13, but Eq. 33 computes that in nats while `classifiers/hhl.py` uses base 2, so the two are not comparable as printed. Converted to the same base, this run is about 15× closer to ideal than the paper's — hardware seven years newer, on a shallower transpilation.
 
 The quantum packages are optional and their versions differ by where the code runs, so each artifact records the stack that produced it under `provenance.versions`. That run was qiskit 2.3.0 with qiskit-ibm-runtime 0.45.1 on Python 3.12.1; the notebook pins qiskit 2.5.2 in `notebooks/qsvm-iris/requirements.txt`, and the image installs 2.5.2 from `requirements/linux/requirements.txt`. Install the recorded versions before re-running a submission, or the comparison moves under you.
 
