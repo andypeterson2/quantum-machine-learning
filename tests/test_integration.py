@@ -227,7 +227,7 @@ class TestRegistryLifecycleAllModels:
         registry.add(DS, "svm_1", SVMNet(), model_type="SVM", epochs=3, batch_size=32, lr=0.01)
 
         assert len(registry) == 3
-        assert set(registry.names(DS)) == {"cnn_1", "linear_1", "svm_1"}
+        assert {n for n, _ in registry.items(DS)} == {"cnn_1", "linear_1", "svm_1"}
 
         registry.remove(DS, "linear_1")
         assert len(registry) == 2

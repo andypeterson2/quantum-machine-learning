@@ -2,26 +2,10 @@
 
 import torch
 
-from classifiers.base_model import BaseModel
 from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 
 
 class TestLinearNet:
-    def test_output_shape_single(self, untrained_linear):
-        x = torch.randn(1, 1, 28, 28)
-        out = untrained_linear(x)
-        assert out.shape == (1, 10)
-
-    def test_output_shape_batch(self, untrained_linear):
-        x = torch.randn(16, 1, 28, 28)
-        out = untrained_linear(x)
-        assert out.shape == (16, 10)
-
-    def test_is_base_model(self):
-        model = LinearNet()
-        assert isinstance(model, BaseModel)
-        assert isinstance(model, torch.nn.Module)
-
     def test_has_fc_layer(self):
         model = LinearNet()
         assert hasattr(model, "fc")

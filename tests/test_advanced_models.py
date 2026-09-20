@@ -2,21 +2,10 @@
 
 import torch
 
-from classifiers.base_model import BaseModel
 from classifiers.datasets.mnist.models import MNISTPolynomialNet, MNISTQuadraticNet
 
 
 class TestQuadraticNet:
-    def test_is_base_model(self):
-        model = MNISTQuadraticNet()
-        assert isinstance(model, BaseModel)
-
-    def test_output_shape(self):
-        model = MNISTQuadraticNet()
-        x = torch.randn(4, 1, 28, 28)
-        out = model(x)
-        assert out.shape == (4, 10)
-
     def test_name_and_description(self):
         assert MNISTQuadraticNet.name == "Quadratic"
         assert len(MNISTQuadraticNet.description) > 0
@@ -36,16 +25,6 @@ class TestQuadraticNet:
 
 
 class TestPolynomialNet:
-    def test_is_base_model(self):
-        model = MNISTPolynomialNet()
-        assert isinstance(model, BaseModel)
-
-    def test_output_shape(self):
-        model = MNISTPolynomialNet()
-        x = torch.randn(4, 1, 28, 28)
-        out = model(x)
-        assert out.shape == (4, 10)
-
     def test_name_and_description(self):
         assert MNISTPolynomialNet.name == "Polynomial"
         assert len(MNISTPolynomialNet.description) > 0

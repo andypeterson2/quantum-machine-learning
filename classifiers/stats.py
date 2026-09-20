@@ -18,17 +18,17 @@ from math import sqrt
 Z_95 = 1.959963984540054
 
 
-def wilson_interval(successes: int, total: int, z: float = Z_95) -> tuple[float, float]:
+def wilson_interval(successes: int, total: int) -> tuple[float, float]:
     """Return the Wilson score interval for ``successes / total``.
 
     Args:
         successes: Number of correct predictions.
         total:     Number of predictions. ``0`` yields ``(0.0, 1.0)`` — no data,
                    so nothing is excluded.
-        z:         Standard-normal quantile; the default is the 95% interval.
 
     Returns:
-        ``(low, high)``, each rounded to four decimals and clamped to ``[0, 1]``.
+        ``(low, high)`` at 95% confidence, each rounded to four decimals and
+        clamped to ``[0, 1]``.
 
     Raises:
         ValueError: If *successes* is negative or exceeds *total*.
@@ -39,6 +39,7 @@ def wilson_interval(successes: int, total: int, z: float = Z_95) -> tuple[float,
         return (0.0, 1.0)
 
     p = successes / total
+    z = Z_95
     denominator = 1 + z * z / total
     centre = (p + z * z / (2 * total)) / denominator
     margin = z * sqrt(p * (1 - p) / total + z * z / (4 * total * total)) / denominator

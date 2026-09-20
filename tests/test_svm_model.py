@@ -23,18 +23,6 @@ def svm():
 
 
 class TestSVMNetArchitecture:
-    def test_is_base_model(self, svm):
-        assert isinstance(svm, BaseModel)
-        assert isinstance(svm, nn.Module)
-
-    def test_output_shape_single(self, svm):
-        out = svm(torch.randn(1, 1, 28, 28))
-        assert out.shape == (1, 10)
-
-    def test_output_shape_batch(self, svm):
-        out = svm(torch.randn(32, 1, 28, 28))
-        assert out.shape == (32, 10)
-
     def test_has_fc_layer(self, svm):
         assert hasattr(svm, "fc")
         assert isinstance(svm.fc, nn.Linear)

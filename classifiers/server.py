@@ -42,6 +42,19 @@ from .plugin_registry import discover_plugins
 #: Default checkpoint directory: ``<project_root>/models/``
 _DEFAULT_MODELS_DIR = Path(__file__).resolve().parents[1] / "models"
 
+#: The only values that turn the dev server's debugger on.
+_DEBUG_ON = ("1", "true", "yes")
+
+
+def debug_enabled() -> bool:
+    """Whether ``CLASSIFIERS_DEBUG`` asks for the Werkzeug debugger.
+
+    The debugger is remote code execution once the host is exposed, so this
+    fails closed: only an explicit opt-in value enables it, and a typo, an empty
+    string or an unset variable all leave it off.
+    """
+    return os.environ.get("CLASSIFIERS_DEBUG", "0").strip().lower() in _DEBUG_ON
+
 
 def create_app(models_dir: Path | None = None) -> Flask:
     """Create and configure the Flask application.

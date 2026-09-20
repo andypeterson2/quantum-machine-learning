@@ -94,9 +94,7 @@ class TestDependabotLeavesTheImmovablePinsAlone:
         raise AssertionError(f"no pip entry for {directory}")
 
     def test_ruff_minors_are_held(self) -> None:
-        """The lint job and the [dev] extra must name one minor between them;
-        a widened range silently re-splits them (PR #29 proposed exactly that,
-        and passed CI because the lint job pins separately)."""
+        """Dependabot leaves ruff's minor alone, so the range moves by hand."""
         assert "ruff" in self._ignored("/")
 
     def test_the_parity_file_holds_its_whole_chain(self) -> None:
@@ -108,3 +106,27 @@ class TestDependabotLeavesTheImmovablePinsAlone:
         ignored = self._ignored("/requirements/linux")
         assert {"torch", "torchvision"} <= ignored
         assert "numpy" not in ignored, "production numpy should keep moving"
+
+
+class TestTheLintJobAndTheDevExtraAgree:
+    """One ruff range between them.
+
+    The enforced rule set moves with ruff's minors, so a tree clean under one
+    minor is not clean under the next. The lint job installs its own ruff and
+    the [dev] extra pins another, and both files carry a comment asking a reader
+    to keep them in step — this is what holds them there.
+    """
+
+    SPEC = re.compile(r"ruff(>=[^\"']+)")
+
+    def _spec(self, path) -> str:
+        match = self.SPEC.search(path.read_text())
+        assert match, f"no ruff specifier in {path.name}"
+        return match.group(1).strip()
+
+    def test_the_ranges_are_identical(self) -> None:
+        workflow = self._spec(REPO_ROOT / ".github" / "workflows" / "ci.yml")
+        pyproject = self._spec(REPO_ROOT / "pyproject.toml")
+        assert workflow == pyproject, (
+            f"lint job pins ruff{workflow}, [dev] pins ruff{pyproject}"
+        )

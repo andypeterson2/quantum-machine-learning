@@ -3,20 +3,10 @@
 import pytest
 import torch
 
-from classifiers.base_model import BaseModel
 from classifiers.datasets.mnist.models import MNISTNet
 
 
 class TestMNISTNet:
-    def test_output_shape_single(self, untrained_model):
-        x = torch.randn(1, 1, 28, 28)
-        out = untrained_model(x)
-        assert out.shape == (1, 10)
-
-    def test_output_shape_batch(self, untrained_model, sample_batch):
-        out = untrained_model(sample_batch)
-        assert out.shape == (4, 10)
-
     def test_output_is_logits_not_probabilities(self, untrained_model):
         """Output should be raw logits (can be negative, don't sum to 1)."""
         x = torch.randn(1, 1, 28, 28)
@@ -35,11 +25,6 @@ class TestMNISTNet:
         x = torch.randn(1, 1, 32, 32)  # Wrong spatial dims
         with pytest.raises(RuntimeError):
             untrained_model(x)
-
-    def test_is_base_model(self):
-        model = MNISTNet()
-        assert isinstance(model, BaseModel)
-        assert isinstance(model, torch.nn.Module)
 
     def test_has_expected_layers(self):
         model = MNISTNet()

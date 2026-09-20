@@ -46,12 +46,6 @@ class TestWilsonInterval:
     def test_no_data_excludes_nothing(self):
         assert wilson_interval(0, 0) == (0.0, 1.0)
 
-    def test_a_wider_quantile_gives_a_wider_interval(self):
-        default = wilson_interval(27, 30)
-        ninety_nine = wilson_interval(27, 30, z=2.576)
-        assert ninety_nine[0] < default[0]
-        assert ninety_nine[1] > default[1]
-
     @pytest.mark.parametrize(("successes", "total"), [(-1, 10), (11, 10), (1, -5)])
     def test_impossible_counts_raise(self, successes, total):
         with pytest.raises(ValueError, match="successes <= total"):

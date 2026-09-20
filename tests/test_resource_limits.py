@@ -178,7 +178,7 @@ class TestRegistryEviction:
 
         reg.update_eval_result("ds", "a", FakeEval())
         self._add(reg, "d")
-        assert reg.names("ds") == ["a", "c", "d"]
+        assert [n for n, _ in reg.items("ds")] == ["a", "c", "d"]
 
     def test_all_evaluated_falls_back_to_oldest(self):
         reg = ModelRegistry(max_per_dataset=2)
@@ -193,14 +193,14 @@ class TestRegistryEviction:
             self._add(reg, name)
             reg.update_eval_result("ds", name, FakeEval())
         self._add(reg, "c")
-        assert reg.names("ds") == ["b", "c"]
+        assert [n for n, _ in reg.items("ds")] == ["b", "c"]
 
     def test_replacing_existing_name_does_not_evict(self):
         reg = ModelRegistry(max_per_dataset=2)
         for name in ["a", "b"]:
             self._add(reg, name)
         self._add(reg, "b")  # replaces the entry in place
-        assert reg.names("ds") == ["a", "b"]
+        assert [n for n, _ in reg.items("ds")] == ["a", "b"]
 
 
 class TestPredictImageGuards:

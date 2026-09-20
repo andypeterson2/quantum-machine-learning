@@ -32,7 +32,7 @@ class TestModelRegistry:
     def test_starts_empty(self):
         reg = ModelRegistry()
         assert len(reg) == 0
-        assert reg.names(DS) == []
+        assert [n for n, _ in reg.items(DS)] == []
         assert reg.items(DS) == []
 
     def test_add_and_get(self, untrained_model):
@@ -65,7 +65,7 @@ class TestModelRegistry:
         reg = ModelRegistry()
         reg.add(DS, "alpha", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01)
         reg.add(DS, "beta", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01)
-        assert set(reg.names(DS)) == {"alpha", "beta"}
+        assert {n for n, _ in reg.items(DS)} == {"alpha", "beta"}
 
     def test_items(self, untrained_model):
         reg = ModelRegistry()
