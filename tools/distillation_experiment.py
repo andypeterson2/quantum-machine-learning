@@ -59,6 +59,14 @@ DISTILL_TEMPERATURE = 4.0
 
 
 def _train(plugin, model_type: str, seed: int, config: TrainingConfig | None = None):
+    """Train one arm of the comparison.
+
+    No validation loader, deliberately. The trainer returns the best-validation
+    checkpoint when it has one and the final weights when it does not, so giving
+    the distilled arm a loader and the solo arm none compared two model-selection
+    rules as well as two losses. The config here sets no patience, so the loader
+    bought nothing else.
+    """
     hp = plugin.get_default_hyperparams()
     return Trainer(
         model_cls=plugin.get_model_types()[model_type],
@@ -67,7 +75,6 @@ def _train(plugin, model_type: str, seed: int, config: TrainingConfig | None = N
         epochs=hp["epochs"],
         lr=hp["lr"],
         config=config,
-        val_loader=plugin.get_val_loader(hp["batch_size"]) if config else None,
         seed=seed,
     ).train()
 
@@ -174,8 +181,9 @@ def main() -> None:
                 "trainer": "classifiers.trainer.Trainer",
                 "protocol": (
                     "per seed: train the teacher, then the student alone and distilled "
-                    "from it, all at the plugin's default hyper-parameters; accuracy and "
-                    "its 95% Wilson interval measured on the test split"
+                    "from it, all at the plugin's default hyper-parameters and all "
+                    "returning their final weights; accuracy and its 95% Wilson interval "
+                    "measured on the test split"
                 ),
                 "loss": "KL(teacher || student) on outputs softened at T, scaled by T^2",
             },

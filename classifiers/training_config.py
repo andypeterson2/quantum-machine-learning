@@ -1,7 +1,7 @@
 """Configuration and history types for advanced training features.
 
 :class:`TrainingConfig` bundles optional advanced training parameters
-(early stopping, validation, distillation, regularisation) so the
+(early stopping, validation, distillation) so the
 :class:`~classifiers.trainer.Trainer` constructor stays stable while
 gaining new capabilities through composition.
 
@@ -10,11 +10,8 @@ gaining new capabilities through composition.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
-
-import torch
 
 if TYPE_CHECKING:
     from classifiers.base_model import BaseModel
@@ -28,25 +25,21 @@ class TrainingConfig:
     behaves identically to the original fixed-epoch Adam loop.
 
     Attributes:
-        patience:           Early-stopping patience in epochs.  ``None`` disables.
+        patience:           Early-stopping patience, counted in validation checks.
+                            ``None`` disables.
         val_gap:            Batches between validation checks.
-        regularization_fn:  Callable ``(model) → scalar tensor`` added to the loss.
         teacher_model:      Frozen teacher model for knowledge distillation.
         distill_weight:     Blend ratio: ``(1-w)*true + w*distill``.
         distill_temperature: Softmax temperature for the distillation term (Hinton
                             et al., 2015); higher values expose more of the
                             teacher's ranking over the wrong classes.
-        teacher_process:    Post-processing applied to the teacher's logits before
-                            they are softened.
     """
 
     patience: int | None = None
     val_gap: int = 50
-    regularization_fn: Callable[[torch.nn.Module], torch.Tensor] | None = None
     teacher_model: BaseModel | None = field(default=None, repr=False)
     distill_weight: float = 0.5
     distill_temperature: float = 4.0
-    teacher_process: Callable[[torch.Tensor], torch.Tensor] | None = None
 
 
 @dataclass

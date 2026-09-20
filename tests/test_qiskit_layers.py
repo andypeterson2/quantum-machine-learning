@@ -100,14 +100,12 @@ from classifiers.qiskit_layers import (  # noqa: E402
     _ExampleCircuit,
     _Head,
     _IndependentInterpret,
-    _ParametricCircuit,
-    _QCExecutor,
     _RunCircuit,
 )
 
-# Helpers
+# Helpers — an executor is anything with run(circuit) -> np.ndarray.
 
-class _StubExecutor(_QCExecutor):
+class _StubExecutor:
     """Deterministic executor that returns a fixed array instead of running
     a real quantum circuit.  The output dimension matches *input_dim*."""
 
@@ -118,7 +116,7 @@ class _StubExecutor(_QCExecutor):
         return np.full(self.output_dim, 0.5, dtype=np.float32)
 
 
-class _CountingExecutor(_QCExecutor):
+class _CountingExecutor:
     """Executor that counts how many times ``run`` is called."""
 
     def __init__(self, output_dim: int):
@@ -169,14 +167,12 @@ class TestIndependentInterpret:
 
 # Tests: _ParametricCircuit.run (mock-based)
 
-class TestParametricCircuit:
+class TestExampleCircuitRun:
     def _make_pc(self, input_dim=3, num_params=6):
         executor = _StubExecutor(output_dim=input_dim)
 
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
 
-        return _ParametricCircuit(builder, num_params, input_dim, executor)
+        return _ExampleCircuit(input_dim, executor=executor)
 
     def test_run_returns_correct_shape(self):
         pc = self._make_pc(input_dim=3, num_params=6)
@@ -185,22 +181,14 @@ class TestParametricCircuit:
 
     def test_run_calls_executor(self):
         executor = _CountingExecutor(output_dim=3)
-
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        pc = _ParametricCircuit(builder, 6, 3, executor)
+        pc = _ExampleCircuit(3, executor=executor)
         pc.run([0.0] * 6, [0.1, 0.2, 0.3])
         assert executor.call_count == 1
 
     def test_assign_parameters_called(self):
         """Verify that assign_parameters is invoked with the correct keys."""
         executor = _StubExecutor(output_dim=2)
-
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        pc = _ParametricCircuit(builder, 4, 2, executor)
+        pc = _ExampleCircuit(2, executor=executor)
         pc.qc.assign_parameters = MagicMock(return_value=_FakeQuantumCircuit(2))
         pc.run([1.0, 2.0, 3.0, 4.0], [0.5, 0.6])
         pc.qc.assign_parameters.assert_called_once()
@@ -231,11 +219,7 @@ class TestExampleCircuit:
 class TestRunCircuitForward:
     def _make_pc(self, input_dim=3):
         executor = _StubExecutor(output_dim=input_dim)
-
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        return _ParametricCircuit(builder, 2 * input_dim, input_dim, executor)
+        return _ExampleCircuit(input_dim, executor=executor)
 
     def test_forward_shape(self):
         pc = self._make_pc(input_dim=3)
@@ -268,15 +252,10 @@ class TestRunCircuitBackward:
         """Backward pass should produce gradients with correct shapes for w
         and x_batch."""
         input_dim = 3
-        num_params = 2 * input_dim
         executor = _CountingExecutor(output_dim=input_dim)
+        pc = _ExampleCircuit(input_dim, executor=executor)
 
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        pc = _ParametricCircuit(builder, num_params, input_dim, executor)
-
-        w = torch.zeros(num_params, requires_grad=True)
+        w = torch.zeros(len(pc.params), requires_grad=True)
         x = torch.randn(1, input_dim, requires_grad=True)
 
         result = _RunCircuit.apply(pc, w, x)
@@ -284,7 +263,7 @@ class TestRunCircuitBackward:
         loss.backward()
 
         assert w.grad is not None
-        assert w.grad.shape == (num_params,)
+        assert w.grad.shape == (len(pc.params),)
         assert x.grad is not None
         assert x.grad.shape == (1, input_dim)
 
@@ -292,15 +271,10 @@ class TestRunCircuitBackward:
         """With a non-constant executor the finite-difference gradients should
         generally be non-zero."""
         input_dim = 2
-        num_params = 4
         executor = _CountingExecutor(output_dim=input_dim)
+        pc = _ExampleCircuit(input_dim, executor=executor)
 
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        pc = _ParametricCircuit(builder, num_params, input_dim, executor)
-
-        w = torch.zeros(num_params, requires_grad=True)
+        w = torch.zeros(len(pc.params), requires_grad=True)
         x = torch.randn(1, input_dim, requires_grad=True)
 
         result = _RunCircuit.apply(pc, w, x)
@@ -315,12 +289,7 @@ class TestRunCircuitBackward:
 
 class TestHead:
     def _make_head(self, input_dim=3):
-        executor = _StubExecutor(output_dim=input_dim)
-
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        pc = _ParametricCircuit(builder, 2 * input_dim, input_dim, executor)
+        pc = _ExampleCircuit(input_dim, executor=_StubExecutor(output_dim=input_dim))
         return _Head(pc)
 
     def test_forward_shape(self):
@@ -331,7 +300,7 @@ class TestHead:
 
     def test_weights_initialized_zero(self):
         head = self._make_head(input_dim=3)
-        assert torch.allclose(head.w, torch.zeros(6))
+        assert torch.allclose(head.w, torch.zeros(4))  # 2 * (input_dim - 1)
 
     def test_is_nn_module(self):
         head = self._make_head()
@@ -348,14 +317,9 @@ class TestHead:
 class TestQiskitQLayer:
     def _make_layer(self, input_dim=3, num_heads=1):
         """Build a QiskitQLayer with all Qiskit internals replaced by stubs."""
-        executor = _StubExecutor(output_dim=input_dim)
+        pc = _ExampleCircuit(input_dim, executor=_StubExecutor(output_dim=input_dim))
 
-        def builder(params, inputs):
-            return _FakeQuantumCircuit(len(inputs))
-
-        pc = _ParametricCircuit(builder, 2 * input_dim, input_dim, executor)
-
-        # Manually construct the layer to bypass _check_qiskit / _ExampleCircuit.
+        # Manually construct the layer to bypass _check_qiskit.
         layer = QiskitQLayer.__new__(QiskitQLayer)
         nn.Module.__init__(layer)
         layer.heads = nn.ModuleList([_Head(pc) for _ in range(num_heads)])

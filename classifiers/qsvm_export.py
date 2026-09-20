@@ -7,9 +7,11 @@ is tiny: after the paper's solved preprocessing map, both datasets share one
 
     s = w[0] * (a*f1 + b) + w[1] * (c*f2 + d)      s > 0 -> class +1
 
-This module re-derives the map coefficients closed-form the same way the
-notebook does (class means -> the Eq. 24 solve against the paper's fixed
-training geometry), pairs them with the notebook's quantum shot-readout
+The rule itself — the Eq. 24 map, the weight vector and the ink-ratio features —
+lives in :mod:`classifiers.qsvm_rule`, which the notebook imports too, so there
+is one definition rather than two. This module re-derives the map coefficients
+closed-form the same way the notebook does (class means -> the Eq. 24 solve
+against the paper's fixed training geometry), pairs them with the shot-readout
 ``alpha`` (the measured artifact of the recreation; the exact analytic
 ``alpha = (0.5, -0.5)`` is sign-identical on Iris and is recorded in the
 provenance), fits the map on a training split, scores the rule on a held-out
@@ -36,13 +38,17 @@ from typing import NamedTuple
 
 import numpy as np
 
+from classifiers.qsvm_rule import (
+    INK_THRESHOLD,
+    decide,
+    ink_ratios,
+    solve_map,
+    weight_vector,
+)
 from classifiers.stats import wilson_interval
 from classifiers.web_export import OUT_DIR, SEED, provenance_base
 
 logger = logging.getLogger(__name__)
-
-#: The paper's fixed training geometry (its two mapped training points).
-TARGETS = np.array([[0.987, 0.159], [0.345, 0.935]])
 
 #: alpha = (sqrt(P(0001)), -sqrt(P(0011))) from the HHL readout on ibm_marrakesh
 #: (2026-09-04, job dad49jdnj4cs73adbp90, 8192 raw shots), a real quantum computer.
@@ -57,11 +63,15 @@ BB84_CD_GRID = [(2.0, 0.02), (1.0, 0.02), (4.0, 0.02), (2.0, 0.1), (8.0, 0.01)]
 #: Fraction of the fit split held back to choose the free parameters on.
 VALIDATION_FRACTION = 0.25
 
-#: Ink threshold for the paper's pixel-ratio features (0-255 grayscale).
-INK_THRESHOLD = 127
-
 #: Held-out MNIST digits per class, drawn from outside the 100-per-class fit sample.
 MNIST_TEST_PER_CLASS = 500
+
+#: The notebook's own seed (its ``rng_seed``), so the exporter fits on the same
+#: 100 digits per class the notebook draws.
+MNIST_FIT_SEED = 42
+#: The held-out sample's seed. This module's own choice, and distinct from the
+#: fit seed so the two samples cannot overlap by construction.
+MNIST_HELD_OUT_SEED = 43
 
 
 class Split(NamedTuple):
@@ -72,48 +82,6 @@ class Split(NamedTuple):
     test_x: np.ndarray
     test_y: np.ndarray
     protocol: str
-
-
-def weight_vector(alpha: np.ndarray) -> np.ndarray:
-    """w = alpha1*x1 + alpha2*x2 over the row-normalized training targets."""
-    x_train = TARGETS / np.linalg.norm(TARGETS, axis=1, keepdims=True)
-    return alpha[0] * x_train[0] + alpha[1] * x_train[1]
-
-
-def solve_map(t1: np.ndarray, t2: np.ndarray, c: float, d: float) -> tuple[float, float]:
-    """Solve the Eq. 24 affine map so the class means land on TARGETS' rays.
-
-    Args:
-        t1: (f1, f2) mean of the +1 class.
-        t2: (f1, f2) mean of the -1 class.
-        c:  Hand-picked slope for the second feature.
-        d:  Hand-picked offset for the second feature.
-
-    Returns:
-        (a, b) such that (a*f1 + b, c*f2 + d) maps each mean parallel to its
-        paper target.
-    """
-    v12, v22 = c * t1[1] + d, c * t2[1] + d
-    if v12 <= 0 or v22 <= 0:
-        raise ValueError("mapped second components must stay positive (paper Sec. IV-A)")
-    req = np.array([v12 * TARGETS[0, 0] / TARGETS[0, 1], v22 * TARGETS[1, 0] / TARGETS[1, 1]])
-    a, b = np.linalg.solve(np.array([[t1[0], 1.0], [t2[0], 1.0]]), req)
-    return float(a), float(b)
-
-
-def decide(w: np.ndarray, mapping: dict, feats: np.ndarray) -> np.ndarray:
-    """Apply the deployed rule to (N, 2) raw features; returns sign(+1/-1).
-
-    Args:
-        w:       The 2-D weight vector.
-        mapping: ``{"a", "b", "c", "d"}`` affine map coefficients.
-        feats:   Raw feature matrix of shape (N, 2).
-    """
-    v = np.stack(
-        [mapping["a"] * feats[:, 0] + mapping["b"], mapping["c"] * feats[:, 1] + mapping["d"]],
-        axis=1,
-    )
-    return np.sign(v @ w)
 
 
 def iris_features() -> Split:
@@ -132,14 +100,6 @@ def iris_features() -> Split:
     return Split(tx, ty, vx, vy, "stratified 70/30 split of the 100 setosa/versicolor samples")
 
 
-def _ink_ratios(images: np.ndarray) -> np.ndarray:
-    """(HR, VR): left/right and top/bottom ink counts, with an empty half counted as 1."""
-    binary = images > INK_THRESHOLD
-    hr = binary[:, :, :14].sum(axis=(1, 2)) / np.maximum(binary[:, :, 14:].sum(axis=(1, 2)), 1)
-    vr = binary[:, :14, :].sum(axis=(1, 2)) / np.maximum(binary[:, 14:, :].sum(axis=(1, 2)), 1)
-    return np.stack([hr, vr], axis=1)
-
-
 def mnist_features() -> Split:
     """The notebook's 6-vs-9 fit sample (100 per class) as (HR, VR) ink ratios, "6"=+1,
     and a disjoint held-out sample of MNIST_TEST_PER_CLASS per class.
@@ -152,18 +112,18 @@ def mnist_features() -> Split:
     X, y = fetch_openml(  # noqa: N806 — sklearn's feature-matrix convention
         "mnist_784", version=1, return_X_y=True, as_frame=False, parser="liac-arff"
     )
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(MNIST_FIT_SEED)
     pool6, pool9 = np.where(y == "6")[0], np.where(y == "9")[0]
     idx6 = rng.choice(pool6, 100, replace=False)
     idx9 = rng.choice(pool9, 100, replace=False)
-    held = np.random.default_rng(43)
+    held = np.random.default_rng(MNIST_HELD_OUT_SEED)
     test6 = held.choice(np.setdiff1d(pool6, idx6), MNIST_TEST_PER_CLASS, replace=False)
     test9 = held.choice(np.setdiff1d(pool9, idx9), MNIST_TEST_PER_CLASS, replace=False)
 
     def sample(i6: np.ndarray, i9: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         images = X[np.concatenate([i6, i9])].reshape(-1, 28, 28)
         labels = np.concatenate([np.ones(len(i6), dtype=int), -np.ones(len(i9), dtype=int)])
-        return _ink_ratios(images), labels
+        return ink_ratios(images), labels
 
     tx, ty = sample(idx6, idx9)
     vx, vy = sample(test6, test9)
@@ -199,7 +159,8 @@ def bb84_features() -> Split:
 
 
 #: Per-dataset export specs — adding a dataset is adding one entry here (plus
-#: its features function above); build_payload has no dataset branches.
+#: its features function above); build_payload has no dataset branches. ``seeds``
+#: names whatever draws that dataset's samples, so the provenance records it.
 QSVM_DATASETS: dict[str, dict] = {
     "iris": {
         "features_fn": iris_features,
@@ -211,6 +172,7 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["sepal_width", "petal_length"],
         "raw_input": "features",
         "subset": "setosa vs versicolor",
+        "seeds": {},
         "extra": {},
     },
     "mnist": {
@@ -222,6 +184,7 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["horizontal_ink_ratio", "vertical_ink_ratio"],
         "raw_input": "pixels",
         "subset": "6 vs 9",
+        "seeds": {"fit_sample": MNIST_FIT_SEED, "held_out_sample": MNIST_HELD_OUT_SEED},
         "extra": {"ink_threshold": INK_THRESHOLD},
     },
     "bb84": {
@@ -234,6 +197,8 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["qber", "sifted_key_rate"],
         "raw_input": "features",
         "subset": "eavesdropped vs clean",
+        # The bb84 splits come from the plugin's own fixed seeds, recorded there.
+        "seeds": {},
         "extra": {},
     },
 }
@@ -330,18 +295,17 @@ def choose_parameters(split: Split, spec: dict, w: np.ndarray) -> Choice:
     return best._replace(candidates=candidates)
 
 
-def fit_and_score(dataset: str, alpha: np.ndarray, choice: Choice | None = None) -> Fit:
+def fit_and_score(dataset: str, alpha: np.ndarray) -> Fit:
     """Fit the Eq. 24 map on the fit split and score the rule on the held-out split.
 
     The one derivation both the exporter and ``tools/hardware_run.py`` use, so a
     hardware alpha is scored exactly the way the shipped exports are. The free
-    parameters come from :func:`choose_parameters` unless a *choice* is supplied.
+    parameters come from :func:`choose_parameters`.
     """
     spec = QSVM_DATASETS[dataset]
     w = weight_vector(alpha)
     split = spec["features_fn"]()
-    if choice is None:
-        choice = choose_parameters(split, spec, w)
+    choice = choose_parameters(split, spec, w)
     train_y = _oriented(split.train_y, flip=choice.flip)
     test_y = _oriented(split.test_y, flip=choice.flip)
     mapping = _solve_on(split.train_x, train_y, choice.c, choice.d)
@@ -398,6 +362,8 @@ def build_payload(dataset: str) -> dict:
                 "analytic alpha (0.5, -0.5) are sign-identical"
             ),
             "derivation": "closed-form Eq. 24 map from the training split's class means",
+            "split_seed": SEED,
+            "sampling_seeds": spec["seeds"],
             "selection": (
                 "free parameters (orientation, and (c, d) where the paper gives none) "
                 "chosen on a validation slice of the fit split, never on the held-out split"

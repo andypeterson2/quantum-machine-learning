@@ -121,17 +121,71 @@ class ModelRegistry:
             lr:         Training learning rate.
         """
         with self._lock:
+            self._add_locked(dataset, name, model, model_type, epochs, batch_size, lr)
+
+    # One parameter per stored metadata field; a config object would only rename them.
+    def add_unique(  # noqa: PLR0913
+        self,
+        dataset: str,
+        base: str,
+        model: BaseModel,
+        model_type: str,
+        epochs: int,
+        batch_size: int,
+        lr: float,
+    ) -> str:
+        """Add under *base*, or the first free ``"base (n)"``, and return the name used.
+
+        The search and the insert happen under one lock. Doing them separately
+        through :meth:`get` and :meth:`add` is the compound check-then-act this
+        class does not make atomic, so two concurrent callers could settle on the
+        same name and one would overwrite the other.
+
+        Args:
+            dataset:    Dataset slug.
+            base:       Preferred display name.
+            model:      Trained model instance.
+            model_type: Registered architecture name.
+            epochs:     Number of training epochs.
+            batch_size: Training batch size.
+            lr:         Training learning rate.
+
+        Returns:
+            The name the entry was stored under.
+        """
+        with self._lock:
             ns = self._models.setdefault(dataset, {})
-            if name not in ns and len(ns) >= self._max_per_dataset:
-                self._evict_locked(ns)
-            ns[name] = ModelEntry(
-                model=model,
-                model_type=model_type,
-                dataset=dataset,
-                epochs=epochs,
-                batch_size=batch_size,
-                lr=lr,
-            )
+            name = base
+            i = 2
+            while name in ns:
+                name = f"{base} ({i})"
+                i += 1
+            self._add_locked(dataset, name, model, model_type, epochs, batch_size, lr)
+            return name
+
+    # One parameter per stored metadata field; a config object would only rename them.
+    def _add_locked(  # noqa: PLR0913
+        self,
+        dataset: str,
+        name: str,
+        model: BaseModel,
+        model_type: str,
+        epochs: int,
+        batch_size: int,
+        lr: float,
+    ) -> None:
+        """Store an entry, evicting first if the cap is reached (caller holds the lock)."""
+        ns = self._models.setdefault(dataset, {})
+        if name not in ns and len(ns) >= self._max_per_dataset:
+            self._evict_locked(ns)
+        ns[name] = ModelEntry(
+            model=model,
+            model_type=model_type,
+            dataset=dataset,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+        )
 
     def _evict_locked(self, ns: dict[str, ModelEntry]) -> None:
         """Drop one entry to make room (caller holds the lock).
@@ -223,18 +277,6 @@ class ModelRegistry:
         """
         with self._lock:
             return self._models.get(dataset, {}).get(name)
-
-    def names(self, dataset: str) -> list[str]:
-        """Return a snapshot of current model names for *dataset* in insertion order.
-
-        Args:
-            dataset: Dataset slug.
-
-        Returns:
-            A new list of name strings.
-        """
-        with self._lock:
-            return list(self._models.get(dataset, {}).keys())
 
     def items(self, dataset: str) -> list[tuple[str, ModelEntry]]:
         """Return a snapshot of ``(name, entry)`` pairs for *dataset*.

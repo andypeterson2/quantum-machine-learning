@@ -102,7 +102,29 @@ class TestModelsRoute:
                       epochs=2, batch_size=64, lr=0.01)
         res = client.get(f"/d/{DS}/models")
         entry = res.get_json()["m"]
-        assert set(entry.keys()) >= {"model_type", "epochs", "batch_size", "lr", "eval_result"}
+        # Compare the key set exactly, so a field that disappears fails here.
+        assert set(entry.keys()) == {
+            "model_type", "epochs", "batch_size", "lr",
+            "num_params", "training_history", "eval_result",
+        }
+
+    def test_list_models_reports_the_interval(self, client, registry):
+        """An accuracy the portal renders arrives with its uncertainty."""
+        from classifiers.evaluator import EvalResult
+
+        registry.add(DS, "m", MNISTNet(), model_type="CNN",
+                      epochs=2, batch_size=64, lr=0.01)
+        registry.update_eval_result(
+            DS, "m",
+            EvalResult(accuracy=0.9, avg_loss=0.3, num_samples=100, accuracy_ci=(0.82, 0.95)),
+        )
+        eval_result = client.get(f"/d/{DS}/models").get_json()["m"]["eval_result"]
+        assert set(eval_result.keys()) == {
+            "accuracy", "accuracy_ci", "num_samples",
+            "avg_loss", "per_class_accuracy", "num_params",
+        }
+        assert eval_result["accuracy_ci"] == [0.82, 0.95]
+        assert eval_result["num_samples"] == 100
 
 
 # DELETE /d/mnist/models/<name>

@@ -13,10 +13,16 @@ model classes from :meth:`~DatasetPlugin.get_model_types`.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import Any
 
 import torch
 import torch.nn.functional as F
 from torch import nn
+
+#: Progress callback: a ``str`` ("Epoch 1/3 done") or a ``dict`` event with a ``"type"``
+#: key. Trainer and Evaluator take one, so progress reporting is transport-agnostic.
+StatusCallback = Callable[[str | dict[str, Any]], None]
 
 
 class BaseModel(ABC, nn.Module):

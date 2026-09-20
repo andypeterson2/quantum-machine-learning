@@ -1,8 +1,6 @@
 .git
 .gitignore
-CONTRIBUTING.md
 LICENSE
-docs/
 tests/
 .vscode/
 .idea/

@@ -20,9 +20,8 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from .base_model import BaseModel
+from .base_model import BaseModel, StatusCallback
 from .stats import wilson_interval
-from .types import StatusCallback
 
 logger = logging.getLogger(__name__)
 
@@ -245,6 +244,11 @@ class Evaluator:
             accuracy=correct / total if total > 0 else 0.0,
             avg_loss=total_loss / total if total > 0 else 0.0,
             per_class_accuracy=per_class,
+            # Every member's parameters are in play at inference, so the ensemble's
+            # count is their sum.
+            num_params=sum(
+                p.numel() for m in models for p in m.parameters() if p.requires_grad
+            ),
             num_samples=total,
             accuracy_ci=wilson_interval(correct, total),
         )
@@ -312,6 +316,8 @@ class Evaluator:
                 "type": "ablation_result",
                 "layer": layer_name,
                 "accuracy": round(result.accuracy, 4),
+                "accuracy_ci": list(result.accuracy_ci),
+                "num_samples": result.num_samples,
                 "drop": round(drop, 4),
             })
 

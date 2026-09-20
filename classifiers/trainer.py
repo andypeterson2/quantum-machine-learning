@@ -21,10 +21,9 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from .base_model import BaseModel
+from .base_model import BaseModel, StatusCallback
 from .seeding import seed_everything
 from .training_config import HistoryEntry, TrainingConfig
-from .types import StatusCallback
 
 
 def distillation_loss(
@@ -47,6 +46,10 @@ def distillation_loss(
     )
 
 logger = logging.getLogger(__name__)
+
+#: Early stopping stays out of the way until the model beats this, so a run still
+#: near chance is never cut short by a flat stretch.
+EARLY_STOP_MIN_ACCURACY = 0.6
 
 
 @dataclass
@@ -99,11 +102,12 @@ class Trainer:
                       torch's generator) Aer sampling. ``None`` leaves every
                       RNG alone, so the run is not repeatable.
         val_loader:   Optional validation data loader for intermediate eval.
-        early_stop_min_accuracy: Early stopping only fires once the best
-                      validation accuracy exceeds this, so a model still near
-                      chance is never stopped. Patience counts epochs since
-                      that best checkpoint (validation runs every
-                      ``config.val_gap`` batches).
+
+    Early stopping waits for the best validation accuracy to pass
+    :data:`EARLY_STOP_MIN_ACCURACY`, then stops after ``config.patience``
+    consecutive validation checks without an improvement. Validation runs every
+    ``config.val_gap`` batches, so patience is counted in those checks — the
+    same unit it is measured in.
     """
 
     # One parameter per training knob the API exposes; a config object would only rename them.
@@ -116,7 +120,6 @@ class Trainer:
         lr: float = 1e-3,
         config: TrainingConfig | None = None,
         val_loader: DataLoader | None = None,
-        early_stop_min_accuracy: float = 0.6,
         seed: int | None = None,
     ) -> None:
         self.model_cls = model_cls
@@ -126,7 +129,6 @@ class Trainer:
         self.lr = lr
         self.config = config
         self.val_loader = val_loader
-        self.early_stop_min_accuracy = early_stop_min_accuracy
         self.seed = seed
 
     # The epoch/batch loop with status emission, validation, and early-stop in
@@ -161,7 +163,7 @@ class Trainer:
         history: list[dict] = []
         best_acc = 0.0
         best_model_state = copy.deepcopy(model.state_dict())
-        best_epoch = -1
+        checks_since_best = 0
         stopped_early = False
         epochs_completed = 0
 
@@ -188,15 +190,9 @@ class Trainer:
                 if teacher is not None and cfg is not None:
                     with torch.no_grad():
                         teacher_out = teacher(data)
-                        if cfg.teacher_process is not None:
-                            teacher_out = cfg.teacher_process(teacher_out)
                     distill_loss = distillation_loss(output, teacher_out, cfg.distill_temperature)
                     w = cfg.distill_weight
                     loss = (1 - w) * loss + w * distill_loss
-
-                # Regularisation
-                if cfg and cfg.regularization_fn is not None:
-                    loss = loss + cfg.regularization_fn(model)
 
                 loss.backward()
                 optimizer.step()
@@ -236,25 +232,30 @@ class Trainer:
 
                     if val_acc > best_acc:
                         best_acc = val_acc
-                        best_epoch = epoch
+                        checks_since_best = 0
                         best_model_state = copy.deepcopy(model.state_dict())
+                    else:
+                        checks_since_best += 1
+
+                    # Stop where the evidence arrives: patience counts validation
+                    # checks, so the rule can fire inside an epoch.
+                    if (
+                        cfg.patience is not None
+                        and best_acc > EARLY_STOP_MIN_ACCURACY
+                        and checks_since_best >= cfg.patience
+                    ):
+                        stopped_early = True
+                        break
 
             epochs_completed = epoch + 1
             avg = total_loss / max(len(self.train_loader), 1)
             status(f"Epoch {epoch + 1}/{self.epochs} done — avg loss: {avg:.4f}")
 
-            # Early stopping check
-            if (
-                cfg is not None
-                and cfg.patience is not None
-                and best_acc > self.early_stop_min_accuracy
-                and epoch > best_epoch + cfg.patience
-            ):
+            if stopped_early:
                 status(
-                    f"Early stopping: no improvement for {cfg.patience} epochs "
+                    f"Early stopping: no improvement for {cfg.patience} validation checks "
                     f"(best val accuracy: {best_acc:.2%})"
                 )
-                stopped_early = True
                 break
 
         # Use best model if we did validation
@@ -284,8 +285,6 @@ class Trainer:
 
     def _validate(self, model: BaseModel) -> float:
         """Run a quick validation pass and return accuracy."""
-        if self.val_loader is None:
-            raise RuntimeError("_validate called without a val_loader")
         model.eval()
         correct = 0
         total = 0

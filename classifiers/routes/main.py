@@ -88,7 +88,6 @@ def health() -> Response:
         "service": SERVICE,
         "version": _service_version(),
         "uptime_s": uptime_s,
-        "uptime": uptime_s,  # legacy alias (pre-contract clients)
         "clients": tracker.count if tracker else 0,
         "timestamp": time.time(),
     })
