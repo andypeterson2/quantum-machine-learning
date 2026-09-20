@@ -144,6 +144,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
                 "num_samples": result.num_samples,
                 "avg_loss": result.avg_loss,
                 "per_class_accuracy": result.per_class_accuracy,
+                "num_params": result.num_params,
             })
         finally:
             slots.release()
@@ -189,6 +190,8 @@ def register(bp) -> None:  # noqa: C901, PLR0915
                 summary = {
                     layer: {
                         "accuracy": r.accuracy,
+                        "accuracy_ci": list(r.accuracy_ci),
+                        "num_samples": r.num_samples,
                         "avg_loss": r.avg_loss,
                     }
                     for layer, r in results.items()

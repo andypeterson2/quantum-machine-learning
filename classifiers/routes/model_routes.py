@@ -126,6 +126,8 @@ def register(bp) -> None:  # noqa: C901, PLR0915
                 "training_history": entry.training_history or [],
                 "eval_result": {
                     "accuracy": entry.eval_result.accuracy,
+                    "accuracy_ci": list(entry.eval_result.accuracy_ci),
+                    "num_samples": entry.eval_result.num_samples,
                     "avg_loss": entry.eval_result.avg_loss,
                     "per_class_accuracy": entry.eval_result.per_class_accuracy,
                     "num_params": entry.eval_result.num_params,
