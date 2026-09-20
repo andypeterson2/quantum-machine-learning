@@ -202,7 +202,7 @@ Evaluation results carry `accuracy_ci` and `num_samples` beside every `accuracy`
 |-------|--------|-------------|
 | `Quadratic` | `layers.py` | Quadratic expansion: `y = W * concat(x^T * x, x)` |
 | `Polynomial` | `layers.py` | Polynomial basis: `y = exp(W * log(\|x\| + 1))` |
-| `QiskitQLayer` | `qiskit_layers.py` | Multi-headed trainable parametric quantum circuit with parameter-shift gradients |
+| `QiskitQLayer` | `qiskit_layers.py` | Trainable parametric quantum circuit with parameter-shift gradients; takes `num_heads`, and both MNIST models run one |
 
 ## Exports
 

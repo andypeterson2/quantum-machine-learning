@@ -46,20 +46,21 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from classifiers import hhl  # noqa: E402
-from classifiers.hhl import analyse, build_hhl, ideal_probs, paper_key  # noqa: E402
+from classifiers.hhl import (  # noqa: E402
+    ALPHA_SIGN_NOTE,
+    DEFAULT_SHOTS,
+    PAPER_REFERENCE,
+    analyse,
+    build_hhl,
+    ideal_probs,
+    paper_key,
+)
 from classifiers.web_export import provenance_base  # noqa: E402
 
 logger = logging.getLogger("hardware_run")
 
 OUT_DIR = REPO_ROOT / "exports" / "hardware"
 PENDING = OUT_DIR / "pending.json"
-
-#: The paper's numbers and the circuit itself now live in classifiers.hhl, which
-#: the notebook imports too — this file used to carry its own copy.
-PAPER_REFERENCE = hhl.PAPER_REFERENCE
-DEFAULT_SHOTS = hhl.DEFAULT_SHOTS
-ALPHA_SIGN_NOTE = hhl.ALPHA_SIGN_NOTE
 
 #: How ``qsvm_accuracy`` is scored, recorded beside it.
 QSVM_ACCURACY_PROTOCOL = (

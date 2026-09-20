@@ -21,7 +21,6 @@ qiskit = pytest.importorskip("qiskit", reason="qiskit not installed")
 from classifiers.qiskit_layers import (  # noqa: E402
     _ExampleCircuit,
     _IndependentInterpret,
-    _QCExecutor,
     _RunCircuit,
 )
 
@@ -29,10 +28,10 @@ N_QUBITS = 3
 EPS = 1e-4
 
 
-class _ExactExecutor(_QCExecutor):
+class _ExactExecutor:
     """Exact outcome probabilities, shaped like the sampler's counts."""
 
-    def run(self, qc, shots: int | None = None) -> np.ndarray:
+    def run(self, qc) -> np.ndarray:
         from qiskit.quantum_info import Statevector
 
         probs = Statevector.from_instruction(

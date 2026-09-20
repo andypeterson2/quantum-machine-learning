@@ -17,6 +17,7 @@ from torch import nn
 
 from classifiers.base_model import BaseModel
 from classifiers.losses import multi_class_hinge_loss
+from classifiers.qvc import build_qvc_layer
 
 # Quantum circuit constants
 
@@ -26,58 +27,6 @@ _N_QUBITS: int = 4
 #: Number of strongly-entangling variational layers.
 #: 2 layers × 4 wires × 3 rotation params = 24 trainable parameters.
 _N_LAYERS: int = 2
-
-
-def _build_qvc_layer():
-    """Construct and return a PennyLane :class:`~pennylane.qnn.TorchLayer`.
-
-    Deferred to a function so that PennyLane is only imported when
-    :class:`IrisQVC` is instantiated — keeping PennyLane an optional
-    dependency for users who only need the classical models.
-
-    The variational circuit:
-
-    1. **AngleEmbedding** — encodes the 4 standardised Iris features as
-       Y-rotation angles on qubits 0–3.  Standardised features lie roughly
-       in ``[−2, 2]``, which maps naturally to qubit rotation angles.
-    2. **StronglyEntanglingLayers** — ``_N_LAYERS`` layers of single-qubit
-       rotations (RX, RY, RZ) interleaved with CNOT entanglers covering all
-       pairs of qubits.
-    3. **Measurement** — Pauli-Z expectation values on qubits 0, 1, 2 yield
-       three real numbers in ``[−1, 1]``, used directly as class logits.
-
-    Gradients are computed via ``diff_method="backprop"``, which propagates
-    through the full PennyLane statevector simulation using PyTorch autograd.
-
-    Returns:
-        A :class:`~pennylane.qnn.TorchLayer` with trainable weight tensor of
-        shape ``(_N_LAYERS, _N_QUBITS, 3)``.
-    """
-    import pennylane as qml
-
-    dev = qml.device("default.qubit", wires=_N_QUBITS)
-
-    @qml.qnode(dev, interface="torch", diff_method="backprop")
-    def circuit(inputs: torch.Tensor, weights: torch.Tensor):
-        """Parameterised quantum circuit for IrisQVC.
-
-        Args:
-            inputs:  Standardised Iris feature vector, shape ``(4,)``.
-            weights: Variational rotation parameters, shape
-                     ``(_N_LAYERS, _N_QUBITS, 3)``.
-
-        Returns:
-            List of three Pauli-Z expectation values: ``[⟨Z₀⟩, ⟨Z₁⟩, ⟨Z₂⟩]``.
-        """
-        # Encode features as rotation angles on qubits 0-3
-        qml.AngleEmbedding(inputs, wires=range(_N_QUBITS), rotation="Y")
-        # Variational ansatz with full entanglement between all qubit pairs
-        qml.StronglyEntanglingLayers(weights, wires=range(_N_QUBITS))
-        # Project onto 3 class scores via Pauli-Z measurements
-        return [qml.expval(qml.PauliZ(i)) for i in range(3)]
-
-    weight_shapes = {"weights": (_N_LAYERS, _N_QUBITS, 3)}
-    return qml.qnn.TorchLayer(circuit, weight_shapes)
 
 
 # Classical models
@@ -156,7 +105,7 @@ class IrisQVC(BaseModel):
 
     def __init__(self) -> None:
         super().__init__()
-        self.qlayer = _build_qvc_layer()
+        self.qlayer = build_qvc_layer(_N_QUBITS, _N_LAYERS, 3)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute class scores for input ``(N, 4)`` → ``(N, 3)``.

@@ -20,7 +20,6 @@ Usage::
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Callable
 
 import numpy as np
@@ -44,14 +43,6 @@ def _check_qiskit() -> None:
 
 
 # Executor (circuit runner)
-
-class _QCExecutor(ABC):
-    """Abstract base for quantum circuit execution strategies."""
-
-    @abstractmethod
-    def run(self, qc: QuantumCircuit) -> np.ndarray:  # noqa: F821
-        ...
-
 
 class _IndependentInterpret:
     """Per-qubit probability of measuring 1: ``output[i] = P(qubit i == 1)``.
@@ -78,7 +69,7 @@ class _IndependentInterpret:
         return output / shots if shots > 0 else output
 
 
-class _QCSampler(_QCExecutor):
+class _QCSampler:
     """Run a quantum circuit by sampling with the Aer QASM simulator.
 
     The simulator seed is drawn from torch's generator when the sampler is
@@ -97,43 +88,18 @@ class _QCSampler(_QCExecutor):
         self.shots = shots
         self.seed = int(torch.randint(0, 2**31 - 1, (1,)).item()) if seed is None else seed
 
-    def run(self, qc: QuantumCircuit, shots: int | None = None) -> np.ndarray:  # noqa: F821
+    def run(self, qc: QuantumCircuit) -> np.ndarray:  # noqa: F821
         from qiskit import transpile
 
-        shots = shots or self.shots
         compiled = transpile(qc, self.backend)
-        result = self.backend.run(compiled, shots=shots, seed_simulator=self.seed).result()
+        result = self.backend.run(compiled, shots=self.shots, seed_simulator=self.seed).result()
         counts = result.get_counts()
         return self.interpret(counts)
 
 
 # Parametric circuit
 
-class _ParametricCircuit:
-    """A quantum circuit with reassignable parameter values."""
-
-    def __init__(
-        self,
-        qc_builder: Callable,
-        num_params: int,
-        input_dim: int,
-        executor: _QCExecutor,
-    ) -> None:
-        from qiskit.circuit import ParameterVector
-
-        self.params = ParameterVector("params", num_params)
-        self.inputs = ParameterVector("inputs", input_dim)
-        self.qc = qc_builder(self.params, self.inputs)
-        self.executor = executor
-
-    def run(self, w: list[float], x: list[float]) -> np.ndarray:
-        bound = self.qc.assign_parameters(
-            {self.params: w, self.inputs: x}, inplace=False, flat_input=False
-        )
-        return self.executor.run(bound)
-
-
-class _ExampleCircuit(_ParametricCircuit):
+class _ExampleCircuit:
     """3-qubit parametric circuit with RX encoding + RXX/RZZ entanglement.
 
     Uses a hardware-efficient ansatz with linear entanglement topology
@@ -141,14 +107,28 @@ class _ExampleCircuit(_ParametricCircuit):
 
     Gate count: ``n`` RX (encoding) + ``2*(n-1)`` entangling gates
     (reduced from ``2*n`` by removing the redundant wrap-around connection).
+
+    Args:
+        input_dim: Qubits, one per input feature.
+        executor:  Anything with ``run(circuit) -> np.ndarray``. Defaults to the
+                   Aer sampler; the gradient tests pass an exact one instead.
     """
 
-    def __init__(self, input_dim: int, executor: _QCExecutor | None = None) -> None:
-        if executor is None:
-            executor = _QCSampler()
+    def __init__(self, input_dim: int, executor: _QCSampler | None = None) -> None:
+        from qiskit.circuit import ParameterVector
+
         # Linear topology: 2*(n-1) entangling params instead of 2*n
         num_params = 2 * (input_dim - 1) if input_dim > 1 else 0
-        super().__init__(_ExampleCircuit._builder, num_params, input_dim, executor)
+        self.params = ParameterVector("params", num_params)
+        self.inputs = ParameterVector("inputs", input_dim)
+        self.qc = _ExampleCircuit._builder(self.params, self.inputs)
+        self.executor = executor if executor is not None else _QCSampler()
+
+    def run(self, w: list[float], x: list[float]) -> np.ndarray:
+        bound = self.qc.assign_parameters(
+            {self.params: w, self.inputs: x}, inplace=False, flat_input=False
+        )
+        return self.executor.run(bound)
 
     @staticmethod
     def _builder(params, inputs):
@@ -176,7 +156,7 @@ class _RunCircuit(Function):
     parameter-shift gradients for both the weights and the inputs."""
 
     @staticmethod
-    def forward(ctx, pc: _ParametricCircuit, w: torch.Tensor, x_batch: torch.Tensor):
+    def forward(ctx, pc: _ExampleCircuit, w: torch.Tensor, x_batch: torch.Tensor):
         ctx.pc = pc
         w_list = w.tolist()
         values = [pc.run(w_list, x_batch[s].tolist()) for s in range(len(x_batch))]
@@ -247,7 +227,7 @@ class _RunCircuit(Function):
 class _Head(nn.Module):
     """Single-headed trainable parametric circuit."""
 
-    def __init__(self, pc: _ParametricCircuit) -> None:
+    def __init__(self, pc: _ExampleCircuit) -> None:
         super().__init__()
         self.pc = pc
         self.w = nn.Parameter(torch.zeros(len(pc.params)))
