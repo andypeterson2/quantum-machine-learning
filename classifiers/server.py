@@ -56,6 +56,18 @@ def debug_enabled() -> bool:
     return os.environ.get("CLASSIFIERS_DEBUG", "0").strip().lower() in _DEBUG_ON
 
 
+def _accepted_origin_secrets() -> list[str]:
+    """The secrets the front door may present, newest first.
+
+    ORIGIN_SECRET is a comma-separated set so the gateway can move to a new value
+    without an outage: add the new secret here, switch the gateway to it, then drop
+    the old one. A single value behaves as a plain equality check. Read per request
+    so a changed environment takes effect without a restart.
+    """
+    raw = os.environ.get("ORIGIN_SECRET") or ""
+    return [part for part in (piece.strip() for piece in raw.split(",")) if part]
+
+
 def create_app(models_dir: Path | None = None) -> Flask:
     """Create and configure the Flask application.
 
@@ -143,11 +155,16 @@ def create_app(models_dir: Path | None = None) -> Flask:
     # check + scale-to-zero wake work. Inert until ORIGIN_SECRET is set.
     @app.before_request
     def _origin_guard():
-        want = os.environ.get("ORIGIN_SECRET")
+        want = _accepted_origin_secrets()
         if want and request.path != "/health":
             got = request.headers.get("X-Origin-Secret") or ""
-            # compare_digest: a plain != on a secret leaks timing.
-            if not hmac.compare_digest(got, want):
+            # compare_digest on every candidate: a plain != leaks timing, and stopping
+            # at the first match would leak which secret it was.
+            ok = False
+            for candidate in want:
+                if hmac.compare_digest(got, candidate):
+                    ok = True
+            if not ok:
                 return jsonify({"error": {"code": "forbidden", "message": "origin"}}), 403
         return None
 

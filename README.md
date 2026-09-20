@@ -229,7 +229,7 @@ python -m pytest tests/ -v
 | Container port (gunicorn) | `PORT` | `8080` | `Dockerfile` CMD |
 | Allowed CORS origins | `CLASSIFIERS_CORS_ORIGINS` | `^https?://localhost(:\d+)?$,https://andypeterson.dev` (comma-separated; anchor any pattern with `^…$`) | `classifiers/server.py` |
 | Max request body size | `CLASSIFIERS_MAX_CONTENT_LENGTH` | 2 MB | `classifiers/server.py` |
-| Gateway origin guard | `ORIGIN_SECRET` | unset (guard inactive) | `classifiers/server.py` |
+| Gateway origin guard | `ORIGIN_SECRET` | unset (guard inactive) | `classifiers/server.py` — comma-separated set, so it rotates without an outage |
 | Concurrent heavy jobs | `CLASSIFIERS_MAX_JOBS` | `2` | `classifiers/server.py` |
 | Models kept per dataset | `CLASSIFIERS_MAX_MODELS` | `20` | `classifiers/model_registry.py` |
 | Saved checkpoints kept | `CLASSIFIERS_MAX_CHECKPOINTS` | `50` | `classifiers/routes/model_routes.py` |
