@@ -126,6 +126,8 @@ def register(bp) -> None:  # noqa: C901, PLR0915
                 "training_history": entry.training_history or [],
                 "eval_result": {
                     "accuracy": entry.eval_result.accuracy,
+                    "accuracy_ci": list(entry.eval_result.accuracy_ci),
+                    "num_samples": entry.eval_result.num_samples,
                     "avg_loss": entry.eval_result.avg_loss,
                     "per_class_accuracy": entry.eval_result.per_class_accuracy,
                     "num_params": entry.eval_result.num_params,
@@ -172,7 +174,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         # filesystem; cap them per dataset so they cannot fill the volume.
         max_files = int(os.environ.get("CLASSIFIERS_MAX_CHECKPOINTS", "50"))
         dataset_files = [
-            f for f in persistence.list_files() if f.get("dataset", "mnist") == plugin.name
+            f for f in persistence.list_files() if f.get("dataset") == plugin.name
         ]
         if len(dataset_files) >= max_files:
             return error_response(
@@ -193,7 +195,7 @@ def register(bp) -> None:  # noqa: C901, PLR0915
         persistence = current_app.extensions["persistence"]
         all_files = persistence.list_files()
         dataset_files = [
-            f for f in all_files if f.get("dataset", "mnist") == plugin.name
+            f for f in all_files if f.get("dataset") == plugin.name
         ]
         return jsonify(dataset_files)
 
@@ -212,6 +214,13 @@ def register(bp) -> None:  # noqa: C901, PLR0915
             return error_response(str(exc))
         except FileNotFoundError as exc:
             return error_response(str(exc), 404)
+        except (RuntimeError, KeyError) as exc:
+            # Unreadable payload, missing model_type, or an architecture this build
+            # does not register. All three describe the request's own file, so they
+            # carry a 4xx.
+            return error_response(
+                f"Cannot load checkpoint {filename!r}: {exc}", 400, code="corrupt_checkpoint"
+            )
 
         if data["dataset"] != plugin.name:
             return error_response(
@@ -219,17 +228,12 @@ def register(bp) -> None:  # noqa: C901, PLR0915
                 f"not '{plugin.name}'"
             )
 
-        # Resolve name collision
-        base: str = data["name"]
-        name: str = base
-        i = 2
-        while registry.get(plugin.name, name) is not None:
-            name = f"{base} ({i})"
-            i += 1
-
-        registry.add(
+        # add_unique resolves a name collision under the registry's own lock; doing
+        # it here through get() then add() is the check-then-act that lets two
+        # concurrent loads pick one name.
+        name = registry.add_unique(
             plugin.name,
-            name,
+            data["name"],
             data["model"],
             model_type=data["model_type"],
             epochs=data["epochs"],

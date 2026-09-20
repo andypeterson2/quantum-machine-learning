@@ -162,30 +162,6 @@ class TestIrisTrainability:
         assert acc > 0.40, f"Iris SVM accuracy {acc:.1%} not above chance"
 
 
-class TestModelOutputShape:
-    """Verify all models produce correct output dimensions."""
-
-    def test_mnist_cnn_output_10(self):
-        x = torch.randn(1, 1, 28, 28)
-        assert MNISTNet()(x).shape == (1, 10)
-
-    def test_mnist_linear_output_10(self):
-        x = torch.randn(1, 1, 28, 28)
-        assert LinearNet()(x).shape == (1, 10)
-
-    def test_mnist_svm_output_10(self):
-        x = torch.randn(1, 1, 28, 28)
-        assert SVMNet()(x).shape == (1, 10)
-
-    def test_iris_linear_output_3(self):
-        x = torch.randn(1, 4)
-        assert IrisLinear()(x).shape == (1, 3)
-
-    def test_iris_svm_output_3(self):
-        x = torch.randn(1, 4)
-        assert IrisSVM()(x).shape == (1, 3)
-
-
 class TestModelsTrainThroughTheirOwnObjective:
     """The dispatch this file used to bypass."""
 

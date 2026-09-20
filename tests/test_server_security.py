@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import pytest
 
-from classifiers.server import create_app
+from classifiers.server import create_app, debug_enabled
 
 
 class TestDebugParseFailsClosed:
     """CLASSIFIERS_DEBUG must only enable the Werkzeug debugger (an RCE if the
-    host is exposed) for an explicit opt-in value — never for typos."""
+    host is exposed) for an explicit opt-in value — never for typos.
+
+    This calls the parse the dev server calls. The matrix used to re-implement
+    the expression and then grep __main__.py to check the copy still matched.
+    """
 
     @pytest.mark.parametrize(
         ("value", "expected"),
@@ -20,22 +24,11 @@ class TestDebugParseFailsClosed:
     )
     def test_parse_matrix(self, value, expected, monkeypatch):
         monkeypatch.setenv("CLASSIFIERS_DEBUG", value)
-        import os
-        debug = os.environ.get("CLASSIFIERS_DEBUG", "0").strip().lower() in ("1", "true", "yes")
-        assert debug is expected
+        assert debug_enabled() is expected
 
     def test_default_is_off(self, monkeypatch):
         monkeypatch.delenv("CLASSIFIERS_DEBUG", raising=False)
-        import os
-        debug = os.environ.get("CLASSIFIERS_DEBUG", "0").strip().lower() in ("1", "true", "yes")
-        assert debug is False
-
-    def test_source_uses_the_fail_closed_parse(self):
-        """Pin the actual __main__.py line so the matrix above tests reality."""
-        from pathlib import Path
-        src = (Path(__file__).parent.parent / "classifiers" / "__main__.py").read_text()
-        assert 'os.environ.get("CLASSIFIERS_DEBUG", "0")' in src
-        assert 'in ("1", "true", "yes")' in src
+        assert debug_enabled() is False
 
 
 class TestOriginGuard:

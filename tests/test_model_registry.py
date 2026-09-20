@@ -32,7 +32,7 @@ class TestModelRegistry:
     def test_starts_empty(self):
         reg = ModelRegistry()
         assert len(reg) == 0
-        assert reg.names(DS) == []
+        assert [n for n, _ in reg.items(DS)] == []
         assert reg.items(DS) == []
 
     def test_add_and_get(self, untrained_model):
@@ -65,7 +65,7 @@ class TestModelRegistry:
         reg = ModelRegistry()
         reg.add(DS, "alpha", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01)
         reg.add(DS, "beta", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01)
-        assert set(reg.names(DS)) == {"alpha", "beta"}
+        assert {n for n, _ in reg.items(DS)} == {"alpha", "beta"}
 
     def test_items(self, untrained_model):
         reg = ModelRegistry()
@@ -124,3 +124,65 @@ class TestModelRegistry:
         ev = EvalResult(accuracy=0.95, avg_loss=0.1)
         reg.update_eval_result(DS, "m1", ev)
         assert reg.get(DS, "m1").eval_result is ev
+
+
+class TestAddUnique:
+    """Name collision is resolved inside the registry's lock.
+
+    The route used to search with get() and then call add(), which is the
+    compound check-then-act this class does not make atomic.
+    """
+
+    def test_free_name_is_used_as_given(self, untrained_model):
+        reg = ModelRegistry()
+        name = reg.add_unique(
+            DS, "Model 1", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01
+        )
+        assert name == "Model 1"
+
+    def test_taken_name_gets_the_next_free_suffix(self, untrained_model):
+        reg = ModelRegistry()
+        for expected in ("Model 1", "Model 1 (2)", "Model 1 (3)"):
+            name = reg.add_unique(
+                DS, "Model 1", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01
+            )
+            assert name == expected
+        assert len(reg) == 3
+
+    def test_nothing_is_overwritten(self, untrained_model, untrained_linear):
+        reg = ModelRegistry()
+        reg.add_unique(
+            DS, "m", untrained_model, model_type="CNN", epochs=1, batch_size=32, lr=0.01
+        )
+        reg.add_unique(
+            DS, "m", untrained_linear, model_type="Linear", epochs=1, batch_size=32, lr=0.01
+        )
+        assert reg.get(DS, "m").model_type == "CNN"
+        assert reg.get(DS, "m (2)").model_type == "Linear"
+
+    def test_concurrent_callers_never_share_a_name(self, untrained_model):
+        """Twenty threads racing on one base name produce twenty entries."""
+        import threading
+
+        reg = ModelRegistry(max_per_dataset=100)
+        names: list[str] = []
+        lock = threading.Lock()
+        barrier = threading.Barrier(20)
+
+        def claim() -> None:
+            barrier.wait()
+            name = reg.add_unique(
+                DS, "Model 1", untrained_model,
+                model_type="CNN", epochs=1, batch_size=32, lr=0.01,
+            )
+            with lock:
+                names.append(name)
+
+        threads = [threading.Thread(target=claim) for _ in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert len(set(names)) == 20
+        assert len(reg) == 20

@@ -1,15 +1,16 @@
 """Shared fixtures and helpers for classifiers tests."""
 
 import base64
+import builtins
+import contextlib
 import io
 import json
 
-import numpy as np
 import pytest
 import torch
 from PIL import Image
 
-from classifiers.datasets.mnist.models import LinearNet, MNISTNet, SVMNet
+from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.datasets.mnist.plugin import MNISTPlugin
 
 
@@ -32,12 +33,6 @@ def untrained_linear():
 
 
 @pytest.fixture
-def untrained_svm():
-    """A freshly initialized SVMNet."""
-    return SVMNet()
-
-
-@pytest.fixture
 def blank_image():
     """A blank 280x280 grayscale image (black canvas)."""
     return Image.new("L", (280, 280), 0)
@@ -52,16 +47,6 @@ def drawn_image():
     draw = ImageDraw.Draw(img)
     draw.ellipse([100, 100, 180, 180], fill=255)
     return img
-
-
-@pytest.fixture
-def sample_probs():
-    """A realistic 10-element probability array (sums to 1)."""
-    raw = np.array(
-        [0.01, 0.01, 0.02, 0.85, 0.03, 0.02, 0.01, 0.02, 0.02, 0.01],
-        dtype=np.float32,
-    )
-    return raw / raw.sum()
 
 
 @pytest.fixture
@@ -115,3 +100,26 @@ def make_fake_test_loader(batch_size=100, n_batches=2):
         targets = torch.randint(0, 10, (batch_size,))
         batches.append((data, targets))
     return _FakeLoader(batches, batch_size)
+
+
+@contextlib.contextmanager
+def blocked_imports(*names: str):
+    """Make ``import <name>`` raise ImportError inside the block.
+
+    Names match on the top-level package, so blocking ``qiskit`` also blocks
+    ``qiskit.circuit``. Modules already in ``sys.modules`` are covered too: the
+    import statement still calls ``__import__``, which this intercepts.
+    """
+    blocked = set(names)
+    real = builtins.__import__
+
+    def guard(name, *args, **kwargs):
+        if name.split(".")[0] in blocked:
+            raise ImportError(f"blocked for this test: {name}")
+        return real(name, *args, **kwargs)
+
+    builtins.__import__ = guard
+    try:
+        yield
+    finally:
+        builtins.__import__ = real

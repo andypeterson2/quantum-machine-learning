@@ -131,10 +131,11 @@ class DatasetPlugin(ABC):
     # UI configuration
 
     def get_ui_config(self) -> dict:
-        """Return a JSON-serialisable dict passed to the frontend as ``UI_CONFIG``.
+        """Return a JSON-serialisable dict describing this dataset to the frontend.
 
-        The shared backend never inspects this dict; it is passed through to
-        the Jinja template and then to JavaScript, maintaining OCP.
+        The shared backend never inspects it; ``/api/datasets/<name>/config``
+        returns it as JSON and the portal renders from it, so a new dataset can
+        change what the UI shows without touching any shared code.
 
         Returns:
             A dict with all metadata the frontend needs to render the correct

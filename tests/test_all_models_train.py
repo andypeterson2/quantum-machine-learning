@@ -234,43 +234,6 @@ class TestTrainStatusCallbacks:
         assert any("complete" in s.lower() for s in str_msgs)
 
 
-# Forward pass — all models produce valid output shapes
-
-
-class TestModelForwardPass:
-    """Verify each model's forward pass produces correct output shape."""
-
-    @pytest.mark.parametrize("model_cls,expected_classes", [
-        (MNISTNet, 10),
-        (LinearNet, 10),
-        (SVMNet, 10),
-        (MNISTQuadraticNet, 10),
-        (MNISTPolynomialNet, 10),
-    ])
-    def test_mnist_forward(self, model_cls, expected_classes):
-        model = model_cls()
-        x = torch.randn(4, 1, 28, 28)
-        out = model(x)
-        assert out.shape == (4, expected_classes)
-
-    @pytest.mark.parametrize("model_cls,expected_classes", [
-        (IrisLinear, 3),
-        (IrisSVM, 3),
-    ])
-    def test_iris_forward(self, model_cls, expected_classes):
-        model = model_cls()
-        x = torch.randn(4, 4)
-        out = model(x)
-        assert out.shape == (4, expected_classes)
-
-    @pytest.mark.skipif(not _HAS_PENNYLANE, reason="pennylane not installed")
-    def test_iris_qvc_forward(self):
-        model = IrisQVC()
-        x = torch.randn(2, 4)
-        out = model(x)
-        assert out.shape == (2, 3)
-
-
 # Evaluation after training — all models can be evaluated
 
 

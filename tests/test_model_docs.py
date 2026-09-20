@@ -117,3 +117,63 @@ class TestBenchmarkArtifact:
         payload = json.loads(BENCHMARKS.read_text())
         assert "Wilson" in payload["provenance"]["training"]["protocol"]
         assert re.fullmatch(r"[0-9a-f]{40}", payload["provenance"]["source_sha"])
+
+
+#: "| CNN (`MNISTNet`) | ... | 98.8% (98.6-99.0%, n=10,000) |" — a README table row
+#: quoting a measurement. The thousands separator is the README's own style.
+README_ROW = re.compile(
+    r"^\|\s*(?P<model>[^|(]+?)\s*\(`(?P<cls>\w+)`\)\s*\|[^|]*\|\s*"
+    r"(?P<acc>\d+\.\d)%\s*\((?P<low>\d+\.\d)-(?P<high>\d+\.\d)%,\s*n=(?P<n>[\d,]+)\)",
+    re.MULTILINE,
+)
+
+#: The heading above each accuracy table names the dataset the rows belong to.
+README_DATASET = re.compile(r"^### (\w+)\s*$", re.MULTILINE)
+
+
+def _readme_rows() -> list[tuple[str, str, tuple[str, str, str, str]]]:
+    """(dataset, model type, quoted numbers) for every measured README row."""
+    text = (REPO_ROOT / "README.md").read_text()
+    sections = list(README_DATASET.finditer(text))
+    rows = []
+    for i, heading in enumerate(sections):
+        end = sections[i + 1].start() if i + 1 < len(sections) else len(text)
+        dataset = heading.group(1).lower()
+        rows.extend(
+            (
+                dataset,
+                match.group("model").strip(),
+                (match.group("acc"), match.group("low"), match.group("high"), match.group("n")),
+            )
+            for match in README_ROW.finditer(text[heading.end() : end])
+        )
+    return rows
+
+
+class TestTheReadmeTablesQuoteTheMeasurements:
+    """The README's own claim, held.
+
+    It says its numbers are "recorded in exports/benchmarks.json by make
+    benchmark and held there by tests/test_model_docs.py" — which only globbed
+    the MODELS.md files, so nothing held the README and its BB84 table quietly
+    lost the measured QVC row.
+    """
+
+    def test_some_rows_were_found(self) -> None:
+        """A parser that matches nothing would pass every other test here."""
+        assert len(_readme_rows()) >= 10
+
+    def test_every_quoted_number_matches_the_measurement(self, measured) -> None:
+        for dataset, model_type, (acc, low, high, n) in _readme_rows():
+            record = measured.get((dataset, model_type))
+            assert record is not None, f"README quotes {dataset}/{model_type}, which is unmeasured"
+            assert float(acc) == pytest.approx(record["accuracy"] * 100, abs=0.05)
+            assert float(low) == pytest.approx(record["accuracy_ci"][0] * 100, abs=0.05)
+            assert float(high) == pytest.approx(record["accuracy_ci"][1] * 100, abs=0.05)
+            assert int(n.replace(",", "")) == record["n"]
+
+    def test_every_measured_model_has_a_row(self, measured) -> None:
+        """A model measured but absent from the table is a number nobody sees."""
+        quoted = {(dataset, model) for dataset, model, _ in _readme_rows()}
+        missing = sorted(set(measured) - quoted)
+        assert not missing, f"measured but missing from the README tables: {missing}"

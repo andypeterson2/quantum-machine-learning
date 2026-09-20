@@ -127,7 +127,6 @@ def _setup_trainer(plugin, registry, body) -> tuple[Trainer, str]:
             teacher_model=teacher_model,
             distill_weight=distill_weight,
             distill_temperature=distill_temperature,
-            teacher_process=None,
         )
         val_loader = plugin.get_val_loader(batch_size)
 
