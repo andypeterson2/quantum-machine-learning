@@ -1,6 +1,8 @@
 """Shared fixtures and helpers for classifiers tests."""
 
 import base64
+import builtins
+import contextlib
 import io
 import json
 
@@ -115,3 +117,26 @@ def make_fake_test_loader(batch_size=100, n_batches=2):
         targets = torch.randint(0, 10, (batch_size,))
         batches.append((data, targets))
     return _FakeLoader(batches, batch_size)
+
+
+@contextlib.contextmanager
+def blocked_imports(*names: str):
+    """Make ``import <name>`` raise ImportError inside the block.
+
+    Names match on the top-level package, so blocking ``qiskit`` also blocks
+    ``qiskit.circuit``. Modules already in ``sys.modules`` are covered too: the
+    import statement still calls ``__import__``, which this intercepts.
+    """
+    blocked = set(names)
+    real = builtins.__import__
+
+    def guard(name, *args, **kwargs):
+        if name.split(".")[0] in blocked:
+            raise ImportError(f"blocked for this test: {name}")
+        return real(name, *args, **kwargs)
+
+    builtins.__import__ = guard
+    try:
+        yield
+    finally:
+        builtins.__import__ = real
