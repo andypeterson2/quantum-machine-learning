@@ -26,31 +26,18 @@ class TestBaseModelABC:
 
 
 class TestPluginModelTypes:
-    """Test model types returned by the MNIST plugin."""
+    """Test model types returned by the MNIST plugin.
 
-    def test_cnn_registered(self):
-        plugin = MNISTPlugin()
-        types = plugin.get_model_types()
-        assert "CNN" in types
-        assert types["CNN"] is MNISTNet
+    Which types the plugin offers when an optional backend is missing is held by
+    tests/test_optional_model_gate.py; this checks what each name maps to.
+    """
 
-    def test_linear_registered(self):
-        plugin = MNISTPlugin()
-        types = plugin.get_model_types()
-        assert "Linear" in types
-        assert types["Linear"] is LinearNet
-
-    def test_svm_registered(self):
-        plugin = MNISTPlugin()
-        types = plugin.get_model_types()
-        assert "SVM" in types
-        assert types["SVM"] is SVMNet
-
-    def test_has_at_least_five_models(self):
-        """CNN, Linear, SVM, Quadratic, Polynomial (and optionally Qiskit)."""
-        plugin = MNISTPlugin()
-        types = plugin.get_model_types()
-        assert len(types) >= 5
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [("CNN", MNISTNet), ("Linear", LinearNet), ("SVM", SVMNet)],
+    )
+    def test_classical_names_map_to_their_architectures(self, name, expected):
+        assert MNISTPlugin().get_model_types()[name] is expected
 
 
 class TestModelConformance:

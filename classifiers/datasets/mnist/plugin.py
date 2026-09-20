@@ -180,7 +180,8 @@ class MNISTPlugin(DatasetPlugin):
         """Return MNIST-compatible architectures.
 
         Always includes CNN, Linear, SVM, Quadratic, Polynomial.
-        Conditionally includes Qiskit models if ``qiskit`` is installed.
+        Conditionally includes the Qiskit models when ``qiskit`` and
+        ``qiskit-aer`` are both importable.
         """
         from .models import (
             LinearNet,
@@ -197,11 +198,18 @@ class MNISTPlugin(DatasetPlugin):
             "Quadratic": MNISTQuadraticNet,
             "Polynomial": MNISTPolynomialNet,
         }
+        # The Qiskit models import QiskitQLayer lazily inside __init__, so importing
+        # their classes succeeds without Qiskit and the failure lands at train time.
+        # Probe the packages themselves, as the Iris and BB84 plugins do, so a lean
+        # deploy never offers a model type it cannot build.
         try:
+            import qiskit  # noqa: F401
+            import qiskit_aer  # noqa: F401
+        except ImportError:
+            pass
+        else:
             from .models import QiskitCNN, QiskitLinear
 
             types["Qiskit-CNN"] = QiskitCNN
             types["Qiskit-Linear"] = QiskitLinear
-        except ImportError:
-            pass
         return types
