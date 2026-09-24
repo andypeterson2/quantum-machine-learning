@@ -50,7 +50,7 @@ dev = [
     # deliberate call sites would have to waive — and those waivers are RUF100
     # errors under 0.15, so no single tree satisfies both). Keep this in sync
     # with the lint job in .github/workflows/ci.yml.
-    "ruff>=0.15.16,<0.16.0",
+    "ruff>=0.15.16,<0.17.0",
 ]
 
 [build-system]
