@@ -58,6 +58,55 @@ class TestOriginGuard:
         assert res.status_code == 200
 
 
+class TestOriginSecretRotation:
+    """ORIGIN_SECRET is a set, so the gateway can move to a new value in its own
+    deploy: add the new secret, switch the sender, then drop the old one."""
+
+    @pytest.fixture()
+    def rotating_client(self, monkeypatch):
+        monkeypatch.setenv("ORIGIN_SECRET", "next-value, s3cret-value")
+        app = create_app()
+        app.config["TESTING"] = True
+        yield app.test_client()
+
+    def test_both_secrets_admitted_mid_rotation(self, rotating_client):
+        for secret in ("s3cret-value", "next-value"):
+            res = rotating_client.get(
+                "/api/datasets", headers={"X-Origin-Secret": secret}
+            )
+            assert res.status_code == 200, secret
+
+    def test_other_secrets_still_rejected(self, rotating_client):
+        res = rotating_client.get(
+            "/api/datasets", headers={"X-Origin-Secret": "wrong"}
+        )
+        assert res.status_code == 403
+
+    def test_the_whole_list_is_not_a_secret(self, rotating_client):
+        # A sender that forwards the raw setting instead of one entry must not pass.
+        res = rotating_client.get(
+            "/api/datasets", headers={"X-Origin-Secret": "next-value, s3cret-value"}
+        )
+        assert res.status_code == 403
+
+    def test_retired_secret_rejected_once_dropped(self, monkeypatch):
+        monkeypatch.setenv("ORIGIN_SECRET", "next-value")
+        app = create_app()
+        app.config["TESTING"] = True
+        res = app.test_client().get(
+            "/api/datasets", headers={"X-Origin-Secret": "s3cret-value"}
+        )
+        assert res.status_code == 403
+
+    def test_blank_entries_leave_the_guard_inert(self, monkeypatch):
+        # " , " parses to an empty set, which reads as unconfigured — the same as
+        # unset, which is this guard's documented no-op state.
+        monkeypatch.setenv("ORIGIN_SECRET", " , ")
+        app = create_app()
+        app.config["TESTING"] = True
+        assert app.test_client().get("/api/datasets").status_code == 200
+
+
 class TestSweeperDoesNotPinTheApp:
     """The stale-client sweeper must not keep its app alive.
 
