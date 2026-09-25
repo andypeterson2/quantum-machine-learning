@@ -1,6 +1,8 @@
 .PHONY: run test lint clean docker export-web sync-web export-qsvm benchmark distillation
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
+# Relative to the working directory, so it resolves from the repo root. From a git
+# worktree it points inside .claude/worktrees/, where there is no website checkout.
 WEB ?= ../website
 
 run:
@@ -13,6 +15,9 @@ export-web:
 
 # Copy the canonical exports into the website checkout's model directory.
 sync-web:
+	@test -d "$(WEB)/public/classifiers/models" || { \
+	  echo "WEB=$(WEB) has no public/classifiers/models/ — pass an absolute path:"; \
+	  echo "  make sync-web WEB=/path/to/website"; exit 1; }
 	cp exports/web/*.json $(WEB)/public/classifiers/models/
 
 # Derive the QSVM paper-recreation weights (closed-form, from the notebook's
