@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 from classifiers import qsvm_export
+from classifiers.qsvm_rule import decide, weight_vector
 from classifiers.web_export import OUT_DIR, REPO_ROOT
 
 TOOL = REPO_ROOT / "tools" / "hardware_run.py"
@@ -70,16 +71,30 @@ def test_other_failures_raise(hardware_run, monkeypatch) -> None:
 
 @pytest.mark.parametrize("path", sorted(HARDWARE_DIR.glob("hhl-*.json")), ids=lambda p: p.name)
 def test_artifact_accuracies_are_held_out(path) -> None:
-    """The committed artifact's accuracies use the exports' protocol: the raw job's
-    alpha is the one the exports ship, so its scores must equal theirs."""
+    """Recomputed from the splits, not read back.
+
+    Comparing the artifact's numbers to the exports compares two stored outputs
+    of one function at one input, which catches a rewritten file and nothing
+    else. Each job's alpha is scored again here against the committed map, which
+    is what its protocol now claims.
+    """
     run = json.loads(path.read_text())
     assert run["qsvm_accuracy_provenance"]["training"]["protocol"].startswith("held-out")
     assert "not measured" in run["alpha_note"]
-    raw = run["jobs"]["raw"]
-    assert raw["alpha"] == pytest.approx(qsvm_export.ALPHA_SHOTS.tolist())
-    for name, acc in raw["qsvm_accuracy"].items():
-        payload = json.loads((OUT_DIR / f"qsvm-{name}.json").read_text())
-        assert acc == payload["test_accuracy"], name
+    assert run["jobs"]["raw"]["alpha"] == pytest.approx(qsvm_export.ALPHA_SHOTS.tolist())
+
+    for job in run["jobs"].values():
+        alpha = np.array(job["alpha"])
+        for name, claimed in job["qsvm_accuracy"].items():
+            if name == "mnist":
+                continue  # needs the openml cache; covered in test_alpha_sensitivity
+            spec = qsvm_export.QSVM_DATASETS[name]
+            payload = json.loads((OUT_DIR / f"qsvm-{name}.json").read_text())
+            split = spec["features_fn"]()
+            flipped = payload["classes"] != list(spec["classes"])
+            labels = -split.test_y if flipped else split.test_y
+            scored = decide(weight_vector(alpha), payload["map"], split.test_x)
+            assert claimed == pytest.approx(float((scored == labels).mean()), abs=5e-5), name
 
 
 def test_fit_and_score_is_held_out() -> None:

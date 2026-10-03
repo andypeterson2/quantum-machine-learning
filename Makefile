@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm benchmark distillation
+.PHONY: run test lint clean docker export-web sync-web export-qsvm benchmark distillation alpha-sensitivity
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
@@ -34,6 +34,11 @@ benchmark:
 # Re-measure whether distillation helps the student (a few minutes per seed).
 distillation:
 	python tools/distillation_experiment.py
+
+# Measure what the hardware's alpha readout is worth: how many deployed
+# predictions change against the exact classical solution. Seconds.
+alpha-sensitivity:
+	python tools/alpha_sensitivity.py
 
 test:
 	python -m pytest tests/ -v
