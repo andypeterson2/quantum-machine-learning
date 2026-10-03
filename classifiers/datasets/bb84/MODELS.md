@@ -13,6 +13,7 @@ Every model extends `BaseModel` and can be trained, evaluated, and compared inte
 **Type:** Logistic Regression
 **Loss:** Cross-entropy (default)
 **Measured accuracy:** 95.4% (95% CI 93.2-96.9%, n=500)
+**Across seeds:** 95.5% mean, sd 0.10, range 95.4-95.6% over 10 seeds — the line above is seed 0's run.
 **Trainable parameters:** 6
 
 ### Architecture
@@ -24,7 +25,7 @@ Input (N, 2)
 
 ### Description
 
-A single linear layer mapping the two session observables directly to two class scores. The decision boundary it learns is, in effect, a data-driven QBER threshold tilted by the sifted-key rate — close to what a QKD operator would set by hand, but fitted rather than decreed. Accuracy tops out in the low 90s because the regimes overlap by construction: a noisy-but-clean channel and a lightly-tapped one can look alike over a finite session.
+A single linear layer mapping the two session observables directly to two class scores. The decision boundary it learns is, in effect, a data-driven QBER threshold tilted by the sifted-key rate — close to what a QKD operator would set by hand, but fitted rather than decreed. Accuracy tops out in the mid 90s because the regimes overlap by construction: a noisy-but-clean channel and a lightly-tapped one can look alike over a finite session.
 
 ### When to use
 
@@ -37,6 +38,7 @@ The baseline. Fast, interpretable (two weights per class read directly as "how m
 **Type:** Linear Support Vector Machine
 **Loss:** Multi-class hinge (Weston-Watkins)
 **Measured accuracy:** 95.4% (95% CI 93.2-96.9%, n=500)
+**Across seeds:** 95.5% mean, sd 0.13, range 95.4-95.8% over 10 seeds — the line above is seed 0's run.
 **Trainable parameters:** 6
 
 ### Architecture
@@ -61,6 +63,7 @@ When you care about the margin story, or want a second opinion on the same capac
 **Type:** Quantum Variational Classifier (simulated)
 **Loss:** Cross-entropy (default)
 **Measured accuracy:** 90.0% (95% CI 87.1-92.3%, n=500)
+**Across seeds:** 91.1% mean, sd 0.68, range 90.0-92.0% over 10 seeds — the line above is seed 0's run.
 **Trainable parameters:** 12
 
 ### Architecture

@@ -11,6 +11,7 @@ Every model extends `BaseModel` and can be trained, evaluated, and compared inte
 **Type:** Convolutional Neural Network
 **Loss:** Cross-entropy (default)
 **Measured accuracy:** 98.8% (95% CI 98.6-99.0%, n=10000)
+**Across seeds:** 98.8% mean, sd 0.07, range 98.7-98.8% over 3 seeds — the line above is seed 0's run.
 **Trainable parameters:** ~1.2M
 
 ### Architecture
@@ -41,6 +42,7 @@ The standard convolutional architecture for MNIST. Two convolutional layers extr
 **Type:** Multinomial Logistic Regression
 **Loss:** Cross-entropy (default)
 **Measured accuracy:** 92.1% (95% CI 91.5-92.6%, n=10000)
+**Across seeds:** 92.0% mean, sd 0.27, range 91.5-92.3% over 10 seeds — the line above is seed 0's run.
 **Trainable parameters:** ~7.9K
 
 ### Architecture
@@ -61,7 +63,7 @@ The simplest possible classifier -- a single linear transformation from pixel sp
 - Fast training (seconds, not minutes)
 - The distillation student in `exports/distillation.json`. The answer there, at
   the default blend, is no: distilling the 98.8% CNN into this model costs it
-  about a point (92.05% alone vs 91.04% distilled, negative on all three seeds)
+  about a point (92.05% alone vs 91.09% distilled, negative on all three seeds)
 - Useful for demonstrating that spatial features matter (7% accuracy gap vs CNN)
 
 ---
@@ -71,6 +73,7 @@ The simplest possible classifier -- a single linear transformation from pixel sp
 **Type:** Linear Support Vector Machine
 **Loss:** Weston-Watkins multi-class hinge loss
 **Measured accuracy:** 91.6% (95% CI 91.0-92.1%, n=10000)
+**Across seeds:** 91.3% mean, sd 0.47, range 90.6-92.1% over 10 seeds — the line above is seed 0's run.
 **Trainable parameters:** ~7.9K
 
 ### Architecture
@@ -102,147 +105,3 @@ Architecturally identical to `LinearNet` (same single linear layer, same paramet
 - Ensemble diversity -- combining SVM and Linear models can improve ensemble accuracy since they optimise different objectives
 
 ---
-
-## Quadratic (`MNISTQuadraticNet`)
-
-**Type:** CNN + Quadratic Expansion Layer
-**Loss:** Cross-entropy (default)
-**Measured accuracy:** 98.2% (95% CI 98.0-98.5%, n=10000)
-**Trainable parameters:** ~40K
-
-### Architecture
-
-```
-Input (N, 1, 28, 28)
-  -> Conv2d(1 -> 6, kernel=5)   -> ReLU -> MaxPool2d(2)
-  -> Conv2d(6 -> 16, kernel=5)  -> ReLU -> MaxPool2d(2)
-  -> Flatten                                (N, 256)
-  -> Linear(256 -> 120)         -> ReLU
-  -> Linear(120 -> 32)          -> ReLU
-  -> Quadratic(32 -> 16)        -> ReLU
-  -> Linear(16 -> 10)                       (N, 10)
-```
-
-### Quadratic expansion
-
-The `Quadratic` layer (from `classifiers.layers`) expands input `x` into `z = concat(x^T * x, x)`, capturing all pairwise products between features plus the original linear terms. For a 32-dimensional input, this produces a `32 * (32 + 1) = 1056`-dimensional expanded vector, which a learned linear layer projects down to the output dimension.
-
-This lets the network model second-order feature interactions explicitly, rather than relying on stacked ReLU layers to approximate them.
-
-### When to use
-
-- Exploring whether explicit quadratic feature interactions improve over standard FC layers
-- Research comparison: quadratic expansion vs polynomial basis vs standard MLP
-- Ablation studies -- zeroing the quadratic layer reveals its contribution vs the convolutional backbone
-
----
-
-## Polynomial (`MNISTPolynomialNet`)
-
-**Type:** CNN + Polynomial (Log-Linear-Exp) Layers
-**Loss:** Cross-entropy (default)
-**Measured accuracy:** 98.0% (95% CI 97.7-98.3%, n=10000)
-**Trainable parameters:** ~25K
-
-### Architecture
-
-```
-Input (N, 1, 28, 28)
-  -> Conv2d(1 -> 6, kernel=5)   -> ReLU -> MaxPool2d(2)
-  -> Conv2d(6 -> 16, kernel=5)  -> ReLU -> MaxPool2d(2)
-  -> Flatten                                (N, 256)
-  -> Linear(256 -> 120)         -> ReLU
-  -> Polynomial(120 -> 84)      -> ReLU
-  -> Linear(84 -> 32)           -> ReLU
-  -> Polynomial(32 -> 16)       -> ReLU
-  -> Linear(16 -> 10)                       (N, 10)
-```
-
-### Polynomial basis
-
-The `Polynomial` layer (from `classifiers.layers`) computes `y = exp(W * log(|x| + 1))`. Working in log-space means that the linear transformation `W` effectively computes weighted sums of logarithms, and exponentiating the result produces polynomial-like combinations of the input features -- without the combinatorial explosion of explicit polynomial expansion.
-
-The `+1` inside the log ensures numerical stability for small inputs, and `abs()` handles negative activations.
-
-### When to use
-
-- Exploring polynomial feature transformations as an alternative to quadratic expansion
-- The model uses two polynomial layers at different stages, allowing study of where in the network polynomial features help most
-- Comparison with Quadratic: polynomial layers are more parameter-efficient (no quadratic blowup) but may capture different feature interactions
-
----
-
-## Qiskit-CNN (`QiskitCNN`)
-
-**Type:** CNN + Qiskit Quantum Circuit Layer
-**Loss:** Cross-entropy (default)
-**Accuracy:** not measured in this repo
-**Trainable parameters:** ~40K classical + 6 quantum
-**Requires:** `pip install qiskit qiskit-aer`
-
-### Architecture
-
-```
-Input (N, 1, 28, 28)
-  -> Conv2d(1 -> 6, kernel=5)   -> ReLU -> MaxPool2d(2)
-  -> Conv2d(6 -> 16, kernel=5)  -> ReLU -> MaxPool2d(2)
-  -> Flatten                                (N, 256)
-  -> Linear(256 -> 120)         -> ReLU
-  -> Linear(120 -> 84)          -> ReLU
-  -> Linear(84 -> 10)           -> Sigmoid * 0.8
-  -> Linear(10 -> 3)
-  -> QiskitQLayer(3)                        (N, 3)
-  -> Linear(3 -> 10)                        (N, 10)
-```
-
-### Quantum layer
-
-The `QiskitQLayer` (from `classifiers.qiskit_layers`) implements a 3-qubit parametric quantum circuit:
-
-1. **Encoding:** Input features are encoded as RX rotation angles on 3 qubits
-2. **Entanglement:** Trainable RXX and RZZ gates create entanglement between adjacent qubits
-3. **Measurement:** 8192-shot sampling gives each qubit's probability of measuring 1
-4. **Gradients:** Parameter-shift rule (evaluate at theta +/- pi/2, halve the difference) for both the weights and the inputs -- exact for these rotation gates, up to shot noise
-
-The sigmoid squashing before the quantum layer ensures inputs stay in a range where rotation angles are meaningful. The classical bottleneck (10 -> 3) reduces the problem to a dimensionality the quantum circuit can handle.
-
-### When to use
-
-- Research into quantum-classical hybrid neural networks
-- Comparing quantum vs classical layers at the same network position
-- Understanding the overhead and accuracy tradeoffs of quantum circuit simulation
-- **Note:** Training is significantly slower than classical models due to circuit simulation (expect minutes per epoch, not seconds)
-
----
-
-## Qiskit-Linear (`QiskitLinear`)
-
-**Type:** Linear + Qiskit Quantum Circuit Layer
-**Loss:** Cross-entropy (default)
-**Accuracy:** not measured in this repo
-**Trainable parameters:** ~66K classical + 6 quantum
-**Requires:** `pip install qiskit qiskit-aer`
-
-### Architecture
-
-```
-Input (N, 1, 28, 28)
-  -> Flatten                     (N, 784)
-  -> Linear(784 -> 84)  -> ReLU
-  -> Linear(84 -> 10)   -> Sigmoid * 0.8
-  -> Linear(10 -> 3)
-  -> QiskitQLayer(3)             (N, 3)
-  -> Linear(3 -> 10)            (N, 10)
-```
-
-### Description
-
-A fully-connected (no convolution) version of the quantum hybrid architecture. The classical front-end compresses the 784-pixel input down to 3 dimensions, the quantum circuit processes these 3 features, and a final linear layer maps back to 10 class scores.
-
-This provides a direct comparison with `QiskitCNN`: same quantum layer, but without convolutional feature extraction. The accuracy difference reveals how much the CNN backbone contributes vs the quantum circuit.
-
-### When to use
-
-- Ablation: comparing QiskitCNN vs QiskitLinear isolates the contribution of convolutional layers in quantum hybrids
-- Research into whether quantum circuits can compensate for the lack of spatial feature extraction
-- Faster than QiskitCNN (fewer parameters in the classical portion), but the quantum layer remains the bottleneck

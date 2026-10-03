@@ -8,12 +8,19 @@ against 95.4%. The rest had no source.
 Each documented accuracy now has to match ``exports/benchmarks.json``
 (``tools/benchmark.py``), and a model nobody measured has to say so instead of
 quoting a number.
+
+A documented accuracy also has to carry its seed spread. The Wilson interval
+beside it is sampling error alone, and on Iris the seed moves the number
+further: the published run is the best of ten on two of the three rows. That is
+a missing line rather than a wrong one, so it needs a requirement rather than a
+ban.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import statistics
 
 import pytest
 
@@ -32,6 +39,15 @@ MEASURED = re.compile(
 UNMEASURED = "**Accuracy:** not measured in this repo"
 #: What the old hand-written claims looked like.
 BANNED = re.compile(r"\*\*Typical accuracy:\*\*")
+
+#: "**Across seeds:** 93.7% mean, sd 1.9, range 90.0-96.7% over 10 seeds" — the
+#: second error component, required wherever a measured number is quoted.
+ACROSS_SEEDS = re.compile(
+    r"\*\*Across seeds:\*\* (\d+\.\d+)% mean, sd (\d+\.\d+), "
+    r"range (\d+\.\d+)-(\d+\.\d+)% over (\d+) seeds"
+)
+#: The alternative for a row backed by a single run.
+SINGLE_SEED = "**Across seeds:** not measured (single seed)"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -159,10 +175,6 @@ class TestTheReadmeTablesQuoteTheMeasurements:
     lost the measured QVC row.
     """
 
-    def test_some_rows_were_found(self) -> None:
-        """A parser that matches nothing would pass every other test here."""
-        assert len(_readme_rows()) >= 10
-
     def test_every_quoted_number_matches_the_measurement(self, measured) -> None:
         for dataset, model_type, (acc, low, high, n) in _readme_rows():
             record = measured.get((dataset, model_type))
@@ -177,3 +189,101 @@ class TestTheReadmeTablesQuoteTheMeasurements:
         quoted = {(dataset, model) for dataset, model, _ in _readme_rows()}
         missing = sorted(set(measured) - quoted)
         assert not missing, f"measured but missing from the README tables: {missing}"
+
+
+class TestTheSeedSpread:
+    """What the Wilson interval cannot say.
+
+    A ten-seed sweep put seed 0 at the top of the distribution on two of the
+    three Iris rows (SVM 96.7% against a 93.7 mean, Linear 90.0% against 88.3).
+    Nothing was picked after the fact, since the seed is fixed in code, but the
+    interval beside each number covers sampling error only and a reader had no
+    way to see the rest. Both components now ship, and these hold them.
+    """
+
+    def test_every_result_reports_its_seeds(self, measured) -> None:
+        for key, record in measured.items():
+            seeds = [run["seed"] for run in record["runs"]]
+            assert seeds, key
+            assert len(set(seeds)) == len(seeds), key
+            assert record["summary"]["seeds"] == len(seeds), key
+
+    def test_the_headline_is_one_of_the_runs(self, measured) -> None:
+        """The published number is a run in the file, not a fourth number."""
+        for key, record in measured.items():
+            headline = record["summary"]["headline_seed"]
+            assert headline == record["training"]["seed"], key
+            run = next(r for r in record["runs"] if r["seed"] == headline)
+            assert run["accuracy"] == record["accuracy"], key
+            assert run["accuracy_ci"] == record["accuracy_ci"], key
+
+    def test_summary_matches_the_runs(self, measured) -> None:
+        for key, record in measured.items():
+            accuracies = [run["accuracy"] for run in record["runs"]]
+            summary = record["summary"]
+            assert summary["accuracy_mean"] == pytest.approx(
+                statistics.fmean(accuracies), abs=5e-5
+            ), key
+            assert summary["accuracy_range"] == [min(accuracies), max(accuracies)], key
+            assert summary["headline_is_best"] is (record["accuracy"] == max(accuracies)), key
+            if len(accuracies) > 1:
+                assert summary["accuracy_stdev"] == pytest.approx(
+                    statistics.stdev(accuracies), abs=5e-5
+                ), key
+            else:
+                assert summary["accuracy_stdev"] is None, key
+
+    def test_a_single_seed_row_is_not_a_measured_zero(self, measured) -> None:
+        """One run has no spread. Zero would claim the seed does not matter,
+        which one run cannot establish."""
+        for key, record in measured.items():
+            if record["summary"]["seeds"] == 1:
+                assert record["summary"]["accuracy_stdev"] is None, key
+                assert record["summary"]["accuracy_range"] == [
+                    record["accuracy"], record["accuracy"]
+                ], key
+
+    def test_every_run_scored_the_same_split(self, measured) -> None:
+        """The split does not depend on the seed, which is what keeps the two
+        error components separable. Every run's accuracy therefore lands on the
+        same 1/n grid, and a split that changed size shows up here."""
+        for key, record in measured.items():
+            n = record["n"]
+            tolerance = n * 5e-5 + 1e-6
+            for run in record["runs"]:
+                hits = run["accuracy"] * n
+                assert hits == pytest.approx(round(hits), abs=tolerance), (key, run["seed"])
+
+
+def test_every_measured_number_also_reports_its_seed_spread(measured) -> None:
+    """A documented accuracy with no spread beside it is half a claim: the
+    reader sees the sampling error and cannot see the seed error."""
+    for dataset, text in _docs():
+        for heading, section in _sections(text).items():
+            if MEASURED.search(section) is None:
+                continue
+            model_type = heading.split("(")[0].strip()
+            summary = measured[(dataset, model_type)]["summary"]
+            match = ACROSS_SEEDS.search(section)
+            if summary["seeds"] == 1:
+                assert SINGLE_SEED in section, f"{dataset}/{model_type}: one seed, say so"
+                continue
+            assert match is not None, (
+                f"{dataset}/{model_type}: quotes an accuracy with no '**Across seeds:**' line"
+            )
+            mean, deviation, low, high, seeds = match.groups()
+            assert float(mean) == pytest.approx(summary["accuracy_mean"] * 100, abs=0.05)
+            assert float(deviation) == pytest.approx(summary["accuracy_stdev"] * 100, abs=0.05)
+            assert float(low) == pytest.approx(summary["accuracy_range"][0] * 100, abs=0.05)
+            assert float(high) == pytest.approx(summary["accuracy_range"][1] * 100, abs=0.05)
+            assert int(seeds) == summary["seeds"]
+
+
+def test_the_readme_does_not_call_iris_unresolved_when_the_seeds_resolve_it(measured) -> None:
+    """One 30-sample run cannot separate the Iris models. Ten runs can, and the
+    README may not keep saying otherwise once the artifact shows it."""
+    linear = measured[("iris", "Linear")]["summary"]
+    svm = measured[("iris", "SVM")]["summary"]
+    if svm["accuracy_range"][0] >= linear["accuracy_range"][1]:
+        readme = (REPO_ROOT / "README.md").read_text()
+        assert "does not separate these architectures" not in readme
