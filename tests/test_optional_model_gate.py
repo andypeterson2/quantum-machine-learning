@@ -21,16 +21,13 @@ from tests.conftest import blocked_imports
 
 #: (plugin class, packages the models need, model types that need them).
 GATED = [
-    pytest.param(
-        MNISTPlugin, ("qiskit", "qiskit_aer"), {"Qiskit-CNN", "Qiskit-Linear"}, id="mnist"
-    ),
     pytest.param(IrisPlugin, ("pennylane",), {"QVC"}, id="iris"),
     pytest.param(BB84Plugin, ("pennylane",), {"QVC"}, id="bb84"),
 ]
 
 #: Every plugin offers these whatever is installed.
 ALWAYS = {
-    MNISTPlugin: {"CNN", "Linear", "SVM", "Quadratic", "Polynomial"},
+    MNISTPlugin: {"CNN", "Linear", "SVM"},
     IrisPlugin: {"Linear", "SVM"},
     BB84Plugin: {"Linear", "SVM"},
 }

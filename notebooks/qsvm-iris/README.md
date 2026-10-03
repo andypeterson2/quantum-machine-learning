@@ -29,7 +29,10 @@ The notebook implements the paper's full pipeline:
    ideal distribution, where the paper reports **0.130 nats** on IBMQX2. The
    paper's Eq. 33 uses a natural log and `classifiers/hhl.py` uses base 2, so
    those two numbers are not on the same scale as printed; converted to one
-   base the run sits about **15x closer to ideal**, seven years on.
+   base the run sits about **15x closer to ideal**. That gap is seven years of
+   IBM's hardware rather than anything built here — the circuit transpiles to
+   depth 18 against the paper's logical depth 7. What the readout is worth to
+   the deployed rule is measured separately, in `exports/alpha-sensitivity.json`.
    The error-suppressed run (dynamical decoupling + Pauli twirling) scored
    0.0211 — slightly *worse* than raw, because at this depth the coherent
    errors twirling randomizes cost less than the randomization itself. The

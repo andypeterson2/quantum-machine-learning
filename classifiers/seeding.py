@@ -6,10 +6,9 @@ a run repeatable, and doing it in one function keeps the exporter and the
 :class:`~classifiers.trainer.Trainer` from drifting apart on which ones they
 remember to seed.
 
-Qiskit's Aer sampler is seeded indirectly: it draws its own simulator seed from
-torch's generator when it is built (see
-:class:`~classifiers.qiskit_layers._QCSampler`), so seeding here makes the
-quantum models repeatable too.
+The variational quantum classifiers need nothing further. Their device runs
+analytically rather than by sampling, and their circuit weights are torch
+parameters, so seeding torch is what makes them repeatable.
 """
 
 from __future__ import annotations

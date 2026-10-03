@@ -16,6 +16,99 @@
         "epochs": 50,
         "batch_size": 16,
         "lr": 0.01
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.8667,
+          "accuracy_ci": [
+            0.7032,
+            0.9469
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.8667,
+          "accuracy_ci": [
+            0.7032,
+            0.9469
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.8333,
+          "accuracy_ci": [
+            0.6644,
+            0.9266
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.8667,
+          "accuracy_ci": [
+            0.7032,
+            0.9469
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.8833,
+        "accuracy_stdev": 0.0236,
+        "accuracy_range": [
+          0.8333,
+          0.9
+        ],
+        "headline_seed": 0,
+        "headline_is_best": true
       }
     },
     {
@@ -33,6 +126,99 @@
         "epochs": 50,
         "batch_size": 16,
         "lr": 0.01
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.9667,
+          "accuracy_ci": [
+            0.8333,
+            0.9941
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.9667,
+          "accuracy_ci": [
+            0.8333,
+            0.9941
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.7438,
+            0.9654
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.9333,
+          "accuracy_ci": [
+            0.7868,
+            0.9815
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.9366,
+        "accuracy_stdev": 0.0189,
+        "accuracy_range": [
+          0.9,
+          0.9667
+        ],
+        "headline_seed": 0,
+        "headline_is_best": true
       }
     },
     {
@@ -50,6 +236,99 @@
         "epochs": 50,
         "batch_size": 16,
         "lr": 0.01
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.8333,
+          "accuracy_ci": [
+            0.6644,
+            0.9266
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.7667,
+          "accuracy_ci": [
+            0.5907,
+            0.8821
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.7,
+          "accuracy_ci": [
+            0.5212,
+            0.8334
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.8667,
+          "accuracy_ci": [
+            0.7032,
+            0.9469
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.7333,
+          "accuracy_ci": [
+            0.5555,
+            0.8582
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.7667,
+          "accuracy_ci": [
+            0.5907,
+            0.8821
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.7333,
+          "accuracy_ci": [
+            0.5555,
+            0.8582
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.8667,
+          "accuracy_ci": [
+            0.7032,
+            0.9469
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.8,
+          "accuracy_ci": [
+            0.6269,
+            0.9049
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.7333,
+          "accuracy_ci": [
+            0.5555,
+            0.8582
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.78,
+        "accuracy_stdev": 0.0592,
+        "accuracy_range": [
+          0.7,
+          0.8667
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     },
     {
@@ -67,6 +346,99 @@
         "epochs": 30,
         "batch_size": 32,
         "lr": 0.01
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.9552,
+        "accuracy_stdev": 0.001,
+        "accuracy_range": [
+          0.954,
+          0.956
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     },
     {
@@ -84,6 +456,99 @@
         "epochs": 30,
         "batch_size": 32,
         "lr": 0.01
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.956,
+          "accuracy_ci": [
+            0.9343,
+            0.9708
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.958,
+          "accuracy_ci": [
+            0.9366,
+            0.9724
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.954,
+          "accuracy_ci": [
+            0.9319,
+            0.9692
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.9554,
+        "accuracy_stdev": 0.0013,
+        "accuracy_range": [
+          0.954,
+          0.958
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     },
     {
@@ -101,6 +566,99 @@
         "epochs": 30,
         "batch_size": 32,
         "lr": 0.01
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.9,
+          "accuracy_ci": [
+            0.8706,
+            0.9233
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.906,
+          "accuracy_ci": [
+            0.8772,
+            0.9286
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.916,
+          "accuracy_ci": [
+            0.8884,
+            0.9373
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.908,
+          "accuracy_ci": [
+            0.8795,
+            0.9303
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.906,
+          "accuracy_ci": [
+            0.8772,
+            0.9286
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.918,
+          "accuracy_ci": [
+            0.8906,
+            0.939
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.92,
+          "accuracy_ci": [
+            0.8929,
+            0.9407
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.918,
+          "accuracy_ci": [
+            0.8906,
+            0.939
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.908,
+          "accuracy_ci": [
+            0.8795,
+            0.9303
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.906,
+          "accuracy_ci": [
+            0.8772,
+            0.9286
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.9106,
+        "accuracy_stdev": 0.0068,
+        "accuracy_range": [
+          0.9,
+          0.92
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     },
     {
@@ -118,6 +676,99 @@
         "epochs": 3,
         "batch_size": 64,
         "lr": 0.001
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.9206,
+          "accuracy_ci": [
+            0.9151,
+            0.9257
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.9192,
+          "accuracy_ci": [
+            0.9137,
+            0.9244
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.9217,
+          "accuracy_ci": [
+            0.9163,
+            0.9268
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.9195,
+          "accuracy_ci": [
+            0.914,
+            0.9247
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.9152,
+          "accuracy_ci": [
+            0.9096,
+            0.9205
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.9215,
+          "accuracy_ci": [
+            0.9161,
+            0.9266
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.9152,
+          "accuracy_ci": [
+            0.9096,
+            0.9205
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.9202,
+          "accuracy_ci": [
+            0.9147,
+            0.9254
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.9228,
+          "accuracy_ci": [
+            0.9174,
+            0.9279
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.9226,
+          "accuracy_ci": [
+            0.9172,
+            0.9277
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.9198,
+        "accuracy_stdev": 0.0027,
+        "accuracy_range": [
+          0.9152,
+          0.9228
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     },
     {
@@ -135,6 +786,99 @@
         "epochs": 3,
         "batch_size": 64,
         "lr": 0.001
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.9161,
+          "accuracy_ci": [
+            0.9105,
+            0.9214
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.917,
+          "accuracy_ci": [
+            0.9114,
+            0.9222
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.9098,
+          "accuracy_ci": [
+            0.904,
+            0.9153
+          ]
+        },
+        {
+          "seed": 3,
+          "accuracy": 0.912,
+          "accuracy_ci": [
+            0.9063,
+            0.9174
+          ]
+        },
+        {
+          "seed": 4,
+          "accuracy": 0.9062,
+          "accuracy_ci": [
+            0.9003,
+            0.9118
+          ]
+        },
+        {
+          "seed": 5,
+          "accuracy": 0.9206,
+          "accuracy_ci": [
+            0.9151,
+            0.9257
+          ]
+        },
+        {
+          "seed": 6,
+          "accuracy": 0.9113,
+          "accuracy_ci": [
+            0.9056,
+            0.9167
+          ]
+        },
+        {
+          "seed": 7,
+          "accuracy": 0.9077,
+          "accuracy_ci": [
+            0.9019,
+            0.9132
+          ]
+        },
+        {
+          "seed": 8,
+          "accuracy": 0.9179,
+          "accuracy_ci": [
+            0.9124,
+            0.9231
+          ]
+        },
+        {
+          "seed": 9,
+          "accuracy": 0.914,
+          "accuracy_ci": [
+            0.9083,
+            0.9193
+          ]
+        }
+      ],
+      "summary": {
+        "seeds": 10,
+        "accuracy_mean": 0.9133,
+        "accuracy_stdev": 0.0047,
+        "accuracy_range": [
+          0.9062,
+          0.9206
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     },
     {
@@ -152,53 +896,57 @@
         "epochs": 3,
         "batch_size": 64,
         "lr": 0.001
-      }
-    },
-    {
-      "dataset": "mnist",
-      "model_type": "Quadratic",
-      "accuracy": 0.9824,
-      "accuracy_ci": [
-        0.9796,
-        0.9848
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "accuracy": 0.9878,
+          "accuracy_ci": [
+            0.9855,
+            0.9898
+          ]
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.9884,
+          "accuracy_ci": [
+            0.9861,
+            0.9903
+          ]
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.987,
+          "accuracy_ci": [
+            0.9846,
+            0.989
+          ]
+        }
       ],
-      "n": 10000,
-      "num_params": 54366,
-      "training": {
-        "seed": 0,
-        "epochs": 3,
-        "batch_size": 64,
-        "lr": 0.001
-      }
-    },
-    {
-      "dataset": "mnist",
-      "model_type": "Polynomial",
-      "accuracy": 0.98,
-      "accuracy_ci": [
-        0.9771,
-        0.9826
-      ],
-      "n": 10000,
-      "num_params": 46994,
-      "training": {
-        "seed": 0,
-        "epochs": 3,
-        "batch_size": 64,
-        "lr": 0.001
+      "summary": {
+        "seeds": 3,
+        "accuracy_mean": 0.9877,
+        "accuracy_stdev": 0.0007,
+        "accuracy_range": [
+          0.987,
+          0.9884
+        ],
+        "headline_seed": 0,
+        "headline_is_best": false
       }
     }
   ],
   "provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "ae443a84e274d32dc2197a22dfb0103aedc22e68",
-    "source_dirty": false,
-    "exported_at": "2026-09-20",
+    "source_sha": "93716ecb2d0a0d4393a6f761009456766fa7a670",
+    "source_dirty": true,
+    "exported_at": "2026-10-03",
     "seed": 0,
     "training": {
       "model": "all",
       "trainer": "classifiers.trainer.Trainer",
-      "protocol": "trained at each plugin's default hyper-parameters with seed 0; accuracy and its 95% Wilson interval measured on the plugin's test split"
+      "headline_seed": 0,
+      "protocol": "each (dataset, model) trained once per seed at the plugin's own default hyper-parameters; the published accuracy and its 95% Wilson interval are seed 0's run on the plugin's test split, which is sampling error only. summary.accuracy_stdev is the spread of the same measurement across seeds. The test split does not depend on the seed, so the two components do not mix"
     },
     "versions": {
       "python": "3.12.1",

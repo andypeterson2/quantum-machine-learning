@@ -259,16 +259,9 @@ class TestRegeneration:
 
 # QSVM paper-recreation exports
 
-from pathlib import Path  # noqa: E402
-
-from sklearn.datasets import get_data_home  # noqa: E402
-
 from classifiers import qsvm_export  # noqa: E402
 
-# fetch_openml stores the ARFF cache under <data_home>/openml; presence of any
-# openml cache is our (coarse but CI-safe) signal that mnist_784 is available.
-_OPENML_DIR = Path(get_data_home()) / "openml"
-MNIST_OPENML_CACHE = _OPENML_DIR.is_dir() and any(_OPENML_DIR.rglob("*.gz"))
+from .conftest import MNIST_OPENML_CACHE  # noqa: E402
 
 
 class TestQsvmProvenance:
