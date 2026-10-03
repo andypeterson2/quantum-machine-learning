@@ -252,6 +252,13 @@ Dependabot updates the linux lock but leaves torch and torchvision alone in both
 
 ## Credits
 
+From March to October 2026 this repository also carried `Quadratic` and
+`Polynomial` feature-expansion layers and a `QiskitQLayer` quantum-circuit
+layer, ported with permission from [Spacefroyo](https://github.com/Spacefroyo)'s
+Digit-Classifier research codebase at the Qualcomm Institute. They were removed
+in `2404700` because nothing this project measures rested on them, not for any
+fault of theirs.
+
 Yang, Awan & Vall-Llosera's least-squares QSVM ([arXiv:1909.11988](https://arxiv.org/abs/1909.11988))
 is recreated in `notebooks/qsvm-iris/`; the algorithm and its preprocessing are
 theirs, the reconstruction is mine.
