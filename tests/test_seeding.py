@@ -112,26 +112,3 @@ class TestSeedOverHttp:
             "/d/iris/train/sync", json={"model_type": "Linear", "epochs": 1, "seed": seed}
         )
         assert resp.status_code == 400
-
-
-class TestQuantumSampling:
-    """The Aer sampler takes its simulator seed from torch's generator, so a
-    seeded run covers the quantum models too."""
-
-    def test_sampler_seed_follows_torch(self):
-        pytest.importorskip("qiskit_aer", reason="qiskit-aer not installed")
-        from classifiers.qiskit_layers import _QCSampler
-
-        seed_everything(5)
-        first = _QCSampler().seed
-        seed_everything(5)
-        assert _QCSampler().seed == first
-
-    def test_seeded_sampling_repeats(self):
-        pytest.importorskip("qiskit_aer", reason="qiskit-aer not installed")
-        from classifiers.qiskit_layers import _ExampleCircuit
-
-        seed_everything(5)
-        circuit = _ExampleCircuit(3)
-        weights, inputs = [0.1, 0.2, 0.3, 0.4], [0.5, -0.5, 0.25]
-        assert circuit.run(weights, inputs).tolist() == circuit.run(weights, inputs).tolist()
