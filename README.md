@@ -10,7 +10,7 @@ The service has no UI and serves no HTML (`static_folder=None`); the portfolio p
 
 ## Measured accuracy
 
-Each number is one seeded run at the plugin's default hyper-parameters, scored on the full test split with a 95% Wilson interval, recorded in `exports/benchmarks.json` by `make benchmark` and held there by `tests/test_model_docs.py`.
+Each number is seed 0's run at the plugin's default hyper-parameters, scored on the full test split with a 95% Wilson interval — which covers sampling error and nothing else. Every model is also retrained at nine further seeds, and `exports/benchmarks.json` records each run plus the across-seed mean, standard deviation and range, so the two error components can be read apart. Both are quoted in the per-model documents. `make benchmark` writes the file and `tests/test_model_docs.py` holds every published number to it.
 
 ### MNIST
 
@@ -19,12 +19,7 @@ Each number is one seeded run at the plugin's default hyper-parameters, scored o
 | CNN (`MNISTNet`) | 2-layer ConvNet: Conv→ReLU→Conv→ReLU→Pool→FC→FC | 98.8% (98.6-99.0%, n=10,000) |
 | Linear (`LinearNet`) | Logistic regression: Flatten→Linear(784→10) | 92.1% (91.5-92.6%, n=10,000) |
 | SVM (`SVMNet`) | Linear layer + multi-class hinge loss | 91.6% (91.0-92.1%, n=10,000) |
-| Quadratic (`MNISTQuadraticNet`) | CNN backbone + quadratic expansion layer | 98.2% (98.0-98.5%, n=10,000) |
-| Polynomial (`MNISTPolynomialNet`) | CNN backbone + polynomial (log-linear-exp) layers | 98.0% (97.7-98.3%, n=10,000) |
-| Qiskit-CNN (`QiskitCNN`) | CNN backbone + Qiskit quantum circuit layer | not measured\* |
-| Qiskit-Linear (`QiskitLinear`) | Linear backbone + Qiskit quantum circuit layer | not measured\* |
 
-\* The Qiskit models need `qiskit` and `qiskit-aer`, and only appear in the dataset's model types when those are installed. They sample a circuit per prediction, so scoring one over 10,000 samples takes hours, and they are not scored here.
 
 ### Iris
 
@@ -34,7 +29,7 @@ Each number is one seeded run at the plugin's default hyper-parameters, scored o
 | SVM (`IrisSVM`) | Linear layer + multi-class hinge loss | 96.7% (83.3-99.4%, n=30) |
 | QVC (`IrisQVC`) | PennyLane variational classifier, 4 qubits, 2 layers | 83.3% (66.4-92.7%, n=30)\* |
 
-The Iris test split is 30 samples, so one sample is 3.3 points and these three intervals overlap almost entirely. This split does not separate these architectures, whatever the point estimates suggest.
+The Iris test split is 30 samples, so one sample is 3.3 points and these three intervals overlap almost entirely: one run cannot separate these architectures. Ten runs can. SVM scores above Linear on all ten seeds (93.7% mean, sd 1.9 against 88.3%, sd 2.4) and the QVC's best seed falls below Linear's mean (78.0%, sd 5.9) — and the seed-0 run quoted above turns out to be the best of the ten for both Linear and SVM. The seed moves this dataset further than the split does.
 
 \* QVC needs `pennylane` installed, and only appears in the dataset's model types when it is.
 
@@ -58,7 +53,11 @@ Distilling the MNIST CNN into the linear student costs accuracy at the default b
 
 `exports/hardware/` holds an IBM Quantum run of the optimized 4-qubit HHL circuit from arXiv:1909.11988 (Fig. 10), submitted and fetched by `tools/hardware_run.py`, with `tests/test_hardware_run.py` holding the stored result to what the scorer computes. On `ibm_marrakesh`, 8192 shots, transpiled to depth 18 with 4 two-qubit gates at optimization level 3, the measured distribution sat 0.0127 from ideal by Jensen-Shannon divergence in bits, and the success state came out at 49.87%. Error mitigation did not help (0.0211).
 
-The paper's own optimized depth-7 circuit on `ibmqx2` reports 0.13, but Eq. 33 computes that in nats while `classifiers/hhl.py` uses base 2, so the two are not comparable as printed. Converted to the same base, this run is about 15× closer to ideal than the paper's — hardware seven years newer, on a shallower transpilation.
+That divergence says how close the measured distribution sat to the ideal one. It does not say what the difference is worth, so `make alpha-sensitivity` measures that instead, into `exports/alpha-sensitivity.json`.
+
+Only one scalar from this run reaches the deployed classifier. The rule decides by `sign(v · w)`, so alpha's scale cancels and only the ratio of its two components matters — and that ratio came out 3.3% from its exact value, -1.0327 against -1. Alpha's `(+, -)` sign pattern is not measured at all, but taken from the ideal solution. Holding the committed map, orientation and split fixed and rebuilding `w` from the exact alpha tilts the boundary 1.58° and changes **19 of 1,530** held-out predictions: none of 30 on Iris, 4 of 500 on BB84, 15 of 1,000 on MNIST. The direction is inconsistent — MNIST is 1.5 points better under the hardware alpha, BB84 0.8 worse, each inside the other's interval — so the reading is that this is a small perturbation these splits cannot resolve. Not that the hardware alpha is as good as exact, and not that it is worse.
+
+The paper's own optimized depth-7 circuit on `ibmqx2` reports 0.13, but Eq. 33 computes that in nats while `classifiers/hhl.py` uses base 2, so the two are not comparable as printed. Converted to the same base, this run is about 15× closer to ideal than the paper's. That gap is seven years of IBM's hardware rather than anything this repository did: the circuit here transpiles to depth 18, against the paper's logical depth 7.
 
 The quantum packages are optional and their versions differ by where the code runs, so each artifact records the stack that produced it under `provenance.versions`. That run was qiskit 2.3.0 with qiskit-ibm-runtime 0.45.1 on Python 3.12.1; the notebook pins qiskit 2.5.2 in `notebooks/qsvm-iris/requirements.txt`, and the image installs 2.5.2 from `requirements/linux/requirements.txt`. Install the recorded versions before re-running a submission, or the comparison moves under you.
 
@@ -86,8 +85,8 @@ pip install -r requirements.txt
 That pulls `flask`, `flask-cors`, `mistune`, `torch`, `torchvision`, `numpy`, `Pillow`, `scikit-learn` and `gunicorn`, pinned to what the Intel-Mac dev machine can run. The Docker image installs current torch instead. For the quantum architectures:
 
 ```bash
-pip install qiskit qiskit-aer   # MNIST Qiskit-CNN / Qiskit-Linear
-pip install "pennylane<0.45"    # Iris QVC (0.45+ needs numpy>=2, which torch 2.2 cannot use)
+pip install qiskit qiskit-aer   # the QSVM notebook and the HHL hardware run
+pip install "pennylane<0.45"    # Iris and BB84 QVC (0.45+ needs numpy>=2, which torch 2.2 cannot use)
 ```
 
 ```bash
@@ -199,14 +198,6 @@ Evaluation results carry `accuracy_ci` and `num_samples` beside every `accuracy`
 | `distill_temperature` | `float` | `4.0` | Softmax temperature for the distillation term, scaled by T² |
 | `seed` | `int` | — | Seeds weight initialisation, shuffling and quantum sampling, and is echoed in the result. Without it the run is not repeatable |
 
-## Custom layers
-
-| Layer | Module | Description |
-|-------|--------|-------------|
-| `Quadratic` | `layers.py` | Quadratic expansion: `y = W * concat(x^T * x, x)` |
-| `Polynomial` | `layers.py` | Polynomial basis: `y = exp(W * log(\|x\| + 1))` |
-| `QiskitQLayer` | `qiskit_layers.py` | Trainable parametric quantum circuit with parameter-shift gradients; takes `num_heads`, and both MNIST models run one |
-
 ## Exports
 
 `make export-web` writes the browser-served linear weights to `exports/web/`, `make export-qsvm` writes the QSVM decision rules beside them, and `make sync-web` copies both into the portfolio site's checkout. `tests/test_web_export.py` checks the committed files against what the code produces.
@@ -258,6 +249,12 @@ docker build -t qml-lock . && docker run --rm qml-lock pip freeze
 ```
 
 Dependabot updates the linux lock but leaves torch and torchvision alone in both files: they come from PyTorch's CPU index and have to move as a pair. `numpy` and `pennylane` are held back in the dev file only. `tests/test_dependency_policy.py` enforces all of it.
+
+## Credits
+
+Yang, Awan & Vall-Llosera's least-squares QSVM ([arXiv:1909.11988](https://arxiv.org/abs/1909.11988))
+is recreated in `notebooks/qsvm-iris/`; the algorithm and its preprocessing are
+theirs, the reconstruction is mine.
 
 ## License
 

@@ -11,6 +11,7 @@ Every model extends `BaseModel` and can be trained, evaluated, and compared inte
 **Type:** Multinomial Logistic Regression
 **Loss:** Cross-entropy (default)
 **Measured accuracy:** 90.0% (95% CI 74.4-96.5%, n=30)
+**Across seeds:** 88.3% mean, sd 2.36, range 83.3-90.0% over 10 seeds — the line above is seed 0, the best of the ten.
 **Trainable parameters:** 15
 
 ### Architecture
@@ -40,6 +41,7 @@ The 15 trainable parameters consist of a 4x3 weight matrix (12 parameters) and a
 **Type:** Linear Support Vector Machine
 **Loss:** Weston-Watkins multi-class hinge loss
 **Measured accuracy:** 96.7% (95% CI 83.3-99.4%, n=30)
+**Across seeds:** 93.7% mean, sd 1.89, range 90.0-96.7% over 10 seeds — the line above is seed 0, the best of the ten.
 **Trainable parameters:** 15
 
 ### Architecture
@@ -63,7 +65,7 @@ where `s_y` is the score for the correct class, `s_j` is the score for class `j`
 
 Architecturally identical to `IrisLinear` -- same single linear layer, same 15 parameters. The only difference is the training objective. Hinge loss seeks maximum-margin decision boundaries rather than calibrated probabilities, producing a support vector machine trained via gradient descent.
 
-On Iris, the accuracy is typically slightly lower than cross-entropy because hinge loss focuses on the decision boundary margin rather than fitting the full class-conditional distribution. However, the resulting model may generalise better to out-of-distribution samples near the decision boundary.
+On Iris it scores above cross-entropy, not below: the measurement is the line above, and repeating both over ten seeds puts this model ahead on every one of them. The margin is two of thirty test samples, so one run cannot tell them apart; the seeds can. Hinge loss seeking a maximum-margin boundary rather than calibrated probabilities is the plausible reason, and it is a reason rather than a measurement.
 
 ### When to use
 
@@ -79,6 +81,7 @@ On Iris, the accuracy is typically slightly lower than cross-entropy because hin
 **Type:** Quantum Variational Classifier (PennyLane)
 **Loss:** Cross-entropy (default)
 **Measured accuracy:** 83.3% (95% CI 66.4-92.7%, n=30)
+**Across seeds:** 78.0% mean, sd 5.92, range 70.0-86.7% over 10 seeds — the line above is seed 0's run.
 **Trainable parameters:** 24 (quantum rotation angles)
 **Requires:** `pip install pennylane`
 

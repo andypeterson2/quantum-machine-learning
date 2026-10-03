@@ -3,13 +3,16 @@
 Iris is scored on 30 samples: 90% and 96.7% are one and a half samples apart,
 and their intervals overlap almost entirely. Reporting the point estimate alone
 invited comparisons the data cannot support.
+
+The interval covers sampling error. ``spread`` covers the other component, the
+seed, which on Iris is the larger of the two.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from classifiers.stats import Z_95, wilson_interval
+from classifiers.stats import Z_95, spread, wilson_interval
 
 
 class TestWilsonInterval:
@@ -53,3 +56,44 @@ class TestWilsonInterval:
 
     def test_z_95_is_the_conventional_quantile(self):
         assert pytest.approx(1.96, abs=5e-4) == Z_95
+
+
+class TestSpread:
+    """Pinned to the ten-seed Iris sweep, so a change in the formula shows up as
+    a change in a published claim — the same discipline as the Wilson cases."""
+
+    # Accuracies for seeds 0-9 at the Iris plugin's default hyper-parameters.
+    SVM = (0.9667, 0.9333, 0.9333, 0.9667, 0.9333, 0.9333, 0.9, 0.9333, 0.9333, 0.9333)
+    LINEAR = (0.9, 0.8667, 0.9, 0.9, 0.8667, 0.8333, 0.8667, 0.9, 0.9, 0.9)
+    QVC = (0.8333, 0.7667, 0.7, 0.8667, 0.7333, 0.7667, 0.7333, 0.8667, 0.8, 0.7333)
+
+    @pytest.mark.parametrize(
+        ("values", "expected"),
+        [
+            ("SVM", (0.9366, 0.0189, (0.9, 0.9667))),
+            ("LINEAR", (0.8833, 0.0236, (0.8333, 0.9))),
+            ("QVC", (0.78, 0.0592, (0.7, 0.8667))),
+        ],
+    )
+    def test_the_iris_sweep(self, values, expected):
+        assert spread(getattr(self, values)) == expected
+
+    def test_the_seed_moves_iris_further_than_the_split_does(self):
+        """Why both components are published. The QVC seed spread is 5.9 points;
+        one Iris test sample is 3.3."""
+        _, deviation, (low, high) = spread(self.QVC)
+        assert deviation > 1 / 30
+        assert high - low > 0.15
+
+    def test_one_run_has_no_spread(self):
+        """``None``, not ``0.0``: a single run cannot report that the seed does
+        not matter."""
+        assert spread([0.9]) == (0.9, None, (0.9, 0.9))
+
+    def test_a_measured_zero_stays_zero(self):
+        """Three runs that agree did measure a spread, and it was zero."""
+        assert spread([0.9, 0.9, 0.9]) == (0.9, 0.0, (0.9, 0.9))
+
+    def test_nothing_to_describe_raises(self):
+        with pytest.raises(ValueError, match="at least one value"):
+            spread([])
