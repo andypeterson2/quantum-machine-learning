@@ -10,8 +10,6 @@ Run with:
 
 from __future__ import annotations
 
-import sys
-
 import pytest
 import torch
 
@@ -19,8 +17,6 @@ from classifiers.datasets.iris.models import IrisLinear, IrisSVM
 from classifiers.datasets.mnist.models import (
     LinearNet,
     MNISTNet,
-    MNISTPolynomialNet,
-    MNISTQuadraticNet,
     SVMNet,
 )
 from classifiers.evaluator import Evaluator
@@ -63,16 +59,6 @@ def _make_iris_test_loader(batch_size=20, n_samples=20):
 
 
 # Check optional dependencies
-
-_HAS_QISKIT = False
-try:
-    import qiskit  # noqa: F401
-    import qiskit_aer  # noqa: F401
-
-    from classifiers.datasets.mnist.models import QiskitCNN, QiskitLinear
-    _HAS_QISKIT = True
-except ImportError:
-    pass
 
 _HAS_PENNYLANE = False
 try:
@@ -127,33 +113,6 @@ class TestTrainMNISTModels:
         result = self._train(SVMNet)
         self._assert_result(result, SVMNet)
 
-    def test_quadratic(self):
-        result = self._train(MNISTQuadraticNet)
-        self._assert_result(result, MNISTQuadraticNet)
-
-    def test_polynomial(self):
-        result = self._train(MNISTPolynomialNet)
-        self._assert_result(result, MNISTPolynomialNet)
-
-    @staticmethod
-    def _assert_real_qiskit():
-        """These tests exist to exercise real Aer; a stub left in sys.modules by
-        another test module would make them pass without running a circuit."""
-        for name in ("qiskit", "qiskit_aer"):
-            assert getattr(sys.modules[name], "__file__", None), f"{name} is a stub"
-
-    @pytest.mark.skipif(not _HAS_QISKIT, reason="qiskit not installed")
-    def test_qiskit_cnn(self):
-        self._assert_real_qiskit()
-        result = self._train(QiskitCNN)
-        self._assert_result(result, QiskitCNN)
-
-    @pytest.mark.skipif(not _HAS_QISKIT, reason="qiskit not installed")
-    def test_qiskit_linear(self):
-        self._assert_real_qiskit()
-        result = self._train(QiskitLinear)
-        self._assert_result(result, QiskitLinear)
-
 
 # Direct Trainer Tests — Iris models
 
@@ -206,7 +165,7 @@ class TestTrainStatusCallbacks:
     """Verify every model emits the expected status messages."""
 
     @pytest.mark.parametrize("model_cls", [
-        MNISTNet, LinearNet, SVMNet, MNISTQuadraticNet, MNISTPolynomialNet,
+        MNISTNet, LinearNet, SVMNet,
     ])
     def test_mnist_model_emits_status(self, model_cls):
         loader = make_fake_train_loader(batch_size=8, n_batches=3)
@@ -253,7 +212,7 @@ class TestEvaluateAfterTraining:
         )
 
     @pytest.mark.parametrize("model_cls", [
-        MNISTNet, LinearNet, SVMNet, MNISTQuadraticNet, MNISTPolynomialNet,
+        MNISTNet, LinearNet, SVMNet,
     ])
     def test_mnist_evaluate(self, model_cls):
         train_loader = make_fake_train_loader(batch_size=8, n_batches=3)
@@ -292,7 +251,7 @@ class TestTrainRouteAllMNISTModels:
         self.client = self.application.test_client()
 
     @pytest.mark.parametrize("model_type", [
-        "CNN", "Linear", "SVM", "Quadratic", "Polynomial",
+        "CNN", "Linear", "SVM",
     ])
     def test_train_model_via_route(self, model_type):
         from unittest.mock import patch

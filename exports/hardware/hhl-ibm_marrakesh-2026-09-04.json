@@ -118,7 +118,8 @@
     "seed": 0,
     "training": {
       "model": "QSVM",
-      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
+      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split, with the map, orientation and split held fixed at the committed exports/web/qsvm-*.json and only w rebuilt per alpha (tools/alpha_sensitivity.py), so a row is one model under one readout",
+      "refit_note": "qsvm_export.fit_and_score re-chooses BB84's free parameters per alpha: at the mitigated readout it picks (c, d) = (1.0, 0.02) over (2.0, 0.1) and moves the map's a from 11.78 to 4.56. Both routes give 0.910 here, so these values are unchanged, but they are recorded as the fixed-map comparison because that is the one the protocol above describes"
     },
     "versions": {
       "python": "3.12.1",
