@@ -44,6 +44,9 @@ quantum = [
     "pennylane>=0.35; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 dev = [
+    # Authoring SDK for .railway/railway.py; only `railway config plan`
+    # and `apply` import it, and the image never installs this group.
+    "railway-sdk>=0.4,<1.0",
     "pytest>=8.0",
     # Compatible-release pin: the enforced rule set shifts with ruff minors, so
     # CI must not float across them (0.16 stabilises PLR0917, which three
