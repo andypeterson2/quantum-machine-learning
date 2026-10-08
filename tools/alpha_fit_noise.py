@@ -26,6 +26,7 @@ import json
 import logging
 import statistics
 import sys
+from math import sqrt
 from pathlib import Path
 
 import numpy as np
@@ -36,7 +37,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from classifiers import qsvm_export  # noqa: E402
 from classifiers.qsvm_rule import decide, solve_map, weight_vector  # noqa: E402
-from classifiers.stats import mcnemar_exact, paired_accuracy_delta  # noqa: E402
+from classifiers.stats import Z_95, mcnemar_exact  # noqa: E402
 from classifiers.web_export import provenance_base  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -98,10 +99,10 @@ def summarise(dataset: str, draws: list[dict]) -> dict:
         mcnemar_exact(d["discordant_hardware_right"], d["discordant_exact_right"]) < 0.05
         for d in draws
     ]
-    pooled_b = sum(d["discordant_hardware_right"] for d in draws)
-    pooled_c = sum(d["discordant_exact_right"] for d in draws)
-    pooled_n = sum(d["n"] for d in draws)
-    delta, low, high = paired_accuracy_delta(pooled_b, pooled_c, pooled_n)
+    # Consecutive draws share all but 200 of their held-out images, so the
+    # spread across draws is what the interval comes from.
+    standard_error = statistics.stdev(deltas) / sqrt(len(deltas))
+    mean_delta = statistics.fmean(deltas)
     return {
         "dataset": dataset,
         "redraws": len(draws),
@@ -115,8 +116,11 @@ def summarise(dataset: str, draws: list[dict]) -> dict:
         "resolved_in": sum(significant),
         "fit_noise_sd": round(statistics.stdev(exact_acc), 6),
         "exact_accuracy_mean": round(statistics.fmean(exact_acc), 6),
-        "pooled_paired_delta": delta,
-        "pooled_paired_delta_ci": [low, high],
+        "delta_mean_se": round(standard_error, 6),
+        "delta_mean_ci": [
+            round(mean_delta - Z_95 * standard_error, 6),
+            round(mean_delta + Z_95 * standard_error, 6),
+        ],
         # The question the artifact exists to answer.
         "delta_is_under_the_fit_noise": bool(
             abs(statistics.fmean(deltas)) < statistics.stdev(exact_acc)

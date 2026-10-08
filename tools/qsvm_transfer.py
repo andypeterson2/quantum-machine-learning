@@ -15,11 +15,11 @@ reverse, on held-out splits of about 13,800 images each.
 
 Every pair is reported. Choosing one would be choosing a result, and the
 choosing is the part that would not survive review: the pair with the largest
-class-mean VR gap on the fit sample, which is the only pre-declarable analogue
-of the paper's own rotation pair, scores barely above chance. Within a pair the
-orientation and ``(c, d)`` come from :func:`classifiers.qsvm_export.choose_parameters`
-on a validation slice of the fit split, as they do for any dataset the paper
-did not run.
+class-mean VR gap on the fit sample, a pair rule stated before scoring, scores
+barely above chance. Within a pair the orientation and ``(c, d)`` come from
+:func:`classifiers.qsvm_export.choose_parameters` on a validation slice of the
+fit split, as they do for any dataset the paper did not run — under the exact
+alpha, so that the arm under test does not pick its own model.
 
 Output: ``exports/qsvm-transfer.json``.
 """
@@ -127,10 +127,18 @@ def one_pair(
     fit_x, fit_y = feats[fit_idx], np.where(labels[fit_idx] == pos, 1, -1)
     held_x, held_y = feats[held_idx], np.where(labels[held_idx] == pos, 1, -1)
 
+    # Exact is the reference the comparison measures departures from, so exact
+    # selects the model; what hardware would have chosen is recorded beside it.
     spec = {"free_parameters": True, "cd_candidates": CD_GRID}
     split = qsvm_export.Split(fit_x, fit_y, held_x, held_y, "")
     w = weight_vector(qsvm_export.ALPHA_SHOTS)
-    choice = qsvm_export.choose_parameters(split, spec, w)
+    choice = qsvm_export.choose_parameters(split, spec, weight_vector(ALPHA_EXACT))
+    under_hardware = qsvm_export.choose_parameters(split, spec, w)
+    same_choice = (choice.flip, choice.c, choice.d) == (
+        under_hardware.flip,
+        under_hardware.c,
+        under_hardware.d,
+    )
 
     train_y = -fit_y if choice.flip else fit_y
     test_y = -held_y if choice.flip else held_y
@@ -160,12 +168,14 @@ def one_pair(
         "paired_delta": delta,
         "paired_delta_ci": [low, high],
         "selection": {
+            "chosen_under": "exact",
             "flip": choice.flip,
             "c": choice.c,
             "d": choice.d,
             "candidates": choice.candidates,
             "validation_accuracy": round(choice.validation_accuracy, 4),
             "validation_n": choice.validation_n,
+            "hardware_would_choose_the_same": same_choice,
         },
     }
 
@@ -184,6 +194,7 @@ def summarise(pairs: list[dict]) -> dict:
             statistics.median(p["logistic_regression"] for p in pairs), 4
         ),
         "beats_logistic_regression_on": sum(p["beats_logistic_regression"] for p in pairs),
+        "selection_agrees_on": sum(p["selection"]["hardware_would_choose_the_same"] for p in pairs),
         "resolved_on": len(resolved),
         "hardware_ahead_on": len(ahead),
         "hardware_behind_on": len(resolved) - len(ahead),
