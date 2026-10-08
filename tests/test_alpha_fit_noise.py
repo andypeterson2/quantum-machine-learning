@@ -58,6 +58,32 @@ def test_enough_draws_to_mean_anything(artifact) -> None:
         assert len(row["draws"]) == row["redraws"]
 
 
+def test_the_interval_treats_redraws_as_the_unit(artifact) -> None:
+    """Consecutive draws share all but 200 of their held-out images, so the
+    interval must come from the spread across draws. Pooling the discordant
+    counts instead would shrink it by about sqrt(redraws) and report a
+    difference on MNIST that the draws themselves say is not there."""
+    from math import sqrt
+
+    for row in artifact["datasets"]:
+        expected = row["delta_sd"] / sqrt(row["redraws"])
+        assert row["delta_mean_se"] == pytest.approx(expected, abs=5e-6), row["dataset"]
+        low, high = row["delta_mean_ci"]
+        assert low < row["delta_mean"] < high, row["dataset"]
+
+
+@pytest.mark.skipif(
+    not MNIST_OPENML_CACHE, reason="openml mnist_784 not cached here; tests never download"
+)
+def test_the_mnist_interval_agrees_with_its_own_headline(artifact) -> None:
+    """28 of 60 draws one way and 30 the other is a coin flip, so the interval
+    on the mean has to admit zero. These two disagreeing is the bug this
+    artifact had."""
+    row = _row(artifact, "mnist")
+    low, high = row["delta_mean_ci"]
+    assert low < 0 < high
+
+
 def test_the_effect_is_smaller_than_the_noise_it_has_to_clear(artifact) -> None:
     """The finding. If this fails the writeup is wrong, not the test."""
     for row in artifact["datasets"]:

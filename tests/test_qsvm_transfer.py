@@ -94,6 +94,23 @@ def test_selection_used_a_validation_slice(artifact) -> None:
         assert 0.0 < sel["validation_accuracy"] <= 1.0, row["pair"]
 
 
+def test_the_arm_under_test_did_not_pick_its_own_model(artifact) -> None:
+    """Selecting under the hardware alpha and then asking whether the hardware
+    alpha wins tilts the comparison toward it. Exact is the reference the claim
+    is about, so exact chooses."""
+    for row in artifact["pairs"]:
+        assert row["selection"]["chosen_under"] == "exact", row["pair"]
+
+
+def test_where_the_two_alphas_would_choose_differently_is_recorded(artifact) -> None:
+    """On most pairs the choice does not depend on which arm makes it, which is
+    what makes the comparison well posed. The pairs where it does are the ones a
+    reader should discount, so the count is published rather than buried."""
+    agree = artifact["summary"]["selection_agrees_on"]
+    assert agree == sum(p["selection"]["hardware_would_choose_the_same"] for p in artifact["pairs"])
+    assert agree > artifact["summary"]["pairs_scored"] // 2
+
+
 @pytest.mark.skipif(
     not FASHION_OPENML_CACHE, reason="openml Fashion-MNIST not cached here; tests never download"
 )

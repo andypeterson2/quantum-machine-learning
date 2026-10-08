@@ -62,6 +62,10 @@ logger = logging.getLogger("hardware_run")
 OUT_DIR = REPO_ROOT / "exports" / "hardware"
 PENDING = OUT_DIR / "pending.json"
 
+#: Fixed so a repeat run gets the same circuit and the same physical qubits;
+#: unseeded, a series could not tell a drifting chip from a different corner.
+TRANSPILER_SEED = 1909
+
 #: How ``qsvm_accuracy`` is scored, recorded beside it.
 QSVM_ACCURACY_PROTOCOL = (
     "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its "
@@ -94,6 +98,78 @@ def qsvm_accuracies(alpha: list[float]) -> dict[str, float]:
 # Submission
 
 
+def layout_qubits(transpiled) -> list[int]:
+    """The physical qubits the circuit's four virtual ones landed on.
+
+    Args:
+        transpiled: A transpiled circuit carrying a ``TranspileLayout``.
+
+    Returns:
+        Physical indices in virtual-qubit order, or ``[]`` if the circuit was
+        never laid out (a backendless transpile).
+    """
+    layout = getattr(transpiled, "layout", None)
+    if layout is None:
+        return []
+    return [int(q) for q in layout.final_index_layout(filter_ancillas=True)]
+
+
+def two_qubit_pairs(transpiled) -> list[list[int]]:
+    """The physical qubit pairs the two-qubit gates act on, deduplicated."""
+    pairs = {
+        tuple(sorted(transpiled.find_bit(q).index for q in inst.qubits))
+        for inst in transpiled.data
+        if inst.operation.num_qubits == 2
+    }
+    return [list(pair) for pair in sorted(pairs)]
+
+
+def calibration_snapshot(backend, qubits: list[int], pairs: list[list[int]]) -> dict:
+    """Coherence and error figures for the qubits this run actually used.
+
+    Recorded at submission because they move between calibrations: two jobs a
+    day apart on one fixed layout differ by whatever this captures, and without
+    it a drifting ratio has no candidate explanation.
+
+    Args:
+        backend: The backend being submitted to.
+        qubits:  Physical qubits from :func:`layout_qubits`.
+        pairs:   Physical pairs from :func:`two_qubit_pairs`.
+
+    Returns:
+        Per-qubit and per-edge figures; keys are absent where the backend's
+        target does not carry them, which is not an error.
+    """
+    target = getattr(backend, "target", None)
+    if target is None:
+        return {}
+    snapshot: dict = {"qubits": {}, "edges": {}}
+    for q in qubits:
+        entry: dict = {}
+        try:
+            props = target.qubit_properties[q]
+            entry["t1_seconds"] = props.t1
+            entry["t2_seconds"] = props.t2
+        except (AttributeError, IndexError, TypeError):
+            pass
+        measure = target.get("measure") if hasattr(target, "get") else None
+        if measure and (q,) in measure:
+            entry["readout_error"] = measure[(q,)].error
+        snapshot["qubits"][str(q)] = entry
+    for name in ("ecr", "cz", "cx"):
+        if name not in getattr(target, "operation_names", ()):
+            continue
+        for pair in pairs:
+            # The target keys one direction of each edge; which one is the
+            # backend's business, so take whichever is there and stop.
+            for ordered in (tuple(pair), tuple(reversed(pair))):
+                if ordered in target[name]:
+                    key = f"{name}:{ordered[0]}_{ordered[1]}"
+                    snapshot["edges"][key] = target[name][ordered].error
+                    break
+    return snapshot
+
+
 def _sampler(backend, *, shots: int, mitigated: bool):
     """A SamplerV2 configured raw or with DD + twirling (nonogram's recipe)."""
     from qiskit_ibm_runtime import SamplerV2
@@ -113,8 +189,22 @@ def _sampler(backend, *, shots: int, mitigated: bool):
     return sampler
 
 
-def submit(backend_name: str | None, shots: int) -> None:
-    """Transpile once, submit the raw + mitigated jobs, record ids."""
+def submit(
+    backend_name: str | None,
+    shots: int,
+    initial_layout: list[int] | None = None,
+    seed_transpiler: int = TRANSPILER_SEED,
+) -> None:
+    """Transpile once, submit the raw + mitigated jobs, record ids.
+
+    Args:
+        backend_name:    Backend to run on; the least busy one when omitted.
+        shots:           Shots per job.
+        initial_layout:  Physical qubits to pin the circuit to. Pass the
+            ``physical_qubits`` of an earlier run to repeat it on the same
+            corner of the chip, which is what makes two runs comparable.
+        seed_transpiler: Fixed so the same inputs give the same circuit.
+    """
     from qiskit import transpile
     from qiskit_ibm_runtime import QiskitRuntimeService
 
@@ -126,10 +216,20 @@ def submit(backend_name: str | None, shots: int) -> None:
     )
     logger.info("backend: %s (%d qubits)", backend.name, backend.num_qubits)
 
-    transpiled = transpile(build_hhl(measure=True), backend=backend, optimization_level=3)
+    transpiled = transpile(
+        build_hhl(measure=True),
+        backend=backend,
+        optimization_level=3,
+        initial_layout=initial_layout,
+        seed_transpiler=seed_transpiler,
+    )
     two_qubit = sum(1 for inst in transpiled.data if inst.operation.num_qubits == 2)
     depth = transpiled.depth()
-    logger.info("transpiled: depth=%d, two-qubit gates=%d", depth, two_qubit)
+    qubits = layout_qubits(transpiled)
+    pairs = two_qubit_pairs(transpiled)
+    logger.info(
+        "transpiled: depth=%d, two-qubit gates=%d, qubits=%s", depth, two_qubit, qubits
+    )
     creg_names = [cr.name for cr in transpiled.cregs]
 
     jobs = {}
@@ -148,7 +248,12 @@ def submit(backend_name: str | None, shots: int) -> None:
                     "depth": depth,
                     "two_qubit_gates": two_qubit,
                     "optimization_level": 3,
+                    "seed_transpiler": seed_transpiler,
+                    "initial_layout_requested": initial_layout,
+                    "physical_qubits": qubits,
+                    "two_qubit_pairs": pairs,
                 },
+                "calibration": calibration_snapshot(backend, qubits, pairs),
                 "creg_names": creg_names,
                 "jobs": jobs,
             },
@@ -192,6 +297,7 @@ def fetch() -> None:
         "backend": pending["backend"],
         "shots": shots,
         "transpiled": pending["transpiled"],
+        "calibration": pending.get("calibration", {}),
         "paper_reference": PAPER_REFERENCE,
         "jobs": {},
     }
@@ -280,12 +386,21 @@ def main() -> None:
     p_submit = sub.add_parser("submit", help="transpile + submit the raw/mitigated job pair")
     p_submit.add_argument("--backend", default=None, help="backend name (default: least busy)")
     p_submit.add_argument("--shots", type=int, default=DEFAULT_SHOTS)
+    p_submit.add_argument(
+        "--initial-layout",
+        default=None,
+        help="comma-separated physical qubits, e.g. 29,51,36,28; repeats an earlier run's layout",
+    )
+    p_submit.add_argument("--seed-transpiler", type=int, default=TRANSPILER_SEED)
     sub.add_parser("fetch", help="retrieve the pending jobs and write the artifact")
     p_rescore = sub.add_parser("rescore", help="re-score qsvm_accuracy offline (no jobs)")
     p_rescore.add_argument("artifact", nargs="?", type=Path, help="default: the newest one")
     args = parser.parse_args()
     if args.command == "submit":
-        submit(args.backend, args.shots)
+        layout = (
+            [int(q) for q in args.initial_layout.split(",")] if args.initial_layout else None
+        )
+        submit(args.backend, args.shots, layout, args.seed_transpiler)
     elif args.command == "fetch":
         fetch()
     else:

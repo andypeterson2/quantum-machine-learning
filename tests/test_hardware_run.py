@@ -105,3 +105,63 @@ def test_fit_and_score_is_held_out() -> None:
     assert len(fit.split.train_y) == 70
     assert len(fit.split.test_y) == 30
     assert 0.0 < fit.accuracy <= 1.0
+
+
+class TestTheRunIsRepeatable:
+    """A series comparing days or devices needs each run pinned to the same
+    physical qubits, and needs to record what those qubits were doing."""
+
+    @staticmethod
+    def _transpiled(hardware_run, layout=None):
+        from qiskit import transpile
+        from qiskit_ibm_runtime.fake_provider import FakeTorino
+
+        from classifiers.hhl import build_hhl
+
+        backend = FakeTorino()
+        return backend, transpile(
+            build_hhl(measure=True),
+            backend=backend,
+            optimization_level=3,
+            initial_layout=layout,
+            seed_transpiler=hardware_run.TRANSPILER_SEED,
+        )
+
+    def test_the_same_seed_gives_the_same_qubits(self, hardware_run) -> None:
+        """Unseeded, the pass manager may land anywhere, and two runs a day
+        apart would differ by their layout as much as by the chip."""
+        _, first = self._transpiled(hardware_run)
+        _, second = self._transpiled(hardware_run)
+        assert hardware_run.layout_qubits(first) == hardware_run.layout_qubits(second)
+        assert len(hardware_run.layout_qubits(first)) == 4
+
+    def test_a_layout_can_be_pinned_to_an_earlier_run(self, hardware_run) -> None:
+        _, transpiled = self._transpiled(hardware_run, layout=[29, 51, 36, 28])
+        assert hardware_run.layout_qubits(transpiled) == [29, 51, 36, 28]
+
+    def test_the_two_qubit_pairs_are_recorded_once_each(self, hardware_run) -> None:
+        _, transpiled = self._transpiled(hardware_run, layout=[29, 51, 36, 28])
+        pairs = hardware_run.two_qubit_pairs(transpiled)
+        assert pairs
+        assert all(a < b for a, b in pairs), "pairs are stored in one orientation"
+        assert len(pairs) == len({tuple(p) for p in pairs})
+
+    def test_the_calibration_covers_what_the_run_used(self, hardware_run) -> None:
+        backend, transpiled = self._transpiled(hardware_run, layout=[29, 51, 36, 28])
+        qubits = hardware_run.layout_qubits(transpiled)
+        pairs = hardware_run.two_qubit_pairs(transpiled)
+        snapshot = hardware_run.calibration_snapshot(backend, qubits, pairs)
+        assert sorted(snapshot["qubits"]) == sorted(str(q) for q in qubits)
+        for entry in snapshot["qubits"].values():
+            assert entry["t1_seconds"] > 0
+            assert 0.0 <= entry["readout_error"] < 1.0
+        assert len(snapshot["edges"]) == len(pairs), "one error per edge, not one per direction"
+
+    def test_a_backend_without_a_target_is_not_an_error(self, hardware_run) -> None:
+        """Only the snapshot is lost, and losing it must not lose the run."""
+        assert hardware_run.calibration_snapshot(object(), [1], [[1, 2]]) == {}
+
+    def test_a_circuit_that_was_never_laid_out_reports_no_qubits(self, hardware_run) -> None:
+        from classifiers.hhl import build_hhl
+
+        assert hardware_run.layout_qubits(build_hhl(measure=True)) == []

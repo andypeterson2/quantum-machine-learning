@@ -84,10 +84,10 @@
    "resolved_in": 0,
    "fit_noise_sd": 0.030686,
    "exact_accuracy_mean": 0.966667,
-   "pooled_paired_delta": -0.005,
-   "pooled_paired_delta_ci": [
-    -0.008258,
-    -0.001742
+   "delta_mean_se": 0.00155,
+   "delta_mean_ci": [
+    -0.008037,
+    -0.001963
    ],
    "delta_is_under_the_fit_noise": true,
    "draws": [
@@ -586,10 +586,10 @@
    "resolved_in": 33,
    "fit_noise_sd": 0.008576,
    "exact_accuracy_mean": 0.905051,
-   "pooled_paired_delta": -0.000247,
-   "pooled_paired_delta_ci": [
-    -0.000477,
-    -1.7e-05
+   "delta_mean_se": 0.000379,
+   "delta_mean_ci": [
+    -0.000991,
+    0.000497
    ],
    "delta_is_under_the_fit_noise": true,
    "draws": [
@@ -1079,8 +1079,8 @@
  "skipped": [],
  "provenance": {
   "source_repo": "quantum-machine-learning",
-  "source_sha": "bb07c09de9aaca12ef1d3e068dba5e686634fad1",
-  "source_dirty": false,
+  "source_sha": "a156c73c6de218a56ebf453a0a991656c37d7279",
+  "source_dirty": true,
   "exported_at": "2026-10-08",
   "seed": 0,
   "training": {
