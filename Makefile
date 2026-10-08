@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity
+.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
@@ -53,6 +53,11 @@ distillation:
 # predictions change against the exact classical solution. Seconds.
 alpha-sensitivity:
 	python tools/alpha_sensitivity.py
+
+# Sweep the one scalar the quantum step contributes and record where accuracy
+# peaks, into exports/alpha-ratio-sweep.json.
+alpha-ratio-sweep:
+	python tools/alpha_ratio_sweep.py
 
 test:
 	python -m pytest tests/ -v

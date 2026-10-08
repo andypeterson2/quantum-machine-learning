@@ -44,7 +44,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from classifiers import qsvm_export  # noqa: E402
 from classifiers.hhl import ALPHA_SIGN_NOTE  # noqa: E402
 from classifiers.qsvm_rule import decide, weight_vector  # noqa: E402
-from classifiers.stats import wilson_interval  # noqa: E402
+from classifiers.stats import mcnemar_exact, paired_accuracy_delta, wilson_interval  # noqa: E402
 from classifiers.web_export import provenance_base  # noqa: E402
 
 logger = logging.getLogger("alpha-sensitivity")
@@ -94,6 +94,13 @@ def compare(dataset: str, alpha: np.ndarray) -> dict:
     there = decide(weight_vector(alpha), payload["map"], split.test_x)
     hits_here, hits_there = int((here == labels).sum()), int((there == labels).sum())
     n = len(labels)
+    # The two arms score the same points, so the pairs where they agree say
+    # nothing and only the discordant ones carry the comparison.
+    right_here = here == labels
+    right_there = there == labels
+    b = int((right_here & ~right_there).sum())
+    c = int((right_there & ~right_here).sum())
+    delta, delta_low, delta_high = paired_accuracy_delta(b, c, n)
     return {
         "dataset": dataset,
         "n": n,
@@ -104,6 +111,11 @@ def compare(dataset: str, alpha: np.ndarray) -> dict:
         "other_accuracy": round(hits_there / n, 4),
         "other_accuracy_ci": list(wilson_interval(hits_there, n)),
         "accuracy_delta": round((hits_here - hits_there) / n, 4),
+        "discordant_committed_right": b,
+        "discordant_other_right": c,
+        "mcnemar_p": round(mcnemar_exact(b, c), 8),
+        "paired_delta": delta,
+        "paired_delta_ci": [delta_low, delta_high],
     }
 
 
@@ -127,13 +139,25 @@ def compare_all(alpha: np.ndarray, label: str) -> dict:
             skipped.append(dataset)
     flips = sum(d["flips"] for d in datasets)
     n = sum(d["n"] for d in datasets)
+    b = sum(d["discordant_committed_right"] for d in datasets)
+    c = sum(d["discordant_other_right"] for d in datasets)
+    delta, delta_low, delta_high = paired_accuracy_delta(b, c, n) if n else (0.0, 0.0, 0.0)
     return {
         "alpha": label,
         "boundary_tilt_degrees": round(
             boundary_tilt_degrees(qsvm_export.ALPHA_SHOTS, alpha), 4
         ),
         "datasets": datasets,
-        "pooled": {"n": n, "flips": flips, "flip_rate": round(flips / n, 4) if n else 0.0},
+        "pooled": {
+            "n": n,
+            "flips": flips,
+            "flip_rate": round(flips / n, 4) if n else 0.0,
+            "discordant_committed_right": b,
+            "discordant_other_right": c,
+            "mcnemar_p": round(mcnemar_exact(b, c), 8),
+            "paired_delta": delta,
+            "paired_delta_ci": [delta_low, delta_high],
+        },
         "skipped": skipped,
     }
 

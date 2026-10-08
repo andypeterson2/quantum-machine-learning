@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import statistics
 from collections.abc import Sequence
-from math import sqrt
+from math import comb, sqrt
 
 #: 1.96 standard deviations — the conventional 95% two-sided interval.
 Z_95 = 1.959963984540054
@@ -79,3 +79,58 @@ def spread(values: Sequence[float]) -> tuple[float, float | None, tuple[float, f
         deviation,
         (round(min(values), 4), round(max(values), 4)),
     )
+
+
+def mcnemar_exact(b: int, c: int) -> float:
+    """Two-sided exact McNemar p-value for two rules on one test split.
+
+    Two rules scored on the same points agree on most of them, and the pairs
+    where they agree carry no information about which is better. Only the
+    discordant pairs do, and under the null each is a coin flip. Comparing the
+    two accuracies' intervals instead treats them as independent samples, which
+    throws away the pairing and almost all of the power.
+
+    Args:
+        b: Pairs the first rule got right and the second wrong.
+        c: Pairs the second got right and the first wrong.
+
+    Returns:
+        The two-sided p-value; ``1.0`` when there are no discordant pairs.
+
+    Raises:
+        ValueError: If either count is negative.
+    """
+    if b < 0 or c < 0:
+        raise ValueError(f"discordant counts must be non-negative (got {b}, {c})")
+    n = b + c
+    if n == 0:
+        return 1.0
+    tail = sum(comb(n, k) for k in range(min(b, c) + 1))
+    return min(1.0, 2.0 * tail / 2.0**n)
+
+
+def paired_accuracy_delta(b: int, c: int, n: int, z: float = Z_95) -> tuple[float, float, float]:
+    """Accuracy difference between two rules on one split, with its interval.
+
+    The difference is ``(b - c) / n`` and its standard error follows from the
+    discordant counts alone, so the interval is far tighter than either rule's
+    own. Reporting it is what lets a reader see whether a difference is resolved
+    or merely small.
+
+    Args:
+        b: Pairs the first rule got right and the second wrong.
+        c: Pairs the second got right and the first wrong.
+        n: Total paired predictions.
+        z: Standard deviations for the interval (default: 95% two-sided).
+
+    Returns:
+        ``(delta, low, high)``, each rounded to six decimals.
+
+    Raises:
+        ValueError: If *n* is not positive or the counts exceed it.
+    """
+    if n <= 0 or b + c > n:
+        raise ValueError(f"need 0 < b + c <= n (got {b} + {c}, n={n})")
+    delta = (b - c) / n
+    se = sqrt((b + c) - (b - c) ** 2 / n) / n if b + c else 0.0
+    return (round(delta, 6), round(delta - z * se, 6), round(delta + z * se, 6))

@@ -36,30 +36,54 @@
             0.8333,
             0.9941
           ],
-          "accuracy_delta": 0.0
+          "accuracy_delta": 0.0,
+          "discordant_committed_right": 0,
+          "discordant_other_right": 0,
+          "mcnemar_p": 1.0,
+          "paired_delta": 0.0,
+          "paired_delta_ci": [
+            0.0,
+            0.0
+          ]
         },
         {
           "dataset": "mnist",
-          "n": 1000,
-          "flips": 15,
-          "flip_rate": 0.015,
-          "committed_accuracy": 0.891,
+          "n": 13634,
+          "flips": 166,
+          "flip_rate": 0.0122,
+          "committed_accuracy": 0.8975,
           "committed_accuracy_ci": [
-            0.8702,
-            0.9088
+            0.8923,
+            0.9024
           ],
-          "other_accuracy": 0.876,
+          "other_accuracy": 0.8932,
           "other_accuracy_ci": [
-            0.8541,
-            0.895
+            0.8879,
+            0.8983
           ],
-          "accuracy_delta": 0.015
+          "accuracy_delta": 0.0043,
+          "discordant_committed_right": 112,
+          "discordant_other_right": 54,
+          "mcnemar_p": 7.93e-06,
+          "paired_delta": 0.004254,
+          "paired_delta_ci": [
+            0.002403,
+            0.006105
+          ]
         }
       ],
       "pooled": {
-        "n": 1030,
-        "flips": 15,
-        "flip_rate": 0.0146
+        "n": 13664,
+        "flips": 166,
+        "flip_rate": 0.0121,
+        "discordant_committed_right": 112,
+        "discordant_other_right": 54,
+        "mcnemar_p": 7.93e-06,
+        "paired_delta": 0.004245,
+        "paired_delta_ci": [
+          0.002398,
+          0.006091
+        ]
       },
       "skipped": []
     },
@@ -82,30 +106,54 @@
             0.8333,
             0.9941
           ],
-          "accuracy_delta": 0.0
+          "accuracy_delta": 0.0,
+          "discordant_committed_right": 0,
+          "discordant_other_right": 0,
+          "mcnemar_p": 1.0,
+          "paired_delta": 0.0,
+          "paired_delta_ci": [
+            0.0,
+            0.0
+          ]
         },
         {
           "dataset": "mnist",
-          "n": 1000,
-          "flips": 5,
-          "flip_rate": 0.005,
-          "committed_accuracy": 0.891,
+          "n": 13634,
+          "flips": 41,
+          "flip_rate": 0.003,
+          "committed_accuracy": 0.8975,
           "committed_accuracy_ci": [
-            0.8702,
-            0.9088
+            0.8923,
+            0.9024
           ],
-          "other_accuracy": 0.886,
+          "other_accuracy": 0.8959,
           "other_accuracy_ci": [
-            0.8648,
-            0.9042
+            0.8907,
+            0.9009
           ],
-          "accuracy_delta": 0.005
+          "accuracy_delta": 0.0015,
+          "discordant_committed_right": 31,
+          "discordant_other_right": 10,
+          "mcnemar_p": 0.00145049,
+          "paired_delta": 0.00154,
+          "paired_delta_ci": [
+            0.00062,
+            0.00246
+          ]
         }
       ],
       "pooled": {
-        "n": 1030,
-        "flips": 5,
-        "flip_rate": 0.0049
+        "n": 13664,
+        "flips": 41,
+        "flip_rate": 0.003,
+        "discordant_committed_right": 31,
+        "discordant_other_right": 10,
+        "mcnemar_p": 0.00145049,
+        "paired_delta": 0.001537,
+        "paired_delta_ci": [
+          0.000619,
+          0.002455
+        ]
       },
       "skipped": []
     }
@@ -124,18 +172,18 @@
     },
     {
       "dataset": "mnist",
-      "n": 1000,
-      "accuracy": 0.916,
+      "n": 13634,
+      "accuracy": 0.9091,
       "accuracy_ci": [
-        0.8972,
-        0.9316
+        0.9042,
+        0.9138
       ]
     }
   ],
   "provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "ad8f587e95f216b58c8edc024100670db4747be5",
-    "source_dirty": false,
+    "source_sha": "4cdcda40e605f09ee56e94ca7c48ce5f0c468736",
+    "source_dirty": true,
     "exported_at": "2026-10-08",
     "seed": 0,
     "training": {
