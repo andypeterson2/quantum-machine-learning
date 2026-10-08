@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from classifiers.stats import Z_95, spread, wilson_interval
+from classifiers.stats import Z_95, mcnemar_exact, paired_accuracy_delta, spread, wilson_interval
 
 
 class TestWilsonInterval:
@@ -97,3 +97,45 @@ class TestSpread:
     def test_nothing_to_describe_raises(self):
         with pytest.raises(ValueError, match="at least one value"):
             spread([])
+
+
+class TestPairedComparison:
+    """Two rules on one split are compared through their discordant pairs."""
+
+    def test_no_discordant_pairs_is_no_evidence(self) -> None:
+        assert mcnemar_exact(0, 0) == 1.0
+
+    def test_a_one_sided_split_is_significant(self) -> None:
+        """Fifteen discordant pairs all one way is a coin landing the same way
+        fifteen times: 2 * 0.5**15."""
+        assert mcnemar_exact(15, 0) == pytest.approx(2 * 0.5**15)
+
+    def test_an_even_split_is_not(self) -> None:
+        assert mcnemar_exact(8, 7) == pytest.approx(1.0)
+
+    def test_it_is_symmetric(self) -> None:
+        assert mcnemar_exact(11, 3) == mcnemar_exact(3, 11)
+
+    @pytest.mark.parametrize("b,c", [(-1, 0), (0, -2)])
+    def test_negative_counts_are_refused(self, b: int, c: int) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            mcnemar_exact(b, c)
+
+    def test_the_paired_interval_is_tighter_than_either_arm(self) -> None:
+        """The point of pairing: 985 of 1,000 predictions are shared, so the
+        difference is pinned far better than either accuracy is."""
+        delta, low, high = paired_accuracy_delta(15, 0, 1000)
+        assert delta == pytest.approx(0.015)
+        paired_width = high - low
+        arm = wilson_interval(891, 1000)
+        assert paired_width < (arm[1] - arm[0])
+
+    def test_a_balanced_difference_brackets_zero(self) -> None:
+        delta, low, high = paired_accuracy_delta(10, 10, 1000)
+        assert delta == 0.0
+        assert low < 0 < high
+
+    @pytest.mark.parametrize("b,c,n", [(1, 1, 1), (0, 0, 0)])
+    def test_impossible_counts_are_refused(self, b: int, c: int, n: int) -> None:
+        with pytest.raises(ValueError, match="b \\+ c"):
+            paired_accuracy_delta(b, c, n)

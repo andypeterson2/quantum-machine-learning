@@ -54,24 +54,17 @@ logger = logging.getLogger(__name__)
 #: (2026-09-04, job dad49jdnj4cs73adbp90, 8192 raw shots), a real quantum computer.
 ALPHA_SHOTS = np.array([0.50097561, -0.48513046])
 
-#: Second-dimension map (c, d): the paper's own values (Eq. 15). Every dataset
-#: here is one the paper ran, so :func:`choose_parameters` has nothing to pick;
-#: the machinery stays for a dataset it did not.
+#: Second-dimension map (c, d): the paper's own values (Eq. 15), for the two
+#: datasets it ran. :func:`choose_parameters` has nothing to pick here.
 IRIS_CD = (0.95, -0.42)
 MNIST_CD = (0.5, -0.3)
 
 #: Fraction of the fit split held back to choose the free parameters on.
 VALIDATION_FRACTION = 0.25
 
-#: Held-out MNIST digits per class, drawn from outside the 100-per-class fit sample.
-MNIST_TEST_PER_CLASS = 500
-
-#: The notebook's own seed (its ``rng_seed``), so the exporter fits on the same
-#: 100 digits per class the notebook draws.
+#: The notebook's ``rng_seed``, so the exporter fits on the same 100 digits per
+#: class; everything else is held out, needing no second seed.
 MNIST_FIT_SEED = 42
-#: The held-out sample's seed. This module's own choice, and distinct from the
-#: fit seed so the two samples cannot overlap by construction.
-MNIST_HELD_OUT_SEED = 43
 
 
 class Split(NamedTuple):
@@ -102,7 +95,11 @@ def iris_features() -> Split:
 
 def mnist_features() -> Split:
     """The notebook's 6-vs-9 fit sample (100 per class) as (HR, VR) ink ratios, "6"=+1,
-    and a disjoint held-out sample of MNIST_TEST_PER_CLASS per class.
+    and every other 6 and 9 in the corpus as the held-out split.
+
+    The held-out size is not a parameter: a sub-sample would only widen the
+    interval on a figure the full corpus already settles, and the digits cost
+    nothing once the file is cached.
 
     Requires the openml ``mnist_784`` cache (the notebook's first run created
     it); callers in CI must skip when it is absent.
@@ -116,9 +113,7 @@ def mnist_features() -> Split:
     pool6, pool9 = np.where(y == "6")[0], np.where(y == "9")[0]
     idx6 = rng.choice(pool6, 100, replace=False)
     idx9 = rng.choice(pool9, 100, replace=False)
-    held = np.random.default_rng(MNIST_HELD_OUT_SEED)
-    test6 = held.choice(np.setdiff1d(pool6, idx6), MNIST_TEST_PER_CLASS, replace=False)
-    test9 = held.choice(np.setdiff1d(pool9, idx9), MNIST_TEST_PER_CLASS, replace=False)
+    test6, test9 = np.setdiff1d(pool6, idx6), np.setdiff1d(pool9, idx9)
 
     def sample(i6: np.ndarray, i9: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         images = X[np.concatenate([i6, i9])].reshape(-1, 28, 28)
@@ -127,8 +122,8 @@ def mnist_features() -> Split:
 
     tx, ty = sample(idx6, idx9)
     vx, vy = sample(test6, test9)
-    n_test = 2 * MNIST_TEST_PER_CLASS
-    protocol = f"fit on the notebook's 200 digits; scored on {n_test} other 6s and 9s"
+    n_test = len(test6) + len(test9)
+    protocol = f"fit on the notebook's 200 digits; scored on every other 6 and 9 ({n_test})"
     return Split(tx, ty, vx, vy, protocol)
 
 
@@ -158,7 +153,7 @@ QSVM_DATASETS: dict[str, dict] = {
         "features": ["horizontal_ink_ratio", "vertical_ink_ratio"],
         "raw_input": "pixels",
         "subset": "6 vs 9",
-        "seeds": {"fit_sample": MNIST_FIT_SEED, "held_out_sample": MNIST_HELD_OUT_SEED},
+        "seeds": {"fit_sample": MNIST_FIT_SEED},
         "extra": {"ink_threshold": INK_THRESHOLD},
     },
 }
