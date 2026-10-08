@@ -100,3 +100,95 @@ def ink_ratios(images: np.ndarray) -> np.ndarray:
     hr = binary[:, :, :14].sum(axis=(1, 2)) / np.maximum(binary[:, :, 14:].sum(axis=(1, 2)), 1)
     vr = binary[:, :14, :].sum(axis=(1, 2)) / np.maximum(binary[:, 14:, :].sum(axis=(1, 2)), 1)
     return np.stack([hr, vr], axis=1)
+
+
+# The paper stops at two features. Everything below widens the preprocessing to
+# d of them and nothing else: the targets keep their inner product, so the
+# kernel matrix F, its eigenvalues and the alpha read off the hardware are the
+# same numbers the 2-D rule uses.
+
+
+def targets_nd(d: int) -> np.ndarray:
+    """TARGETS widened to ``d`` coordinates, spreading each paper coordinate evenly.
+
+    Paper coordinate 0 takes the first ``d/2`` slots and coordinate 1 the rest,
+    each divided by ``sqrt(d/2)``. The two widened targets keep unit norm and
+    keep their inner product, because the halves contribute
+    ``t0A*t0B*(d/2)/(d/2) + t1A*t1B*(d/2)/(d/2)``. So the kernel matrix the
+    quantum step inverts is unchanged, and the alpha measured for the 2-D rule
+    carries over with nothing re-run.
+
+    Args:
+        d: Number of coordinates, even and at least 2.
+
+    Returns:
+        A (2, d) matrix of unit-norm targets.
+
+    Raises:
+        ValueError: If *d* is odd or below 2.
+    """
+    if d < 2 or d % 2:
+        raise ValueError(f"d must be even and at least 2 (got {d})")
+    half = d // 2
+    unit = TARGETS / np.linalg.norm(TARGETS, axis=1, keepdims=True)
+    spread = [
+        np.concatenate([np.repeat(t[0], half), np.repeat(t[1], half)]) / np.sqrt(half) for t in unit
+    ]
+    return np.stack(spread)
+
+
+#: Below this, a coordinate's two class means are one point and no map exists.
+MIN_MEAN_GAP = 1e-9
+
+
+def solve_map_nd(mu_pos: np.ndarray, mu_neg: np.ndarray, targets: np.ndarray) -> tuple:
+    """Per-coordinate ``(a, b)`` putting each class mean on its widened target.
+
+    One independent 2x2 solve per coordinate, the same shape as :func:`solve_map`
+    with the second dimension's hand-picked ``(c, d)`` replaced by a solve of its
+    own. Being per-coordinate is also the limit: the map reads each feature
+    alone, so it cannot represent a correlation between two of them.
+
+    Args:
+        mu_pos:  Mean of the +1 class, shape (d,).
+        mu_neg:  Mean of the -1 class, shape (d,).
+        targets: The (2, d) widened targets from :func:`targets_nd`.
+
+    Returns:
+        ``(a, b)``, each shape (d,), with ``a*mu_pos + b == targets[0]`` and
+        ``a*mu_neg + b == targets[1]``.
+
+    Raises:
+        ValueError: If any coordinate's two class means agree, which makes that
+            coordinate's solve singular. Sparse features hit this often: a block
+            of an image that is empty for both classes separates neither.
+    """
+    gaps = np.abs(mu_pos - mu_neg)
+    if np.any(gaps < MIN_MEAN_GAP):
+        dead = np.flatnonzero(gaps < MIN_MEAN_GAP).tolist()
+        raise ValueError(f"class means agree in coordinates {dead}; no affine map exists there")
+    a = (targets[0] - targets[1]) / (mu_pos - mu_neg)
+    b = targets[0] - a * mu_pos
+    return a, b
+
+
+def margin_nd(w: np.ndarray, a: np.ndarray, b: np.ndarray, feats: np.ndarray) -> np.ndarray:
+    """The rule's signed score for (N, d) raw features, on the unit circle.
+
+    The mapped vector is L2-normalised first (paper Eq. 22), unlike
+    :func:`decide`, which skips it because scaling leaves a sign alone. Here the
+    magnitude is read as well as the sign — scores from different maps are
+    compared against each other — so the normalisation has to happen.
+
+    Args:
+        w:     The widened weight vector, shape (d,).
+        a:     Per-coordinate slopes, shape (d,).
+        b:     Per-coordinate offsets, shape (d,).
+        feats: Raw feature matrix of shape (N, d).
+
+    Returns:
+        An (N,) vector of signed scores; positive picks the +1 class.
+    """
+    v = feats * a + b
+    norms = np.maximum(np.linalg.norm(v, axis=1, keepdims=True), MIN_MEAN_GAP)
+    return (v / norms) @ w

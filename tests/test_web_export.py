@@ -196,7 +196,7 @@ class TestReportedUncertainty:
     """Every committed accuracy ships the interval it was measured with."""
 
     @pytest.mark.parametrize(
-        "name", ["iris", "mnist", "bb84", "qsvm-iris", "qsvm-mnist", "qsvm-bb84"]
+        "name", ["iris", "mnist", "bb84", "qsvm-iris", "qsvm-mnist"]
     )
     def test_interval_brackets_the_claim(self, name: str) -> None:
         payload = _load(name)
@@ -205,7 +205,7 @@ class TestReportedUncertainty:
         assert 0.0 <= low < high <= 1.0
 
     @pytest.mark.parametrize(
-        "name", ["iris", "mnist", "bb84", "qsvm-iris", "qsvm-mnist", "qsvm-bb84"]
+        "name", ["iris", "mnist", "bb84", "qsvm-iris", "qsvm-mnist"]
     )
     def test_interval_matches_the_recorded_sample_count(self, name: str) -> None:
         """The interval must come from this export's own n, not a stale one."""
@@ -267,7 +267,7 @@ from .conftest import MNIST_OPENML_CACHE  # noqa: E402
 class TestQsvmProvenance:
     """The qsvm exports carry the same provenance discipline, QSVM-flavoured."""
 
-    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist", "qsvm-bb84"])
+    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist"])
     def test_provenance_block(self, name: str) -> None:
         prov = _load(name)["provenance"]
         assert set(prov) >= PROVENANCE_KEYS
@@ -282,11 +282,11 @@ class TestQsvmProvenance:
 class TestQsvmSchema:
     """Both files honour the browser contract for kind=qsvm."""
 
-    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist", "qsvm-bb84"])
+    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist"])
     def test_contract(self, name: str) -> None:
         payload = _load(name)
         assert payload["kind"] == "qsvm"
-        assert payload["dataset"] in {"iris", "mnist", "bb84"}
+        assert payload["dataset"] in {"iris", "mnist"}
         assert len(payload["classes"]) == 2
         assert len(payload["w"]) == 2
         assert set(payload["map"]) == {"a", "b", "c", "d"}
@@ -303,7 +303,7 @@ class TestQsvmSchema:
 class TestQsvmSelection:
     """Free parameters are chosen on validation data, never on the held-out split."""
 
-    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist", "qsvm-bb84"])
+    @pytest.mark.parametrize("name", ["qsvm-iris", "qsvm-mnist"])
     def test_selection_is_recorded(self, name: str) -> None:
         selection = _load(name)["selection"]
         assert selection["positive_class"] in _load(name)["classes"]
@@ -318,14 +318,25 @@ class TestQsvmSelection:
             assert selection["validation_accuracy"] is None
             assert selection["validation_n"] == 0
 
-    def test_bb84_chooses_on_a_validation_slice(self) -> None:
-        """BB84 has no paper values, so both parameters are picked here — and
-        the number the site publishes must not have informed that pick."""
-        selection = _load("qsvm-bb84")["selection"]
-        assert selection["candidates"] > 1
-        assert selection["validation_n"] > 0
-        assert 0.0 < selection["validation_accuracy"] <= 1.0
-        assert "validation slice" in selection["protocol"]
+    def test_a_dataset_the_paper_never_ran_would_choose_on_validation(self) -> None:
+        """Every shipped dataset is one the paper ran, so nothing is selected.
+        The selection path still has to work for one that is not."""
+        import numpy as np
+
+        spec = dict(
+            qsvm_export.QSVM_DATASETS["iris"],
+            free_parameters=True,
+            cd_candidates=[(0.95, -0.42), (0.5, -0.3), (2.0, 0.1)],
+        )
+        split = qsvm_export.iris_features()
+        choice = qsvm_export.choose_parameters(
+            split, spec, qsvm_export.weight_vector(qsvm_export.ALPHA_SHOTS)
+        )
+        assert choice.candidates > 1
+        assert choice.validation_n > 0
+        assert 0.0 < choice.validation_accuracy <= 1.0
+        assert (choice.c, choice.d) in spec["cd_candidates"]
+        assert not np.isnan(choice.validation_accuracy)
 
 
 class TestQsvmIrisDrift:
@@ -372,33 +383,117 @@ class TestQsvmMnistDrift:
         assert acc >= 0.85
 
 
-class TestQsvmBb84Drift:
-    """Full re-derivation in CI — the bb84 sessions are seeded simulation."""
+class TestQsvmOvo:
+    """The three-class Iris rule: three pairwise maps, one shared alpha."""
 
-    def test_map_and_weights_rederive(self) -> None:
-        """Re-run the whole derivation, selection included, and land on the
-        committed rule."""
-        payload = _load("qsvm-bb84")
-        fit = qsvm_export.fit_and_score("bb84", qsvm_export.ALPHA_SHOTS)
-        assert payload["map"]["a"] == pytest.approx(fit.mapping["a"], abs=1e-9)
-        assert payload["map"]["b"] == pytest.approx(fit.mapping["b"], abs=1e-9)
-        assert payload["map"]["c"] == pytest.approx(fit.choice.c)
-        assert payload["map"]["d"] == pytest.approx(fit.choice.d)
-        assert payload["w"] == pytest.approx(fit.w.tolist(), abs=1e-9)
+    def test_contract(self) -> None:
+        payload = _load("qsvm-iris-ovo")
+        assert payload["kind"] == "qsvm-ovo"
+        assert payload["dataset"] == "iris"
+        assert payload["classes"] == ["setosa", "versicolor", "virginica"]
+        assert len(payload["features"]) == 4
+        assert payload["raw_input"] == "features"
+        assert len(payload["w"]) == 4
+        assert len(payload["rules"]) == 3
+        for rule in payload["rules"]:
+            assert len(rule["pair"]) == 2
+            assert set(rule["pair"]) <= set(payload["classes"])
+            assert len(rule["a"]) == len(rule["b"]) == 4
+        assert {tuple(r["pair"]) for r in payload["rules"]} == {
+            ("setosa", "versicolor"),
+            ("setosa", "virginica"),
+            ("versicolor", "virginica"),
+        }
+        assert payload["num_params"] == 28
+        assert payload["test_n"] == 45
+        assert payload["train_n"] == 105
 
-    def test_accuracy_claim_reproduces(self) -> None:
-        payload = _load("qsvm-bb84")
-        split = qsvm_export.bb84_features()
+    def test_alpha_is_untouched_by_the_widening(self) -> None:
+        """The widened targets keep the kernel matrix, which is what lets all
+        three rules share one hardware alpha — and lets that alpha be the one
+        the binary exports already shipped."""
         import numpy as np
 
-        pred = qsvm_export.decide(np.array(payload["w"]), payload["map"], split.test_x)
-        acc = float((pred == split.test_y).mean())
-        assert round(acc, 4) == payload["test_accuracy"]
-        assert len(split.test_y) == payload["test_n"]
-        assert acc >= 0.9
+        from classifiers.qsvm_rule import TARGETS
 
-    def test_eavesdropped_rides_the_plus_one_ray(self) -> None:
-        """classes[0] (the s>0 class) must be 'eavesdropped' — the boundary
-        placement argument in bb84_features() depends on it."""
-        payload = _load("qsvm-bb84")
-        assert payload["classes"] == ["eavesdropped", "clean"]
+        targets = np.array(_load("qsvm-iris-ovo")["targets"])
+        unit2 = TARGETS / np.linalg.norm(TARGETS, axis=1, keepdims=True)
+        assert targets.shape == (2, 4)
+        assert np.allclose(np.linalg.norm(targets, axis=1), 1.0)
+        assert np.allclose(targets @ targets.T, unit2 @ unit2.T)
+
+    def test_one_weight_vector_serves_every_rule(self) -> None:
+        import numpy as np
+
+        from classifiers.qsvm_rule import weight_vector
+
+        payload = _load("qsvm-iris-ovo")
+        expected = weight_vector(qsvm_export.ALPHA_SHOTS) @ np.array(payload["targets"])
+        assert payload["w"] == pytest.approx(expected.tolist(), abs=1e-12)
+
+    def test_every_rule_pins_its_class_means_to_the_targets(self) -> None:
+        import numpy as np
+
+        from classifiers import qsvm_ovo_export
+
+        payload = _load("qsvm-iris-ovo")
+        targets = np.array(payload["targets"])
+        train_x, _, train_y, _ = qsvm_ovo_export.iris_split(qsvm_ovo_export.SEED)
+        for rule in payload["rules"]:
+            pos, neg = (qsvm_ovo_export.CLASSES.index(c) for c in rule["pair"])
+            a, b = np.array(rule["a"]), np.array(rule["b"])
+            assert np.allclose(train_x[train_y == pos].mean(axis=0) * a + b, targets[0])
+            assert np.allclose(train_x[train_y == neg].mean(axis=0) * a + b, targets[1])
+
+    def test_rules_and_accuracy_rederive(self) -> None:
+        """Re-run the whole derivation and land on the committed rule."""
+        import numpy as np
+
+        from classifiers import qsvm_ovo_export
+
+        payload = _load("qsvm-iris-ovo")
+        rules, w, hits, test_n, train_n = qsvm_ovo_export.fit_and_score(
+            qsvm_ovo_export.SEED, qsvm_export.ALPHA_SHOTS
+        )
+        assert payload["w"] == pytest.approx(w.tolist(), abs=1e-12)
+        assert payload["test_n"] == test_n
+        assert payload["train_n"] == train_n
+        assert payload["test_accuracy"] == round(hits / test_n, 4)
+        for committed, derived in zip(payload["rules"], rules, strict=True):
+            assert committed["pair"] == [derived.positive, derived.negative]
+            assert committed["a"] == pytest.approx(derived.a.tolist(), abs=1e-12)
+            assert committed["b"] == pytest.approx(derived.b.tolist(), abs=1e-12)
+            assert np.isfinite(derived.a).all()
+
+    def test_it_beats_a_coin_and_says_how_sure_it_is(self) -> None:
+        """One 45-sample split cannot pin this down, so the export carries a
+        cross-validated figure beside it."""
+        payload = _load("qsvm-iris-ovo")
+        low, high = payload["test_accuracy_ci"]
+        assert low <= payload["test_accuracy"] <= high
+        assert payload["test_accuracy"] >= 0.80
+        assert payload["cv_accuracy"] >= 0.80
+        assert payload["cv_splits"] >= 10
+
+    def test_nothing_is_selected(self) -> None:
+        """Both free choices are fixed by construction, so no validation slice
+        is used and none may be claimed."""
+        selection = _load("qsvm-iris-ovo")["selection"]
+        assert selection["candidates"] == 1
+        assert selection["validation_n"] == 0
+        assert selection["validation_accuracy"] is None
+
+    def test_provenance_block(self) -> None:
+        prov = _load("qsvm-iris-ovo")["provenance"]
+        assert set(prov) >= PROVENANCE_KEYS
+        assert prov["source_repo"] == "quantum-machine-learning"
+        assert re.fullmatch(r"[0-9a-f]{40}", prov["source_sha"])
+        assert prov["training"]["model"] == "QSVM one-vs-one"
+        assert prov["training"]["paper"] == "arXiv:1909.11988"
+
+    def test_the_binary_iris_rule_is_untouched(self) -> None:
+        """This model ships beside the paper's own Iris experiment, not over it."""
+        binary = _load("qsvm-iris")
+        assert binary["kind"] == "qsvm"
+        assert binary["classes"] == ["setosa", "versicolor"]
+        assert binary["features"] == ["sepal_width", "petal_length"]

@@ -91,7 +91,7 @@ class TestTheFlipsRecompute:
         there = decide(weight_vector(alpha), payload["map"], split.test_x)
         return int((here != there).sum()), len(split.test_y)
 
-    @pytest.mark.parametrize("dataset", ["iris", "bb84"])
+    @pytest.mark.parametrize("dataset", ["iris"])
     def test_against_the_exact_alpha(self, artifact, dataset) -> None:
         flips, n = self._recount(dataset, np.array(artifact["compared_against"]["exact"]))
         row = _row(artifact, "exact", dataset)
@@ -105,7 +105,7 @@ class TestTheFlipsRecompute:
         row = _row(artifact, "exact", "mnist")
         assert (flips, n) == (row["flips"], row["n"])
 
-    @pytest.mark.parametrize("dataset", ["iris", "bb84"])
+    @pytest.mark.parametrize("dataset", ["iris"])
     def test_the_committed_accuracy_is_the_shipped_one(self, artifact, dataset) -> None:
         """The deployed arm is the export's own rule, so this doubles as a drift
         check on the browser payload."""
@@ -125,11 +125,15 @@ class TestWhatTheNumberSays:
         statement about the split, not about the hardware."""
         assert _row(artifact, "exact", "iris")["flips"] == 0
 
-    def test_the_direction_is_inconsistent(self, artifact) -> None:
-        """The hardware alpha is better on one dataset and worse on another, so
-        it may not be reported as an improvement in either direction."""
-        deltas = [d["accuracy_delta"] for d in _comparison(artifact, "exact")["datasets"]]
-        assert max(deltas) > 0 and min(deltas) < 0
+    def test_no_difference_clears_its_own_interval(self, artifact) -> None:
+        """Where the hardware alpha moves a figure at all it moves it up, so the
+        only thing keeping that from reading as an improvement is the interval:
+        every alternative accuracy sits inside the committed one's."""
+        rows = _comparison(artifact, "exact")["datasets"]
+        for row in rows:
+            low, high = row["committed_accuracy_ci"]
+            assert low <= row["other_accuracy"] <= high, row["dataset"]
+        assert any(row["accuracy_delta"] != 0 for row in rows), "nothing moved; the test is vacuous"
 
     def test_every_difference_sits_inside_its_interval(self, artifact) -> None:
         """Nothing here is resolved by these splits."""

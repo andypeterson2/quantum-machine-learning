@@ -55,7 +55,7 @@ Distilling the MNIST CNN into the linear student costs accuracy at the default b
 
 That divergence says how close the measured distribution sat to the ideal one. It does not say what the difference is worth, so `make alpha-sensitivity` measures that instead, into `exports/alpha-sensitivity.json`.
 
-Only one scalar from this run reaches the deployed classifier. The rule decides by `sign(v · w)`, so alpha's scale cancels and only the ratio of its two components matters — and that ratio came out 3.3% from its exact value, -1.0327 against -1. Alpha's `(+, -)` sign pattern is not measured at all, but taken from the ideal solution. Holding the committed map, orientation and split fixed and rebuilding `w` from the exact alpha tilts the boundary 1.58° and changes **19 of 1,530** held-out predictions: none of 30 on Iris, 4 of 500 on BB84, 15 of 1,000 on MNIST. The direction is inconsistent — MNIST is 1.5 points better under the hardware alpha, BB84 0.8 worse, each inside the other's interval — so the reading is that this is a small perturbation these splits cannot resolve. Not that the hardware alpha is as good as exact, and not that it is worse.
+Only one scalar from this run reaches the deployed classifier. The rule decides by `sign(v · w)`, so alpha's scale cancels and only the ratio of its two components matters — and that ratio came out 3.3% from its exact value, -1.0327 against -1. Alpha's `(+, -)` sign pattern is not measured at all, but taken from the ideal solution. Holding the committed map, orientation and split fixed and rebuilding `w` from the exact alpha tilts the boundary 1.58° and changes **15 of 1,030** held-out predictions: none of 30 on Iris, 15 of 1,000 on MNIST. Those 15 go the measured alpha's way, putting MNIST 1.5 points above the exact solution — inside the committed interval, so the reading is that this is a small perturbation these splits cannot resolve. Not that the hardware alpha is as good as exact, and not that it is better.
 
 The paper's own optimized depth-7 circuit on `ibmqx2` reports 0.13, but Eq. 33 computes that in nats while `classifiers/hhl.py` uses base 2, so the two are not comparable as printed. Converted to the same base, this run is about 15× closer to ideal than the paper's. That gap is seven years of IBM's hardware rather than anything this repository did: the circuit here transpiles to depth 18, against the paper's logical depth 7.
 
@@ -200,7 +200,7 @@ Evaluation results carry `accuracy_ci` and `num_samples` beside every `accuracy`
 
 ## Exports
 
-`make export-web` writes the browser-served linear weights to `exports/web/`, `make export-qsvm` writes the QSVM decision rules beside them, and `make sync-web` copies both into the portfolio site's checkout. `tests/test_web_export.py` checks the committed files against what the code produces.
+`make export-web` writes the browser-served linear weights to `exports/web/`, `make export-qsvm` writes the QSVM decision rules beside them, `make export-qsvm-ovo` writes the three-class Iris rule that runs the same alpha once per pair of species over all four measurements, and `make sync-web` copies them into the portfolio site's checkout. `tests/test_web_export.py` checks the committed files against what the code produces.
 
 ## Tests
 
