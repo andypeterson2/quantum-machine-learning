@@ -87,3 +87,48 @@ def test_committed_hardware_run_reanalyses_to_its_recorded_values(path) -> None:
         assert again["alpha"] == pytest.approx(job["alpha"]), label
         assert again["p_q4_success"] == pytest.approx(job["p_q4_success"]), label
     assert run["shots"] == DEFAULT_SHOTS
+
+
+class TestAlphaIsFixedByTheGeometry:
+    """The README and the site both now say the quantum step reproduces a
+    closed-form answer rather than computing an unknown one. That is a claim
+    about the paper's construction, so it is checked rather than asserted.
+    """
+
+    @staticmethod
+    def _system(k: float, gamma: float) -> np.ndarray:
+        """``F = K + gamma^-1 I`` for two unit-norm training points."""
+        inverse = 0.0 if np.isinf(gamma) else 1.0 / gamma
+        return np.array([[1.0 + inverse, k], [k, 1.0 + inverse]])
+
+    def test_the_paper_targets_are_unit_length(self) -> None:
+        """Which is what makes F's diagonal equal, and the rest follow."""
+        from classifiers.qsvm_rule import TARGETS
+
+        unit = TARGETS / np.linalg.norm(TARGETS, axis=1, keepdims=True)
+        assert np.allclose(np.linalg.norm(unit, axis=1), 1.0)
+
+    @pytest.mark.parametrize("k", [0.0, 0.25, 0.490974, 0.75, 0.99])
+    @pytest.mark.parametrize("gamma", [1.0, 2.0**3, 100.0])
+    def test_the_label_vector_is_an_eigenvector(self, k: float, gamma: float) -> None:
+        y = np.array([1.0, -1.0])
+        product = self._system(k, gamma) @ y
+        assert np.allclose(product, product[0] * y)
+
+    @pytest.mark.parametrize("k", [0.0, 0.25, 0.490974, 0.75, 0.99])
+    @pytest.mark.parametrize("gamma", [1.0, 2.0**3, 100.0])
+    def test_the_ratio_is_one_whatever_the_data(self, k: float, gamma: float) -> None:
+        """alpha1 / -alpha2 is exactly 1 for every dataset and every gamma, so
+        a measured ratio away from it is device error and nothing else."""
+        alpha = np.linalg.solve(self._system(k, gamma), np.array([1.0, -1.0]))
+        assert alpha[0] / -alpha[1] == pytest.approx(1.0, abs=1e-12)
+
+    def test_the_system_is_too_well_conditioned_to_generalise(self) -> None:
+        """HHL's cost scales with the condition number, so the writeup may not
+        read as a statement about HHL where that number is large."""
+        from classifiers.qsvm_export import IRIS_CD  # noqa: F401  (module import check)
+        from classifiers.qsvm_rule import TARGETS
+
+        unit = TARGETS / np.linalg.norm(TARGETS, axis=1, keepdims=True)
+        shipped = self._system(float(unit[0] @ unit[1]), 2.0**3)
+        assert np.linalg.cond(shipped) < 5.0
