@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep
+.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep alpha-fit-noise
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
@@ -58,6 +58,11 @@ alpha-sensitivity:
 # peaks, into exports/alpha-ratio-sweep.json.
 alpha-ratio-sweep:
 	python tools/alpha_ratio_sweep.py
+
+# Redraw the fit sample and measure how much it alone moves accuracy, so the
+# hardware alpha's effect can be read against it. exports/alpha-fit-noise.json.
+alpha-fit-noise:
+	python tools/alpha_fit_noise.py
 
 test:
 	python -m pytest tests/ -v
