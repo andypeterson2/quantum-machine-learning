@@ -182,8 +182,8 @@
   ],
   "provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "f4c1a14ff62af19314efbd97338795291e8d4076",
-    "source_dirty": false,
+    "source_sha": "4c5c95229a397a5795de952a6d38789d0f87f8ee",
+    "source_dirty": true,
     "exported_at": "2026-10-08",
     "seed": 0,
     "training": {

@@ -218,30 +218,58 @@ def _solve_on(x: np.ndarray, y: np.ndarray, c: float, d: float) -> dict:
     return {"a": a, "b": b, "c": c, "d": d}
 
 
+def paper_orientation(x: np.ndarray, y: np.ndarray, c: float, d: float) -> bool:
+    """Whether the labels must be swapped to match the paper's ray assignment.
+
+    The paper's two targets are not interchangeable: the +1 ray has the smaller
+    second component (0.159 against 0.938 once normalised), so the +1 class is
+    the one whose mapped second component is smaller. Reading the orientation
+    off that, rather than searching for it, reproduces the paper's own choice
+    on both of its datasets — setosa against versicolor, and "6" against "9" —
+    which is the evidence that this is its convention rather than a new one.
+
+    Searching instead costs more than it buys. A validation slice of a
+    200-sample fit split is 50 images; choosing between two orientations on 50
+    images is close to a coin toss, and the toss lands in the published number.
+
+    Args:
+        x: Fit features, shape (N, 2).
+        y: Fit labels, +1 and -1 as the dataset spec names them.
+        c: Second-dimension slope, whose sign decides which way the map orders
+            the two class means.
+        d: Second-dimension offset.
+
+    Returns:
+        ``True`` when the spec's +1 class belongs on the -1 ray.
+    """
+    pos = c * x[y == 1].mean(axis=0)[1] + d
+    neg = c * x[y == -1].mean(axis=0)[1] + d
+    return bool(pos > neg)
+
+
 def choose_parameters(split: Split, spec: dict, w: np.ndarray) -> Choice:
-    """Pick the orientation and (c, d) on a validation slice of the fit split.
+    """Pick (c, d) on a validation slice of the fit split.
 
-    Two parameters here are the modeller's, not the paper's: which class rides
-    the +1 ray (the Eq. 24 geometry puts the boundary about 87% of the way from
-    the +1 mean toward the -1 mean, so the choice matters), and the second
-    dimension's (c, d) where the paper gives no value. They were previously
-    fixed by hand, justified by accuracies that this module only ever computed
-    on the held-out split — which makes the published number optimistic.
-
-    They are now chosen on a slice held back from the fit split, so the held-out
-    split takes no part in the choice. Ties keep the first candidate, so the
+    One parameter here is the modeller's, not the paper's: the second
+    dimension's (c, d), where the paper gives no value for a dataset it did not
+    run. It was once fixed by hand, justified by accuracies this module only
+    ever computed on the held-out split — which made the published number
+    optimistic. It is now chosen on a slice held back from the fit split, so
+    the held-out split takes no part. Ties keep the first candidate, so the
     result is deterministic.
 
-    Where the paper fixes both (Iris and MNIST are its own experiments), there
-    is nothing to choose and its values stand: selecting them here would only
-    add noise — on Iris's 18-sample validation slice it flips the orientation
-    and costs 13 points of held-out accuracy.
+    The orientation is not searched at all; :func:`paper_orientation` reads it
+    off the geometry for whichever (c, d) is under test.
+
+    Where the paper fixes (c, d) too — Iris and MNIST are its own experiments —
+    there is nothing to choose and its values stand.
     """
     from sklearn.model_selection import train_test_split
 
     if not spec["free_parameters"]:
         c, d = spec["cd_candidates"][0]
-        return Choice(flip=False, c=c, d=d, validation_accuracy=float("nan"),
+        flip = paper_orientation(split.train_x, split.train_y, c, d)
+        return Choice(flip=flip, c=c, d=d, validation_accuracy=float("nan"),
                       validation_n=0, candidates=1)
 
     fit_x, val_x, fit_y, val_y = train_test_split(
@@ -254,19 +282,19 @@ def choose_parameters(split: Split, spec: dict, w: np.ndarray) -> Choice:
 
     best: Choice | None = None
     candidates = 0
-    for flip in (False, True):
+    for c, d in spec["cd_candidates"]:
+        flip = paper_orientation(fit_x, fit_y, c, d)
         fit_labels, val_labels = _oriented(fit_y, flip=flip), _oriented(val_y, flip=flip)
-        for c, d in spec["cd_candidates"]:
-            try:
-                mapping = _solve_on(fit_x, fit_labels, c, d)
-            except ValueError:
-                # The mapped second components must stay positive (paper Sec.
-                # IV-A); a candidate that breaks that is simply not available.
-                continue
-            candidates += 1
-            accuracy = float((decide(w, mapping, val_x) == val_labels).mean())
-            if best is None or accuracy > best.validation_accuracy:
-                best = Choice(flip, c, d, accuracy, len(val_labels), candidates)
+        try:
+            mapping = _solve_on(fit_x, fit_labels, c, d)
+        except ValueError:
+            # The mapped second components must stay positive (paper Sec.
+            # IV-A); a candidate that breaks that is simply not available.
+            continue
+        candidates += 1
+        accuracy = float((decide(w, mapping, val_x) == val_labels).mean())
+        if best is None or accuracy > best.validation_accuracy:
+            best = Choice(flip, c, d, accuracy, len(val_labels), candidates)
     if best is None:
         raise ValueError("no (c, d) candidate maps this dataset into the first quadrant")
     return best._replace(candidates=candidates)
@@ -310,10 +338,11 @@ def build_payload(dataset: str) -> dict:
         "test_protocol": split.protocol,
         "selection": {
             "protocol": (
-                f"orientation and (c, d) chosen on a stratified {VALIDATION_FRACTION:.0%} "
-                "validation slice of the fit split; the held-out split takes no part"
+                f"(c, d) chosen on a stratified {VALIDATION_FRACTION:.0%} validation slice of "
+                "the fit split, the held-out split taking no part; the orientation follows the "
+                "paper's ray geometry and is not searched"
                 if spec["free_parameters"]
-                else "orientation and (c, d) fixed by the paper; nothing selected here"
+                else "(c, d) fixed by the paper; the orientation follows its ray geometry"
             ),
             "candidates": choice.candidates,
             "validation_n": choice.validation_n,

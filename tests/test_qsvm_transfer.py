@@ -66,13 +66,14 @@ def test_the_rule_does_not_transfer(artifact) -> None:
     assert s["accuracy_min"] < 0.55, "at least one pair should be near chance"
 
 
-def test_the_hardware_advantage_reverses(artifact) -> None:
-    """Claim two: resolved in both directions, so MNIST's sign is not a
-    property of the readout."""
+def test_the_hardware_advantage_does_not_survive_the_corpus(artifact) -> None:
+    """Claim two. On MNIST the measured alpha comes out ahead; here it is
+    behind on almost every pair that resolves at all. The sign is a property of
+    the corpus, not of the readout, which is what stops the MNIST number being
+    read as a hardware result."""
     s = artifact["summary"]
     assert s["resolved_on"] > 10
-    assert s["hardware_ahead_on"] > 0
-    assert s["hardware_behind_on"] > 0
+    assert s["hardware_behind_on"] > 0.8 * s["resolved_on"]
 
 
 def test_every_pair_is_scored_on_a_real_split(artifact) -> None:
