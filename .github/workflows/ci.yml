@@ -44,11 +44,14 @@ jobs:
             done
           fi
 
-      - name: Restore openml cache (qsvm mnist drift check)
+      # Both corpora share one cache path, so the key names both and the
+      # populate step asks after each by its own file: a cache holding only one
+      # of them must still fetch the other.
+      - name: Restore openml cache (qsvm drift check and transfer study)
         uses: actions/cache@v6
         with:
           path: ~/scikit_learn_data
-          key: openml-mnist784-v1
+          key: openml-mnist784-fashion-v1
 
       - name: Populate openml cache (cold cache only)
         run: |
@@ -56,8 +59,10 @@ jobs:
           from pathlib import Path
           from sklearn.datasets import fetch_openml, get_data_home
 
-          if not any((Path(get_data_home()) / "openml").rglob("*.gz")):
-              fetch_openml("mnist_784", version=1, as_frame=False, parser="liac-arff")
+          openml = Path(get_data_home()) / "openml"
+          for name in ("mnist_784", "Fashion-MNIST"):
+              if not any(openml.rglob(f"{name}.arff.gz")):
+                  fetch_openml(name, version=1, as_frame=False, parser="liac-arff")
           EOF
 
       - name: Run tests

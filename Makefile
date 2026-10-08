@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep alpha-fit-noise
+.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep alpha-fit-noise qsvm-transfer
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
@@ -63,6 +63,11 @@ alpha-ratio-sweep:
 # hardware alpha's effect can be read against it. exports/alpha-fit-noise.json.
 alpha-fit-noise:
 	python tools/alpha_fit_noise.py
+
+# Apply the paper's rule to every Fashion-MNIST class pair, to see whether it
+# transfers off the corpus it was fitted to. exports/qsvm-transfer.json.
+qsvm-transfer:
+	python tools/qsvm_transfer.py
 
 test:
 	python -m pytest tests/ -v
