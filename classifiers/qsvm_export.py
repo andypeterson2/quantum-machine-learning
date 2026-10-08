@@ -34,6 +34,7 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import logging
+from functools import lru_cache
 from typing import NamedTuple
 
 import numpy as np
@@ -77,9 +78,15 @@ class Split(NamedTuple):
     protocol: str
 
 
-def iris_features() -> Split:
+def iris_features(seed: int = SEED) -> Split:
     """The notebook's Iris subset, (sepal_width, petal_length) with setosa=+1,
-    split 70/30 by class."""
+    split 70/30 by class.
+
+    Args:
+        seed: The split's random state. The default is the committed one;
+            :mod:`tools.alpha_fit_noise` varies it to measure how much the
+            split alone moves the rule.
+    """
     from sklearn.datasets import load_iris
     from sklearn.model_selection import train_test_split
 
@@ -88,12 +95,26 @@ def iris_features() -> Split:
     feats = iris.data[mask][:, [1, 2]]
     labels = np.where(iris.target[mask] == 0, 1, -1)
     tx, vx, ty, vy = train_test_split(
-        feats, labels, test_size=0.3, stratify=labels, random_state=SEED
+        feats, labels, test_size=0.3, stratify=labels, random_state=seed
     )
     return Split(tx, ty, vx, vy, "stratified 70/30 split of the 100 setosa/versicolor samples")
 
 
-def mnist_features() -> Split:
+@lru_cache(maxsize=1)
+def _mnist_corpus() -> tuple[np.ndarray, np.ndarray]:
+    """The openml digits, parsed once.
+
+    Parsing 70,000 rows takes seconds, and :mod:`tools.alpha_fit_noise` redraws
+    the fit sample sixty times from the same corpus.
+    """
+    from sklearn.datasets import fetch_openml
+
+    return fetch_openml(
+        "mnist_784", version=1, return_X_y=True, as_frame=False, parser="liac-arff"
+    )
+
+
+def mnist_features(seed: int = MNIST_FIT_SEED) -> Split:
     """The notebook's 6-vs-9 fit sample (100 per class) as (HR, VR) ink ratios, "6"=+1,
     and every other 6 and 9 in the corpus as the held-out split.
 
@@ -103,13 +124,14 @@ def mnist_features() -> Split:
 
     Requires the openml ``mnist_784`` cache (the notebook's first run created
     it); callers in CI must skip when it is absent.
-    """
-    from sklearn.datasets import fetch_openml
 
-    X, y = fetch_openml(  # noqa: N806 — sklearn's feature-matrix convention
-        "mnist_784", version=1, return_X_y=True, as_frame=False, parser="liac-arff"
-    )
-    rng = np.random.default_rng(MNIST_FIT_SEED)
+    Args:
+        seed: Draws the fit sample. The default is the notebook's;
+            :mod:`tools.alpha_fit_noise` varies it to measure how much the
+            sample alone moves the rule.
+    """
+    X, y = _mnist_corpus()  # noqa: N806 — sklearn's feature-matrix convention
+    rng = np.random.default_rng(seed)
     pool6, pool9 = np.where(y == "6")[0], np.where(y == "9")[0]
     idx6 = rng.choice(pool6, 100, replace=False)
     idx9 = rng.choice(pool9, 100, replace=False)
