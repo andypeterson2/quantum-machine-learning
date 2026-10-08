@@ -16,7 +16,7 @@ against the paper's fixed training geometry), pairs them with the shot-readout
 ``alpha = (0.5, -0.5)`` is sign-identical on Iris and is recorded in the
 provenance), fits the map on a training split, scores the rule on a held-out
 split, and writes
-``exports/web/qsvm-{iris,mnist,bb84}.json`` for the portfolio site's in-browser
+``exports/web/qsvm-{iris,mnist}.json`` for the portfolio site's in-browser
 demo tier — same conventions as :mod:`classifiers.web_export`.
 
 Run via ``make export-qsvm``; ship with ``make sync-web``.
@@ -54,11 +54,11 @@ logger = logging.getLogger(__name__)
 #: (2026-09-04, job dad49jdnj4cs73adbp90, 8192 raw shots), a real quantum computer.
 ALPHA_SHOTS = np.array([0.50097561, -0.48513046])
 
-#: Second-dimension map (c, d): the paper's own values (Eq. 15) for its two
-#: datasets, and for BB84 a grid :func:`choose_parameters` picks from.
+#: Second-dimension map (c, d): the paper's own values (Eq. 15). Every dataset
+#: here is one the paper ran, so :func:`choose_parameters` has nothing to pick;
+#: the machinery stays for a dataset it did not.
 IRIS_CD = (0.95, -0.42)
 MNIST_CD = (0.5, -0.3)
-BB84_CD_GRID = [(2.0, 0.02), (1.0, 0.02), (4.0, 0.02), (2.0, 0.1), (8.0, 0.01)]
 
 #: Fraction of the fit split held back to choose the free parameters on.
 VALIDATION_FRACTION = 0.25
@@ -132,32 +132,6 @@ def mnist_features() -> Split:
     return Split(tx, ty, vx, vy, protocol)
 
 
-def bb84_features() -> Split:
-    """The bb84 plugin's train and test splits as raw (qber, sifted_key_rate), eve=+1.
-
-    Re-generates the exact seeded simulations the plugin serves (self-generated
-    data — no cache, so the CI drift check runs this unconditionally).
-
-    Labels arrive with *eavesdropped* on the +1 ray; which class actually ends
-    up there is decided by :func:`choose_parameters` on a validation slice,
-    because it matters — the Eq. 24 geometry places the boundary about 87% of
-    the way from the +1 class mean toward the −1 mean, so the orientation moves
-    the boundary between the sparse gap near the clean regime and the middle of
-    the eavesdropped distribution.
-    """
-    from classifiers.datasets.bb84.plugin import N_TEST, N_TRAIN, TEST_SEED, TRAIN_SEED
-    from classifiers.datasets.bb84.simulate import generate_dataset
-
-    def sessions(n: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
-        feats, labels01 = generate_dataset(n, seed)
-        return feats.astype(np.float64), np.where(labels01 == 1, 1, -1)  # eve is +1
-
-    tx, ty = sessions(N_TRAIN, TRAIN_SEED)
-    vx, vy = sessions(N_TEST, TEST_SEED)
-    protocol = f"fit on the {N_TRAIN} training sessions; scored on the {N_TEST} test sessions"
-    return Split(tx, ty, vx, vy, protocol)
-
-
 #: Per-dataset export specs — adding a dataset is adding one entry here (plus
 #: its features function above); build_payload has no dataset branches. ``seeds``
 #: names whatever draws that dataset's samples, so the provenance records it.
@@ -186,20 +160,6 @@ QSVM_DATASETS: dict[str, dict] = {
         "subset": "6 vs 9",
         "seeds": {"fit_sample": MNIST_FIT_SEED, "held_out_sample": MNIST_HELD_OUT_SEED},
         "extra": {"ink_threshold": INK_THRESHOLD},
-    },
-    "bb84": {
-        "features_fn": bb84_features,
-        "cd_candidates": BB84_CD_GRID,
-        # The paper has no BB84 experiment, so both the orientation and (c, d)
-        # are this repo's to pick — and so must be picked on validation data.
-        "free_parameters": True,
-        "classes": ["eavesdropped", "clean"],
-        "features": ["qber", "sifted_key_rate"],
-        "raw_input": "features",
-        "subset": "eavesdropped vs clean",
-        # The bb84 splits come from the plugin's own fixed seeds, recorded there.
-        "seeds": {},
-        "extra": {},
     },
 }
 

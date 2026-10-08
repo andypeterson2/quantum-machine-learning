@@ -54,29 +54,12 @@
             0.895
           ],
           "accuracy_delta": 0.015
-        },
-        {
-          "dataset": "bb84",
-          "n": 500,
-          "flips": 4,
-          "flip_rate": 0.008,
-          "committed_accuracy": 0.908,
-          "committed_accuracy_ci": [
-            0.8795,
-            0.9303
-          ],
-          "other_accuracy": 0.916,
-          "other_accuracy_ci": [
-            0.8884,
-            0.9373
-          ],
-          "accuracy_delta": -0.008
         }
       ],
       "pooled": {
-        "n": 1530,
-        "flips": 19,
-        "flip_rate": 0.0124
+        "n": 1030,
+        "flips": 15,
+        "flip_rate": 0.0146
       },
       "skipped": []
     },
@@ -117,29 +100,12 @@
             0.9042
           ],
           "accuracy_delta": 0.005
-        },
-        {
-          "dataset": "bb84",
-          "n": 500,
-          "flips": 1,
-          "flip_rate": 0.002,
-          "committed_accuracy": 0.908,
-          "committed_accuracy_ci": [
-            0.8795,
-            0.9303
-          ],
-          "other_accuracy": 0.91,
-          "other_accuracy_ci": [
-            0.8817,
-            0.9321
-          ],
-          "accuracy_delta": -0.002
         }
       ],
       "pooled": {
-        "n": 1530,
-        "flips": 6,
-        "flip_rate": 0.0039
+        "n": 1030,
+        "flips": 5,
+        "flip_rate": 0.0049
       },
       "skipped": []
     }
@@ -164,22 +130,13 @@
         0.8972,
         0.9316
       ]
-    },
-    {
-      "dataset": "bb84",
-      "n": 500,
-      "accuracy": 0.928,
-      "accuracy_ci": [
-        0.9019,
-        0.9475
-      ]
     }
   ],
   "provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "93716ecb2d0a0d4393a6f761009456766fa7a670",
+    "source_sha": "5958a7e6ec4d8063240d03bfefdfe2983b843318",
     "source_dirty": true,
-    "exported_at": "2026-10-03",
+    "exported_at": "2026-10-08",
     "seed": 0,
     "training": {
       "model": "QSVM",

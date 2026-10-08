@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm benchmark distillation alpha-sensitivity
+.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
@@ -13,17 +13,31 @@ run:
 export-web:
 	python -m classifiers.web_export
 
+# Exports the site does not serve. BB84's sessions come from this repo, and on
+# them a fixed QBER threshold beats both fitted models, so an accuracy beside the
+# other datasets would read as a result it is not. The files stay here: the alpha
+# sensitivity sweep still scores them.
+UNSERVED = bb84.json qsvm-bb84.json
+
 # Copy the canonical exports into the website checkout's model directory.
 sync-web:
 	@test -d "$(WEB)/public/classifiers/models" || { \
 	  echo "WEB=$(WEB) has no public/classifiers/models/ — pass an absolute path:"; \
 	  echo "  make sync-web WEB=/path/to/website"; exit 1; }
-	cp exports/web/*.json $(WEB)/public/classifiers/models/
+	@for f in exports/web/*.json; do \
+	  case " $(UNSERVED) " in *" $$(basename $$f) "*) continue;; esac; \
+	  cp "$$f" $(WEB)/public/classifiers/models/; \
+	done
 
 # Derive the QSVM paper-recreation weights (closed-form, from the notebook's
 # recorded solution) into exports/web/ (drift-checked in CI; ship via sync-web).
 export-qsvm:
 	python -m classifiers.qsvm_export
+
+# Derive the three-class Iris rule (three pairwise maps over all four features,
+# sharing the binary rule's alpha) into exports/web/ (ship via sync-web).
+export-qsvm-ovo:
+	python -m classifiers.qsvm_ovo_export
 
 # Measure every model's accuracy (seeded, with a 95% interval) into
 # exports/benchmarks.json — the numbers the MODELS.md files are held to.

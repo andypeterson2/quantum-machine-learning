@@ -47,7 +47,7 @@ def no_mnist(monkeypatch):
 def test_scores_match_committed_exports(hardware_run, no_mnist) -> None:
     """With the shipped alpha, the tool reproduces each export's held-out accuracy."""
     got = hardware_run.qsvm_accuracies(qsvm_export.ALPHA_SHOTS.tolist())
-    for name in ("iris", "bb84"):
+    for name in ("iris",):
         payload = json.loads((OUT_DIR / f"qsvm-{name}.json").read_text())
         assert got[name] == payload["test_accuracy"], name
 
@@ -55,7 +55,7 @@ def test_scores_match_committed_exports(hardware_run, no_mnist) -> None:
 def test_unavailable_dataset_is_skipped(hardware_run, no_mnist) -> None:
     got = hardware_run.qsvm_accuracies([0.5, -0.5])
     assert "mnist" not in got
-    assert set(got) == {"iris", "bb84"}
+    assert set(got) == {"iris"}
 
 
 def test_other_failures_raise(hardware_run, monkeypatch) -> None:
@@ -88,6 +88,8 @@ def test_artifact_accuracies_are_held_out(path) -> None:
         for name, claimed in job["qsvm_accuracy"].items():
             if name == "mnist":
                 continue  # needs the openml cache; covered in test_alpha_sensitivity
+            if name not in qsvm_export.QSVM_DATASETS:
+                continue  # a dataset the sweep covered when this run was recorded
             spec = qsvm_export.QSVM_DATASETS[name]
             payload = json.loads((OUT_DIR / f"qsvm-{name}.json").read_text())
             split = spec["features_fn"]()
