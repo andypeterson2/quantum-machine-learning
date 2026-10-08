@@ -15,10 +15,18 @@ from sklearn.datasets import get_data_home
 from classifiers.datasets.mnist.models import LinearNet, MNISTNet
 from classifiers.datasets.mnist.plugin import MNISTPlugin
 
-# fetch_openml stores the ARFF cache under <data_home>/openml; presence of any
-# openml cache is our (coarse but CI-safe) signal that mnist_784 is available.
+# Two corpora share <data_home>/openml, so each is asked after by its own
+# <name>.arff.gz: one being cached must not enable the other's tests.
 _OPENML_DIR = Path(get_data_home()) / "openml"
-MNIST_OPENML_CACHE = _OPENML_DIR.is_dir() and any(_OPENML_DIR.rglob("*.gz"))
+
+
+def _openml_cached(name: str) -> bool:
+    """Whether fetch_openml has this corpus on disk; tests never download."""
+    return _OPENML_DIR.is_dir() and any(_OPENML_DIR.rglob(f"{name}.arff.gz"))
+
+
+MNIST_OPENML_CACHE = _openml_cached("mnist_784")
+FASHION_OPENML_CACHE = _openml_cached("Fashion-MNIST")
 
 
 @pytest.fixture

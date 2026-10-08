@@ -1,0 +1,1450 @@
+{
+ "kind": "qsvm-transfer",
+ "corpus": "Fashion-MNIST",
+ "corpus_citation": "Xiao, Rasul & Vollgraf, arXiv:1708.07747",
+ "fit_seed": 42,
+ "fit_per_class": 100,
+ "deployed_alpha": [
+  0.50097561,
+  -0.48513046
+ ],
+ "exact_alpha": [
+  0.5,
+  -0.5
+ ],
+ "declared_pair": {
+  "rule": "largest class-mean VR gap on the fit sample; no held-out image takes part",
+  "pair": [
+   "T-shirt",
+   "Bag"
+  ],
+  "vr_gap": 2.7024
+ },
+ "summary": {
+  "pairs_scored": 45,
+  "accuracy_median": 0.6267,
+  "accuracy_min": 0.4765,
+  "accuracy_max": 0.9614,
+  "logistic_regression_median": 0.7337,
+  "beats_logistic_regression_on": 9,
+  "resolved_on": 31,
+  "hardware_ahead_on": 9,
+  "hardware_behind_on": 22,
+  "delta_mean": -0.00334,
+  "delta_sd": 0.00563
+ },
+ "pairs": [
+  {
+   "pair": [
+    "T-shirt",
+    "Trouser"
+   ],
+   "n": 13800,
+   "accuracy": 0.5659,
+   "accuracy_ci": [
+    0.5576,
+    0.5741
+   ],
+   "exact_accuracy": 0.5662,
+   "logistic_regression": 0.5793,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 10,
+   "discordant_exact_right": 15,
+   "mcnemar_p": 0.4243562222,
+   "paired_delta": -0.000362,
+   "paired_delta_ci": [
+    -0.001072,
+    0.000348
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.52,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Pullover"
+   ],
+   "n": 13800,
+   "accuracy": 0.4856,
+   "accuracy_ci": [
+    0.4772,
+    0.4939
+   ],
+   "exact_accuracy": 0.4851,
+   "logistic_regression": 0.557,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 8,
+   "discordant_exact_right": 1,
+   "mcnemar_p": 0.0390625,
+   "paired_delta": 0.000507,
+   "paired_delta_ci": [
+    8.1e-05,
+    0.000933
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.46,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Dress"
+   ],
+   "n": 13800,
+   "accuracy": 0.5239,
+   "accuracy_ci": [
+    0.5156,
+    0.5322
+   ],
+   "exact_accuracy": 0.5244,
+   "logistic_regression": 0.5674,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 8,
+   "discordant_exact_right": 15,
+   "mcnemar_p": 0.2100396156,
+   "paired_delta": -0.000507,
+   "paired_delta_ci": [
+    -0.001188,
+    0.000174
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.46,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Coat"
+   ],
+   "n": 13800,
+   "accuracy": 0.5692,
+   "accuracy_ci": [
+    0.5609,
+    0.5774
+   ],
+   "exact_accuracy": 0.5694,
+   "logistic_regression": 0.5903,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 9,
+   "discordant_exact_right": 12,
+   "mcnemar_p": 0.6636238098,
+   "paired_delta": -0.000217,
+   "paired_delta_ci": [
+    -0.000868,
+    0.000433
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.54,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Sandal"
+   ],
+   "n": 13800,
+   "accuracy": 0.7926,
+   "accuracy_ci": [
+    0.7858,
+    0.7993
+   ],
+   "exact_accuracy": 0.7912,
+   "logistic_regression": 0.7823,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 20,
+   "discordant_exact_right": 0,
+   "mcnemar_p": 1.9073e-06,
+   "paired_delta": 0.001449,
+   "paired_delta_ci": [
+    0.000815,
+    0.002084
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 10,
+    "validation_accuracy": 0.7,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Shirt"
+   ],
+   "n": 13800,
+   "accuracy": 0.4987,
+   "accuracy_ci": [
+    0.4904,
+    0.507
+   ],
+   "exact_accuracy": 0.4991,
+   "logistic_regression": 0.5318,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 0,
+   "discordant_exact_right": 5,
+   "mcnemar_p": 0.0625,
+   "paired_delta": -0.000362,
+   "paired_delta_ci": [
+    -0.00068,
+    -4.5e-05
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.48,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.6267,
+   "accuracy_ci": [
+    0.6186,
+    0.6348
+   ],
+   "exact_accuracy": 0.6433,
+   "logistic_regression": 0.9246,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 14,
+   "discordant_exact_right": 242,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.016522,
+   "paired_delta_ci": [
+    -0.018777,
+    -0.014266
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 10,
+    "validation_accuracy": 0.72,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.7646,
+   "accuracy_ci": [
+    0.7574,
+    0.7716
+   ],
+   "exact_accuracy": 0.7725,
+   "logistic_regression": 0.8186,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 97,
+   "discordant_exact_right": 207,
+   "mcnemar_p": 3e-10,
+   "paired_delta": -0.007971,
+   "paired_delta_ci": [
+    -0.010444,
+    -0.005498
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.64,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "T-shirt",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.6209,
+   "accuracy_ci": [
+    0.6128,
+    0.629
+   ],
+   "exact_accuracy": 0.6387,
+   "logistic_regression": 0.9754,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 249,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.017754,
+   "paired_delta_ci": [
+    -0.019993,
+    -0.015514
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.76,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Pullover"
+   ],
+   "n": 13800,
+   "accuracy": 0.5334,
+   "accuracy_ci": [
+    0.5251,
+    0.5417
+   ],
+   "exact_accuracy": 0.5332,
+   "logistic_regression": 0.595,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 13,
+   "discordant_exact_right": 10,
+   "mcnemar_p": 0.6776394844,
+   "paired_delta": 0.000217,
+   "paired_delta_ci": [
+    -0.000464,
+    0.000899
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.48,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Dress"
+   ],
+   "n": 13800,
+   "accuracy": 0.5183,
+   "accuracy_ci": [
+    0.5099,
+    0.5266
+   ],
+   "exact_accuracy": 0.5182,
+   "logistic_regression": 0.5861,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 3,
+   "discordant_exact_right": 2,
+   "mcnemar_p": 1.0,
+   "paired_delta": 7.2e-05,
+   "paired_delta_ci": [
+    -0.000245,
+    0.00039
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.44,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Coat"
+   ],
+   "n": 13800,
+   "accuracy": 0.5223,
+   "accuracy_ci": [
+    0.514,
+    0.5306
+   ],
+   "exact_accuracy": 0.5236,
+   "logistic_regression": 0.831,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 21,
+   "mcnemar_p": 0.0009105206,
+   "paired_delta": -0.001232,
+   "paired_delta_ci": [
+    -0.001942,
+    -0.000522
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.4,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Sandal"
+   ],
+   "n": 13800,
+   "accuracy": 0.8423,
+   "accuracy_ci": [
+    0.8361,
+    0.8483
+   ],
+   "exact_accuracy": 0.8413,
+   "logistic_regression": 0.855,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 14,
+   "discordant_exact_right": 0,
+   "mcnemar_p": 0.0001220703,
+   "paired_delta": 0.001014,
+   "paired_delta_ci": [
+    0.000483,
+    0.001546
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.92,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Shirt"
+   ],
+   "n": 13800,
+   "accuracy": 0.543,
+   "accuracy_ci": [
+    0.5347,
+    0.5513
+   ],
+   "exact_accuracy": 0.5427,
+   "logistic_regression": 0.5128,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 12,
+   "discordant_exact_right": 7,
+   "mcnemar_p": 0.3592834473,
+   "paired_delta": 0.000362,
+   "paired_delta_ci": [
+    -0.000257,
+    0.000981
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.54,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.9217,
+   "accuracy_ci": [
+    0.9171,
+    0.9261
+   ],
+   "exact_accuracy": 0.9274,
+   "logistic_regression": 0.9483,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 12,
+   "discordant_exact_right": 90,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.005652,
+   "paired_delta_ci": [
+    -0.007083,
+    -0.004221
+   ],
+   "selection": {
+    "flip": true,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 1.0,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.7147,
+   "accuracy_ci": [
+    0.7071,
+    0.7222
+   ],
+   "exact_accuracy": 0.7193,
+   "logistic_regression": 0.8962,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 51,
+   "discordant_exact_right": 114,
+   "mcnemar_p": 1.0393e-06,
+   "paired_delta": -0.004565,
+   "paired_delta_ci": [
+    -0.006388,
+    -0.002742
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.7,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Trouser",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.9614,
+   "accuracy_ci": [
+    0.9581,
+    0.9645
+   ],
+   "exact_accuracy": 0.9649,
+   "logistic_regression": 0.9861,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 0,
+   "discordant_exact_right": 48,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.003478,
+   "paired_delta_ci": [
+    -0.004461,
+    -0.002496
+   ],
+   "selection": {
+    "flip": true,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 1.0,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Dress"
+   ],
+   "n": 13800,
+   "accuracy": 0.5308,
+   "accuracy_ci": [
+    0.5225,
+    0.5391
+   ],
+   "exact_accuracy": 0.5296,
+   "logistic_regression": 0.5055,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 18,
+   "discordant_exact_right": 2,
+   "mcnemar_p": 0.0004024506,
+   "paired_delta": 0.001159,
+   "paired_delta_ci": [
+    0.000525,
+    0.001794
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.5,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Coat"
+   ],
+   "n": 13800,
+   "accuracy": 0.5282,
+   "accuracy_ci": [
+    0.5199,
+    0.5365
+   ],
+   "exact_accuracy": 0.5286,
+   "logistic_regression": 0.5566,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 5,
+   "discordant_exact_right": 10,
+   "mcnemar_p": 0.3017578125,
+   "paired_delta": -0.000362,
+   "paired_delta_ci": [
+    -0.000912,
+    0.000188
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.66,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Sandal"
+   ],
+   "n": 13800,
+   "accuracy": 0.8464,
+   "accuracy_ci": [
+    0.8403,
+    0.8523
+   ],
+   "exact_accuracy": 0.8449,
+   "logistic_regression": 0.6711,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 20,
+   "discordant_exact_right": 0,
+   "mcnemar_p": 1.9073e-06,
+   "paired_delta": 0.001449,
+   "paired_delta_ci": [
+    0.000815,
+    0.002084
+   ],
+   "selection": {
+    "flip": false,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.88,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Shirt"
+   ],
+   "n": 13800,
+   "accuracy": 0.5014,
+   "accuracy_ci": [
+    0.493,
+    0.5097
+   ],
+   "exact_accuracy": 0.5015,
+   "logistic_regression": 0.5259,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 6,
+   "mcnemar_p": 0.75390625,
+   "paired_delta": -0.000145,
+   "paired_delta_ci": [
+    -0.000594,
+    0.000304
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.58,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.8311,
+   "accuracy_ci": [
+    0.8247,
+    0.8372
+   ],
+   "exact_accuracy": 0.8474,
+   "logistic_regression": 0.9327,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 13,
+   "discordant_exact_right": 238,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.016304,
+   "paired_delta_ci": [
+    -0.018538,
+    -0.014071
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 10,
+    "validation_accuracy": 0.82,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.5222,
+   "accuracy_ci": [
+    0.5138,
+    0.5305
+   ],
+   "exact_accuracy": 0.522,
+   "logistic_regression": 0.7437,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 1,
+   "mcnemar_p": 0.375,
+   "paired_delta": 0.000217,
+   "paired_delta_ci": [
+    -0.0001,
+    0.000535
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.5,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Pullover",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.8058,
+   "accuracy_ci": [
+    0.7991,
+    0.8123
+   ],
+   "exact_accuracy": 0.8108,
+   "logistic_regression": 0.9814,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 1,
+   "discordant_exact_right": 70,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.005,
+   "paired_delta_ci": [
+    -0.006194,
+    -0.003806
+   ],
+   "selection": {
+    "flip": false,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.84,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Dress",
+    "Coat"
+   ],
+   "n": 13800,
+   "accuracy": 0.5,
+   "accuracy_ci": [
+    0.4917,
+    0.5083
+   ],
+   "exact_accuracy": 0.4998,
+   "logistic_regression": 0.5314,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 3,
+   "discordant_exact_right": 0,
+   "mcnemar_p": 0.25,
+   "paired_delta": 0.000217,
+   "paired_delta_ci": [
+    -2.9e-05,
+    0.000463
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.34,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Dress",
+    "Sandal"
+   ],
+   "n": 13800,
+   "accuracy": 0.7592,
+   "accuracy_ci": [
+    0.752,
+    0.7663
+   ],
+   "exact_accuracy": 0.7575,
+   "logistic_regression": 0.6624,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 23,
+   "discordant_exact_right": 0,
+   "mcnemar_p": 2.384e-07,
+   "paired_delta": 0.001667,
+   "paired_delta_ci": [
+    0.000986,
+    0.002347
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.25,
+    "d": -0.1,
+    "candidates": 10,
+    "validation_accuracy": 0.86,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Dress",
+    "Shirt"
+   ],
+   "n": 13800,
+   "accuracy": 0.5039,
+   "accuracy_ci": [
+    0.4956,
+    0.5123
+   ],
+   "exact_accuracy": 0.5046,
+   "logistic_regression": 0.5345,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 14,
+   "mcnemar_p": 0.0308837891,
+   "paired_delta": -0.000725,
+   "paired_delta_ci": [
+    -0.001327,
+    -0.000122
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.54,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Dress",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.7522,
+   "accuracy_ci": [
+    0.7449,
+    0.7593
+   ],
+   "exact_accuracy": 0.7593,
+   "logistic_regression": 0.8945,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 102,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.007101,
+   "paired_delta_ci": [
+    -0.008559,
+    -0.005644
+   ],
+   "selection": {
+    "flip": true,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.86,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Dress",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.4765,
+   "accuracy_ci": [
+    0.4682,
+    0.4849
+   ],
+   "exact_accuracy": 0.4765,
+   "logistic_regression": 0.6757,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 3,
+   "discordant_exact_right": 3,
+   "mcnemar_p": 1.0,
+   "paired_delta": 0.0,
+   "paired_delta_ci": [
+    -0.000348,
+    0.000348
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.4,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Dress",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.7962,
+   "accuracy_ci": [
+    0.7894,
+    0.8028
+   ],
+   "exact_accuracy": 0.8054,
+   "logistic_regression": 0.974,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 0,
+   "discordant_exact_right": 128,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.009275,
+   "paired_delta_ci": [
+    -0.010875,
+    -0.007676
+   ],
+   "selection": {
+    "flip": true,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.9,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Coat",
+    "Sandal"
+   ],
+   "n": 13800,
+   "accuracy": 0.8399,
+   "accuracy_ci": [
+    0.8336,
+    0.8459
+   ],
+   "exact_accuracy": 0.8386,
+   "logistic_regression": 0.6435,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 18,
+   "discordant_exact_right": 1,
+   "mcnemar_p": 7.62939e-05,
+   "paired_delta": 0.001232,
+   "paired_delta_ci": [
+    0.000613,
+    0.001851
+   ],
+   "selection": {
+    "flip": false,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.72,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Coat",
+    "Shirt"
+   ],
+   "n": 13800,
+   "accuracy": 0.5502,
+   "accuracy_ci": [
+    0.5419,
+    0.5585
+   ],
+   "exact_accuracy": 0.5502,
+   "logistic_regression": 0.5641,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 13,
+   "discordant_exact_right": 13,
+   "mcnemar_p": 1.0,
+   "paired_delta": 0.0,
+   "paired_delta_ci": [
+    -0.000724,
+    0.000724
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.6,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Coat",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.8619,
+   "accuracy_ci": [
+    0.856,
+    0.8675
+   ],
+   "exact_accuracy": 0.8649,
+   "logistic_regression": 0.9349,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 52,
+   "discordant_exact_right": 94,
+   "mcnemar_p": 0.0006398231,
+   "paired_delta": -0.003043,
+   "paired_delta_ci": [
+    -0.004759,
+    -0.001328
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.82,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Coat",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.4927,
+   "accuracy_ci": [
+    0.4843,
+    0.501
+   ],
+   "exact_accuracy": 0.492,
+   "logistic_regression": 0.7522,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 12,
+   "discordant_exact_right": 3,
+   "mcnemar_p": 0.03515625,
+   "paired_delta": 0.000652,
+   "paired_delta_ci": [
+    0.000102,
+    0.001202
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.56,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Coat",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.9029,
+   "accuracy_ci": [
+    0.8978,
+    0.9077
+   ],
+   "exact_accuracy": 0.9127,
+   "logistic_regression": 0.9802,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 7,
+   "discordant_exact_right": 142,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.009783,
+   "paired_delta_ci": [
+    -0.011509,
+    -0.008057
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.84,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Sandal",
+    "Shirt"
+   ],
+   "n": 13800,
+   "accuracy": 0.6216,
+   "accuracy_ci": [
+    0.6135,
+    0.6297
+   ],
+   "exact_accuracy": 0.6281,
+   "logistic_regression": 0.6097,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 11,
+   "discordant_exact_right": 101,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.006522,
+   "paired_delta_ci": [
+    -0.008021,
+    -0.005023
+   ],
+   "selection": {
+    "flip": false,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.66,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Sandal",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.5551,
+   "accuracy_ci": [
+    0.5468,
+    0.5634
+   ],
+   "exact_accuracy": 0.555,
+   "logistic_regression": 0.4887,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 10,
+   "discordant_exact_right": 8,
+   "mcnemar_p": 0.8145294189,
+   "paired_delta": 0.000145,
+   "paired_delta_ci": [
+    -0.000458,
+    0.000747
+   ],
+   "selection": {
+    "flip": true,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.58,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Sandal",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.7788,
+   "accuracy_ci": [
+    0.7718,
+    0.7857
+   ],
+   "exact_accuracy": 0.773,
+   "logistic_regression": 0.546,
+   "beats_logistic_regression": true,
+   "discordant_hardware_right": 90,
+   "discordant_exact_right": 10,
+   "mcnemar_p": 0.0,
+   "paired_delta": 0.005797,
+   "paired_delta_ci": [
+    0.00438,
+    0.007214
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.74,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Sandal",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.6824,
+   "accuracy_ci": [
+    0.6746,
+    0.6901
+   ],
+   "exact_accuracy": 0.6854,
+   "logistic_regression": 0.7304,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 42,
+   "discordant_exact_right": 83,
+   "mcnemar_p": 0.0003098219,
+   "paired_delta": -0.002971,
+   "paired_delta_ci": [
+    -0.004558,
+    -0.001384
+   ],
+   "selection": {
+    "flip": false,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.68,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Shirt",
+    "Sneaker"
+   ],
+   "n": 13800,
+   "accuracy": 0.7032,
+   "accuracy_ci": [
+    0.6955,
+    0.7108
+   ],
+   "exact_accuracy": 0.7198,
+   "logistic_regression": 0.9192,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 12,
+   "discordant_exact_right": 241,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.016594,
+   "paired_delta_ci": [
+    -0.018836,
+    -0.014352
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 10,
+    "validation_accuracy": 0.84,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Shirt",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.5782,
+   "accuracy_ci": [
+    0.5699,
+    0.5864
+   ],
+   "exact_accuracy": 0.5805,
+   "logistic_regression": 0.7337,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 28,
+   "discordant_exact_right": 60,
+   "mcnemar_p": 0.0008464961,
+   "paired_delta": -0.002319,
+   "paired_delta_ci": [
+    -0.003651,
+    -0.000987
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.95,
+    "d": -0.42,
+    "candidates": 8,
+    "validation_accuracy": 0.6,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Shirt",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.6946,
+   "accuracy_ci": [
+    0.6869,
+    0.7023
+   ],
+   "exact_accuracy": 0.7079,
+   "logistic_regression": 0.9691,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 4,
+   "discordant_exact_right": 187,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.013261,
+   "paired_delta_ci": [
+    -0.015211,
+    -0.011311
+   ],
+   "selection": {
+    "flip": true,
+    "c": 0.5,
+    "d": -0.3,
+    "candidates": 10,
+    "validation_accuracy": 0.8,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Sneaker",
+    "Bag"
+   ],
+   "n": 13800,
+   "accuracy": 0.802,
+   "accuracy_ci": [
+    0.7952,
+    0.8085
+   ],
+   "exact_accuracy": 0.8054,
+   "logistic_regression": 0.898,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 19,
+   "discordant_exact_right": 66,
+   "mcnemar_p": 3.041e-07,
+   "paired_delta": -0.003406,
+   "paired_delta_ci": [
+    -0.004714,
+    -0.002098
+   ],
+   "selection": {
+    "flip": true,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 8,
+    "validation_accuracy": 0.86,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Sneaker",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.6646,
+   "accuracy_ci": [
+    0.6566,
+    0.6724
+   ],
+   "exact_accuracy": 0.667,
+   "logistic_regression": 0.7349,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 24,
+   "discordant_exact_right": 57,
+   "mcnemar_p": 0.0003173169,
+   "paired_delta": -0.002391,
+   "paired_delta_ci": [
+    -0.003669,
+    -0.001114
+   ],
+   "selection": {
+    "flip": false,
+    "c": 1.0,
+    "d": 0.02,
+    "candidates": 10,
+    "validation_accuracy": 0.72,
+    "validation_n": 50
+   }
+  },
+  {
+   "pair": [
+    "Bag",
+    "Ankle boot"
+   ],
+   "n": 13800,
+   "accuracy": 0.8736,
+   "accuracy_ci": [
+    0.8679,
+    0.879
+   ],
+   "exact_accuracy": 0.8822,
+   "logistic_regression": 0.9762,
+   "beats_logistic_regression": false,
+   "discordant_hardware_right": 6,
+   "discordant_exact_right": 125,
+   "mcnemar_p": 0.0,
+   "paired_delta": -0.008623,
+   "paired_delta_ci": [
+    -0.010242,
+    -0.007004
+   ],
+   "selection": {
+    "flip": false,
+    "c": 2.0,
+    "d": 0.02,
+    "candidates": 8,
+    "validation_accuracy": 0.9,
+    "validation_n": 50
+   }
+  }
+ ],
+ "provenance": {
+  "source_repo": "quantum-machine-learning",
+  "source_sha": "bb07c09de9aaca12ef1d3e068dba5e686634fad1",
+  "source_dirty": true,
+  "exported_at": "2026-10-08",
+  "seed": 0,
+  "training": {
+   "model": "QSVM",
+   "paper": "arXiv:1909.11988",
+   "protocol": "every class pair, none selected; orientation and (c, d) chosen per pair on a validation slice of the fit split, scored on every other image"
+  },
+  "versions": {
+   "python": "3.12.1",
+   "numpy": "1.26.4",
+   "scikit-learn": "1.8.0"
+  }
+ }
+}
