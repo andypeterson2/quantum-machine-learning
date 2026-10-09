@@ -1,0 +1,183 @@
+{
+  "kind": "hardware-run",
+  "circuit": "optimized 4-qubit HHL (paper Fig. 10, depth 8 as built)",
+  "paper": "arXiv:1909.11988",
+  "backend": "ibm_marrakesh",
+  "shots": 32768,
+  "transpiled": {
+    "depth": 17,
+    "two_qubit_gates": 4,
+    "optimization_level": 3,
+    "seed_transpiler": 1909,
+    "initial_layout_requested": null,
+    "physical_qubits": [
+      147,
+      10,
+      148,
+      146
+    ],
+    "qubit_roles": {
+      "eigenvalue_q1": 147,
+      "eigenvalue_q2": 10,
+      "solution_q3": 148,
+      "ancilla_q4": 146
+    },
+    "two_qubit_pairs": [
+      [
+        146,
+        147
+      ],
+      [
+        147,
+        148
+      ]
+    ]
+  },
+  "calibration": {
+    "qubits": {
+      "147": {
+        "t1_seconds": 0.00019372707421886056,
+        "t2_seconds": 8.010380618458021e-05,
+        "readout_error": 0.00439453125
+      },
+      "10": {
+        "t1_seconds": 0.00021340688373748258,
+        "t2_seconds": 9.489171612864306e-05,
+        "readout_error": 0.00341796875
+      },
+      "148": {
+        "t1_seconds": 0.00010309037733632831,
+        "t2_seconds": 4.312185445980414e-05,
+        "readout_error": 0.004150390625
+      },
+      "146": {
+        "t1_seconds": 0.00017749172582364267,
+        "t2_seconds": 1.6700502136176493e-05,
+        "readout_error": 0.00390625
+      }
+    },
+    "edges": {
+      "cz:146_147": 0.003620997624896344,
+      "cz:147_148": 0.00146875697398835
+    },
+    "last_update_date": "2026-10-08 15:41:49-07:00"
+  },
+  "paper_reference": {
+    "ibmqx2_optimized_depth7_djs": 0.13,
+    "ibmqx2_baseline_depth20_djs": 0.603,
+    "note": "the 0.603 baseline is a depth-20 unoptimized circuit this repo does not build; only the optimized circuit is compared like-for-like"
+  },
+  "jobs": {
+    "raw": {
+      "job_id": "db42f34lf4us73c248v0",
+      "counts": {
+        "0000": 8399,
+        "0011": 7578,
+        "0001": 7998,
+        "0010": 7529,
+        "1001": 267,
+        "1010": 327,
+        "1011": 250,
+        "1000": 340,
+        "0111": 31,
+        "0100": 21,
+        "0110": 20,
+        "0101": 6,
+        "1110": 1,
+        "1100": 1
+      },
+      "js_divergence_vs_ideal": 0.0199,
+      "alpha": [
+        0.49404412,
+        -0.48089729
+      ],
+      "p_q4_success": 0.4922,
+      "qsvm_accuracy": {
+        "iris": 0.9667,
+        "mnist": 0.8969
+      }
+    },
+    "mitigated": {
+      "job_id": "db42f34lf4us73c24900",
+      "counts": {
+        "0011": 8062,
+        "0001": 8036,
+        "0000": 7763,
+        "0010": 7875,
+        "1011": 210,
+        "1010": 214,
+        "0100": 29,
+        "1001": 202,
+        "1100": 3,
+        "0111": 46,
+        "0101": 38,
+        "1000": 234,
+        "0110": 51,
+        "1111": 2,
+        "1101": 3
+      },
+      "js_divergence_vs_ideal": 0.016,
+      "alpha": [
+        0.49521637,
+        -0.49601685
+      ],
+      "p_q4_success": 0.5066,
+      "qsvm_accuracy": {
+        "iris": 0.9667,
+        "mnist": 0.8925
+      }
+    }
+  },
+  "alpha_note": "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign pattern is taken from the ideal solution F^-1 y, not measured",
+  "qsvm_accuracy_provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "50a3db8cbf3320f68c6122a5b5d899f24e5e1cfc",
+    "source_dirty": true,
+    "exported_at": "2026-10-08",
+    "seed": 0,
+    "training": {
+      "model": "QSVM",
+      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "numpy": "1.26.4",
+      "scikit-learn": "1.8.0"
+    }
+  },
+  "ideal_probs": {
+    "0000": 0.25,
+    "1000": 0.0,
+    "0100": 0.0,
+    "1100": 0.0,
+    "0010": 0.25,
+    "1010": 0.0,
+    "0110": 0.0,
+    "1110": 0.0,
+    "0001": 0.25,
+    "1001": 0.0,
+    "0101": 0.0,
+    "1101": 0.0,
+    "0011": 0.25,
+    "1011": 0.0,
+    "0111": 0.0,
+    "1111": 0.0
+  },
+  "provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "50a3db8cbf3320f68c6122a5b5d899f24e5e1cfc",
+    "source_dirty": true,
+    "exported_at": "2026-10-08",
+    "seed": 0,
+    "training": {
+      "model": "HHL",
+      "paper": "arXiv:1909.11988",
+      "derivation": "notebook cell 10 circuit executed on real hardware; see tools/hardware_run.py"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "qiskit": "2.3.0",
+      "qiskit-ibm-runtime": "0.45.1"
+    }
+  }
+}

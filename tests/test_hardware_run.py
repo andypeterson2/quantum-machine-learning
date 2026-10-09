@@ -69,6 +69,34 @@ def test_other_failures_raise(hardware_run, monkeypatch) -> None:
         hardware_run.qsvm_accuracies([0.5, -0.5])
 
 
+def test_exactly_one_run_is_the_deployed_one() -> None:
+    """ALPHA_SHOTS is one recorded run's readout, and the exports are built
+    from it. Every other run is a second measurement of the same circuit, so
+    the property to hold is that one artifact matches and the rest do not —
+    not that they all do, which was only true while there was one of them."""
+    matches = [
+        path.name
+        for path in sorted(HARDWARE_DIR.glob("hhl-*.json"))
+        if json.loads(path.read_text())["jobs"]["raw"]["alpha"]
+        == pytest.approx(qsvm_export.ALPHA_SHOTS.tolist())
+    ]
+    assert len(matches) == 1, matches
+
+
+@pytest.mark.parametrize("path", sorted(HARDWARE_DIR.glob("hhl-*.json")), ids=lambda p: p.name)
+def test_every_readout_is_a_plausible_solution(path) -> None:
+    """A readout is two square roots of probabilities with the sign pattern
+    taken from the ideal solution, so each component sits in [-1, 1] and the
+    ratio is near 1. A job that fell outside this is a broken run, not a
+    measurement, and must not reach the comparison."""
+    run = json.loads(path.read_text())
+    for label, job in run["jobs"].items():
+        first, second = job["alpha"]
+        assert 0.0 < first <= 1.0, (path.name, label)
+        assert -1.0 <= second < 0.0, (path.name, label)
+        assert 0.8 < first / -second < 1.25, (path.name, label)
+
+
 @pytest.mark.parametrize("path", sorted(HARDWARE_DIR.glob("hhl-*.json")), ids=lambda p: p.name)
 def test_artifact_accuracies_are_held_out(path) -> None:
     """Recomputed from the splits, not read back.
@@ -81,7 +109,6 @@ def test_artifact_accuracies_are_held_out(path) -> None:
     run = json.loads(path.read_text())
     assert run["qsvm_accuracy_provenance"]["training"]["protocol"].startswith("held-out")
     assert "not measured" in run["alpha_note"]
-    assert run["jobs"]["raw"]["alpha"] == pytest.approx(qsvm_export.ALPHA_SHOTS.tolist())
 
     for job in run["jobs"].values():
         alpha = np.array(job["alpha"])
@@ -157,6 +184,33 @@ class TestTheRunIsRepeatable:
             assert 0.0 <= entry["readout_error"] < 1.0
         assert len(snapshot["edges"]) == len(pairs), "one error per edge, not one per direction"
 
+    def test_each_qubit_role_is_recorded(self, hardware_run) -> None:
+        """The readout splits on the solution qubit and the ancilla, so a bias
+        on one branch is only chaseable if the record says which physical qubit
+        held which role."""
+        _, transpiled = self._transpiled(hardware_run, layout=[29, 51, 36, 28])
+        roles = hardware_run.qubit_roles(hardware_run.layout_qubits(transpiled))
+        assert roles == {
+            "eigenvalue_q1": 29,
+            "eigenvalue_q2": 51,
+            "solution_q3": 36,
+            "ancilla_q4": 28,
+        }
+
+    def test_a_circuit_with_no_layout_has_no_roles(self, hardware_run) -> None:
+        assert hardware_run.qubit_roles([]) == {}
+
+    def test_the_calibration_says_when_it_was_taken(self, hardware_run) -> None:
+        """Two runs on one calibration measure the chip twice; across one they
+        measure drift as well. Without the stamp there is no telling which."""
+        backend, transpiled = self._transpiled(hardware_run, layout=[29, 51, 36, 28])
+        snapshot = hardware_run.calibration_snapshot(
+            backend,
+            hardware_run.layout_qubits(transpiled),
+            hardware_run.two_qubit_pairs(transpiled),
+        )
+        assert snapshot["last_update_date"]
+
     def test_a_backend_without_a_target_is_not_an_error(self, hardware_run) -> None:
         """Only the snapshot is lost, and losing it must not lose the run."""
         assert hardware_run.calibration_snapshot(object(), [1], [[1, 2]]) == {}
@@ -165,3 +219,67 @@ class TestTheRunIsRepeatable:
         from classifiers.hhl import build_hhl
 
         assert hardware_run.layout_qubits(build_hhl(measure=True)) == []
+
+
+class TestTheExposureIsSplit:
+    """The probes report flip rates per unit of exposure, so a prediction for
+    the circuit needs its operations and its measurement window timed apart."""
+
+    @staticmethod
+    def _laid_out(hardware_run):
+        from qiskit import transpile
+        from qiskit_ibm_runtime.fake_provider import FakeTorino
+
+        from classifiers.hhl import build_hhl
+
+        backend = FakeTorino()
+        layout = [29, 51, 36, 28]
+        circuit = transpile(
+            build_hhl(measure=True),
+            backend=backend,
+            optimization_level=3,
+            initial_layout=layout,
+            seed_transpiler=hardware_run.TRANSPILER_SEED,
+        )
+        return backend, circuit, layout
+
+    def test_operations_and_measurement_add_up_to_the_estimate(self, hardware_run) -> None:
+        backend, circuit, layout = self._laid_out(hardware_run)
+        solution = layout[hardware_run.QUBIT_ROLES.index("solution_q3")]
+        split = hardware_run.exposure_split(circuit, backend.target, solution)
+        assert 0.0 < split["circuit_seconds"] < split["measure_seconds"]
+        assert 0.0 < split["solution_busy_seconds"] <= split["circuit_seconds"]
+        estimate = circuit.estimate_duration(backend.target, unit="s")
+        assert split["total_seconds"] == pytest.approx(estimate, rel=0.02)
+
+    def test_the_decay_probe_waits_the_pre_measurement_time(self, hardware_run) -> None:
+        """The probe's own measurement window already covers the circuit's, so a
+        wait of the whole length would count that window twice."""
+        backend, circuit, layout = self._laid_out(hardware_run)
+        solution = layout[hardware_run.QUBIT_ROLES.index("solution_q3")]
+        split = hardware_run.exposure_split(circuit, backend.target, solution)
+        _, decay = hardware_run.build_probes(backend, layout, split["circuit_seconds"])
+        waited = hardware_run.probe_delay_seconds(decay, backend.target.dt)
+        assert waited == pytest.approx(split["circuit_seconds"], rel=0.01)
+        assert hardware_run.delay_covers(waited, split["circuit_seconds"]) == "circuit"
+
+    def test_a_wait_of_the_whole_length_is_labelled(self, hardware_run) -> None:
+        assert (
+            hardware_run.delay_covers(2.08e-6, 0.416e-6) == "circuit and measurement window"
+        )
+        assert hardware_run.delay_covers(None, 0.4e-6) is None
+
+    def test_a_probe_without_a_delay_reports_none(self, hardware_run) -> None:
+        backend, _, layout = self._laid_out(hardware_run)
+        readout, _ = hardware_run.build_probes(backend, layout, 1e-6)
+        assert hardware_run.probe_delay_seconds(readout, backend.target.dt) is None
+
+    def test_a_target_without_a_measurement_length_raises(self, hardware_run) -> None:
+        from classifiers.hhl import build_hhl
+
+        class Bare:
+            def __getitem__(self, name):
+                raise KeyError(name)
+
+        with pytest.raises(ValueError, match="measurement length"):
+            hardware_run.exposure_split(build_hhl(measure=True), Bare(), 2)

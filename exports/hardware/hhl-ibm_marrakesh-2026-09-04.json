@@ -40,8 +40,7 @@
       "p_q4_success": 0.4987,
       "qsvm_accuracy": {
         "iris": 0.9667,
-        "mnist": 0.891,
-        "bb84": 0.908
+        "mnist": 0.8975
       }
     },
     "mitigated": {
@@ -69,8 +68,7 @@
       "p_q4_success": 0.4984,
       "qsvm_accuracy": {
         "iris": 0.9667,
-        "mnist": 0.886,
-        "bb84": 0.91
+        "mnist": 0.8959
       }
     }
   },
@@ -112,14 +110,13 @@
   "alpha_note": "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign pattern is taken from the ideal solution F^-1 y, not measured",
   "qsvm_accuracy_provenance": {
     "source_repo": "quantum-machine-learning",
-    "source_sha": "216490582b842d5f19248496752c5f1ea7a6e00f",
-    "source_dirty": false,
-    "exported_at": "2026-09-17",
+    "source_sha": "50a3db8cbf3320f68c6122a5b5d899f24e5e1cfc",
+    "source_dirty": true,
+    "exported_at": "2026-10-08",
     "seed": 0,
     "training": {
       "model": "QSVM",
-      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split, with the map, orientation and split held fixed at the committed exports/web/qsvm-*.json and only w rebuilt per alpha (tools/alpha_sensitivity.py), so a row is one model under one readout",
-      "refit_note": "qsvm_export.fit_and_score re-chooses BB84's free parameters per alpha: at the mitigated readout it picks (c, d) = (1.0, 0.02) over (2.0, 0.1) and moves the map's a from 11.78 to 4.56. Both routes give 0.910 here, so these values are unchanged, but they are recorded as the fixed-map comparison because that is the one the protocol above describes"
+      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
     },
     "versions": {
       "python": "3.12.1",
