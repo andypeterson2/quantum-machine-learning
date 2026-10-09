@@ -2,7 +2,7 @@
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
-# worktree it points inside .claude/worktrees/, where there is no website checkout.
+# worktree it points inside that worktree's parent, where there is no website checkout.
 WEB ?= ../website
 
 run:
