@@ -19,7 +19,6 @@ from classifiers.web_export import REPO_ROOT
 pytest.importorskip("qiskit", reason="qiskit not installed")
 
 from classifiers.hhl import (
-    DEFAULT_SHOTS,
     alpha_from_counts,
     analyse,
     build_hhl,
@@ -86,7 +85,11 @@ def test_committed_hardware_run_reanalyses_to_its_recorded_values(path) -> None:
         assert again["js_divergence_vs_ideal"] == job["js_divergence_vs_ideal"], label
         assert again["alpha"] == pytest.approx(job["alpha"]), label
         assert again["p_q4_success"] == pytest.approx(job["p_q4_success"]), label
-    assert run["shots"] == DEFAULT_SHOTS
+    # Runs are taken at whatever shot count the question needs, so the header
+    # has to agree with the counts it describes.
+    assert run["shots"] > 0
+    for job in run["jobs"].values():
+        assert sum(job["counts"].values()) == run["shots"]
 
 
 class TestAlphaIsFixedByTheGeometry:

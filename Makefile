@@ -1,4 +1,4 @@
-.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep alpha-fit-noise qsvm-transfer
+.PHONY: run test lint clean docker export-web sync-web export-qsvm export-qsvm-ovo benchmark distillation alpha-sensitivity alpha-ratio-sweep alpha-fit-noise qsvm-transfer hardware-mechanism
 
 # Website checkout that consumes the browser model exports (override: make sync-web WEB=...)
 # Relative to the working directory, so it resolves from the repo root. From a git
@@ -68,6 +68,12 @@ alpha-fit-noise:
 # transfers off the corpus it was fitted to. exports/qsvm-transfer.json.
 qsvm-transfer:
 	python tools/qsvm_transfer.py
+
+# Account for the raw readout bias against the probes that ran beside the
+# circuit, pool the ratio across every run, and range the hardware alphas
+# downstream. Offline. exports/hardware/mechanism.json.
+hardware-mechanism:
+	python tools/hardware_mechanism.py
 
 test:
 	python -m pytest tests/ -v

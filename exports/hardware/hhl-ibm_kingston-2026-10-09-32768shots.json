@@ -1,0 +1,225 @@
+{
+  "kind": "hardware-run",
+  "circuit": "optimized 4-qubit HHL (paper Fig. 10, depth 8 as built)",
+  "paper": "arXiv:1909.11988",
+  "backend": "ibm_kingston",
+  "shots": 32768,
+  "transpiled": {
+    "depth": 17,
+    "two_qubit_gates": 4,
+    "optimization_level": 3,
+    "seed_transpiler": 1909,
+    "initial_layout_requested": [
+      94,
+      42,
+      93,
+      95
+    ],
+    "physical_qubits": [
+      94,
+      42,
+      93,
+      95
+    ],
+    "qubit_roles": {
+      "eigenvalue_q1": 94,
+      "eigenvalue_q2": 42,
+      "solution_q3": 93,
+      "ancilla_q4": 95
+    },
+    "two_qubit_pairs": [
+      [
+        93,
+        94
+      ],
+      [
+        94,
+        95
+      ]
+    ],
+    "isa_sha256": "deacee3bed93f792f2ded8e23d623219baceab4785af4006d2f1d4c26cbf54ea",
+    "isa_reused": false,
+    "duration_seconds": 2.644e-06,
+    "exposure": {
+      "circuit_seconds": 4.6399999999999997e-07,
+      "solution_busy_seconds": 4.6399999999999997e-07,
+      "measure_seconds": 2.18e-06,
+      "total_seconds": 2.644e-06,
+      "durations_read_on": "2026-10-09"
+    }
+  },
+  "calibration": {
+    "qubits": {
+      "94": {
+        "t1_seconds": 0.00029121932784210834,
+        "t2_seconds": 0.0002011320387412723,
+        "readout_error": 0.0087890625
+      },
+      "42": {
+        "t1_seconds": 0.00016507553214976928,
+        "t2_seconds": 7.568631444533843e-05,
+        "readout_error": 0.002685546875
+      },
+      "93": {
+        "t1_seconds": 0.00039370803750429236,
+        "t2_seconds": 0.00014783572498052594,
+        "readout_error": 0.00341796875
+      },
+      "95": {
+        "t1_seconds": 0.0004268780432900168,
+        "t2_seconds": 0.0005503030369816514,
+        "readout_error": 0.00341796875
+      }
+    },
+    "edges": {
+      "cz:93_94": 0.0011145732459914293,
+      "cz:94_95": 0.0011667463386146881
+    },
+    "last_update_date": "2026-10-08 19:56:05-07:00"
+  },
+  "paper_reference": {
+    "ibmqx2_optimized_depth7_djs": 0.13,
+    "ibmqx2_baseline_depth20_djs": 0.603,
+    "note": "the 0.603 baseline is a depth-20 unoptimized circuit this repo does not build; only the optimized circuit is compared like-for-like"
+  },
+  "jobs": {
+    "raw": {
+      "job_id": "db45sv4vf2bc73cu469g",
+      "counts": {
+        "0000": 8181,
+        "0011": 7732,
+        "0001": 8000,
+        "1001": 187,
+        "0010": 7969,
+        "1010": 215,
+        "1011": 210,
+        "1000": 217,
+        "0111": 15,
+        "0110": 13,
+        "0101": 12,
+        "0100": 16,
+        "1110": 1
+      },
+      "js_divergence_vs_ideal": 0.0137,
+      "alpha": [
+        0.49410588,
+        -0.48575911
+      ],
+      "p_q4_success": 0.493,
+      "qsvm_accuracy": {
+        "iris": 0.9667,
+        "mnist": 0.8958
+      },
+      "probes": {
+        "readout": {
+          "prepared": "1",
+          "read_zero": 0.006897,
+          "shots": 32768
+        },
+        "decay": {
+          "prepared": "1",
+          "read_zero": 0.0383,
+          "shots": 32768,
+          "delay_seconds": 2.644e-06,
+          "delay_covers": "circuit and measurement window"
+        }
+      }
+    },
+    "mitigated": {
+      "job_id": "db45sv84qg6s73c1mho0",
+      "counts": {
+        "0010": 8081,
+        "0011": 8038,
+        "0001": 7690,
+        "0000": 7798,
+        "1000": 288,
+        "0101": 81,
+        "0110": 62,
+        "1011": 179,
+        "1010": 208,
+        "1001": 191,
+        "0111": 85,
+        "0100": 59,
+        "1111": 1,
+        "1100": 4,
+        "1110": 3
+      },
+      "js_divergence_vs_ideal": 0.018,
+      "alpha": [
+        0.484438,
+        -0.495278
+      ],
+      "p_q4_success": 0.4964,
+      "qsvm_accuracy": {
+        "iris": 0.9667,
+        "mnist": 0.8884
+      },
+      "probes": {
+        "readout": {
+          "prepared": "1",
+          "read_zero": 0.005035,
+          "shots": 32768
+        },
+        "decay": {
+          "prepared": "1",
+          "read_zero": 0.020477,
+          "shots": 32768,
+          "delay_seconds": 2.644e-06,
+          "delay_covers": "circuit and measurement window"
+        }
+      }
+    }
+  },
+  "alpha_note": "alpha magnitudes are measured (sqrt of P(0001), P(0011)); the (+, -) sign pattern is taken from the ideal solution F^-1 y, not measured",
+  "qsvm_accuracy_provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "50a3db8cbf3320f68c6122a5b5d899f24e5e1cfc",
+    "source_dirty": true,
+    "exported_at": "2026-10-09",
+    "seed": 0,
+    "training": {
+      "model": "QSVM",
+      "protocol": "held-out: Eq. 24 map fit on each dataset's fit split, rule scored on its held-out split (classifiers.qsvm_export.fit_and_score), as in exports/web/qsvm-*.json"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "numpy": "1.26.4",
+      "scikit-learn": "1.8.0"
+    }
+  },
+  "ideal_probs": {
+    "0000": 0.25,
+    "1000": 0.0,
+    "0100": 0.0,
+    "1100": 0.0,
+    "0010": 0.25,
+    "1010": 0.0,
+    "0110": 0.0,
+    "1110": 0.0,
+    "0001": 0.25,
+    "1001": 0.0,
+    "0101": 0.0,
+    "1101": 0.0,
+    "0011": 0.25,
+    "1011": 0.0,
+    "0111": 0.0,
+    "1111": 0.0
+  },
+  "provenance": {
+    "source_repo": "quantum-machine-learning",
+    "source_sha": "50a3db8cbf3320f68c6122a5b5d899f24e5e1cfc",
+    "source_dirty": true,
+    "exported_at": "2026-10-09",
+    "seed": 0,
+    "training": {
+      "model": "HHL",
+      "paper": "arXiv:1909.11988",
+      "derivation": "notebook cell 10 circuit executed on real hardware; see tools/hardware_run.py"
+    },
+    "versions": {
+      "python": "3.12.1",
+      "qiskit": "2.3.0",
+      "qiskit-ibm-runtime": "0.45.1"
+    }
+  }
+}
