@@ -143,6 +143,14 @@ README_ROW = re.compile(
     re.MULTILINE,
 )
 
+#: "| SVM (`IrisSVM`) | ... | 96.7% (...) — 93.7% mean, sd 1.9 |" — a README row that
+#: also quotes its seed spread, which the Wilson interval beside it cannot carry.
+README_SPREAD = re.compile(
+    r"^\|\s*(?P<model>[^|(]+?)\s*\(`\w+`\)\s*\|[^|]*\|[^|]*?"
+    r"(?P<mean>\d+\.\d)%\s*mean,\s*sd\s*(?P<sd>\d+\.\d)",
+    re.MULTILINE,
+)
+
 #: The heading above each accuracy table names the dataset the rows belong to.
 README_DATASET = re.compile(r"^### (\w+)\s*$", re.MULTILINE)
 
@@ -166,6 +174,21 @@ def _readme_rows() -> list[tuple[str, str, tuple[str, str, str, str]]]:
     return rows
 
 
+def _readme_spreads() -> list[tuple[str, str, tuple[str, str]]]:
+    """(dataset, model, (mean, sd)) for every README row quoting a seed spread."""
+    text = (REPO_ROOT / "README.md").read_text()
+    headings = list(README_DATASET.finditer(text))
+    rows = []
+    for index, heading in enumerate(headings):
+        dataset = heading.group(1).lower()
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        rows.extend(
+            (dataset, match.group("model").strip(), (match.group("mean"), match.group("sd")))
+            for match in README_SPREAD.finditer(text[heading.end() : end])
+        )
+    return rows
+
+
 class TestTheReadmeTablesQuoteTheMeasurements:
     """The README's own claim, held.
 
@@ -183,6 +206,16 @@ class TestTheReadmeTablesQuoteTheMeasurements:
             assert float(low) == pytest.approx(record["accuracy_ci"][0] * 100, abs=0.05)
             assert float(high) == pytest.approx(record["accuracy_ci"][1] * 100, abs=0.05)
             assert int(n.replace(",", "")) == record["n"]
+
+    def test_every_quoted_spread_matches_the_runs(self, measured) -> None:
+        """A mean printed beside the headline has to be the mean of the runs."""
+        for dataset, model, (mean, sd) in _readme_spreads():
+            record = measured.get((dataset, model))
+            key = f"{dataset}/{model}"
+            assert record is not None, f"README quotes a spread for {key}, which is unmeasured"
+            summary = record["summary"]
+            assert float(mean) == pytest.approx(summary["accuracy_mean"] * 100, abs=0.05), key
+            assert float(sd) == pytest.approx(summary["accuracy_stdev"] * 100, abs=0.05), key
 
     def test_every_measured_model_has_a_row(self, measured) -> None:
         """A model measured but absent from the table is a number nobody sees."""

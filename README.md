@@ -23,13 +23,13 @@ Each number is seed 0's run at the plugin's default hyper-parameters, scored on 
 
 ### Iris
 
-| Architecture | Description | Accuracy (95% CI, n) |
+| Architecture | Description | Accuracy (95% CI, n) — and across 10 seeds |
 |-------------|-------------|-----------------|
-| Linear (`IrisLinear`) | Single linear layer: Linear(4→3) | 90.0% (74.4-96.5%, n=30) |
-| SVM (`IrisSVM`) | Linear layer + multi-class hinge loss | 96.7% (83.3-99.4%, n=30) |
-| QVC (`IrisQVC`) | PennyLane variational classifier, 4 qubits, 2 layers | 83.3% (66.4-92.7%, n=30)\* |
+| Linear (`IrisLinear`) | Single linear layer: Linear(4→3) | 90.0% (74.4-96.5%, n=30) — 88.3% mean, sd 2.4 |
+| SVM (`IrisSVM`) | Linear layer + multi-class hinge loss | 96.7% (83.3-99.4%, n=30) — 93.7% mean, sd 1.9 |
+| QVC (`IrisQVC`) | PennyLane variational classifier, 4 qubits, 2 layers | 83.3% (66.4-92.7%, n=30)\* — 78.0% mean, sd 5.9 |
 
-The Iris test split is 30 samples, so one sample is 3.3 points and these three intervals overlap almost entirely: one run cannot separate these architectures. Ten runs can. SVM scores above Linear on all ten seeds (93.7% mean, sd 1.9 against 88.3%, sd 2.4) and the QVC's best seed falls below Linear's mean (78.0%, sd 5.9) — and the seed-0 run quoted above turns out to be the best of the ten for both Linear and SVM. The seed moves this dataset further than the split does.
+The mean is the figure to read. The Iris test split is 30 samples, so one sample is 3.3 points and the single-run intervals overlap almost entirely: one run cannot separate these architectures. Ten runs can. SVM scores above Linear on all ten seeds, and the QVC's best seed falls below Linear's mean. The quoted run is seed 0, the committed export's split, and it is the best of the ten for both Linear and SVM, so it flatters both. The seed moves this dataset further than the split does.
 
 \* QVC needs `pennylane` installed, and only appears in the dataset's model types when it is.
 
